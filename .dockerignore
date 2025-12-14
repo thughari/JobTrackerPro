@@ -1,0 +1,32 @@
+# Maven/Gradle build directories
+target/
+build/
+
+# IDE files and directories
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+
+# Git
+.git/
+.gitignore
+
+# Logs
+logs/
+*.log
+*.tmp
+
+# Environment variables and configuration
+.env
+.env.*
+application*.properties
+application*.yml
+
+# Other common exclusions
+tmp/
+temp/
