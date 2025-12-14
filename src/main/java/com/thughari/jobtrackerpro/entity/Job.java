@@ -17,7 +17,7 @@ import jakarta.persistence.Table;
 public class Job {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(columnDefinition = "VARCHAR(36)")
+    @Column(columnDefinition = "uuid")		//@Column(columnDefinition = "VARCHAR(36)") -- for mySQL
     private UUID id;
 
     private String userEmail; 

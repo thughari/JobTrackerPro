@@ -28,9 +28,8 @@ public class User {
 
 	private String password;
 	
-	@Lob
-    @Column(columnDefinition = "LONGBLOB")
-    private byte[] profileImage;
+//	@Lob
+//    private byte[] profileImage;
 	
 	@Column(length = 1000)
 	private String imageUrl; 

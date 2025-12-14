@@ -3,8 +3,6 @@ package com.thughari.jobtrackerpro.dto;
 import lombok.Data;
 import java.util.UUID;
 
-import com.thughari.jobtrackerpro.entity.AuthProvider;
-
 @Data
 public class UserProfileResponse {
     private UUID id;

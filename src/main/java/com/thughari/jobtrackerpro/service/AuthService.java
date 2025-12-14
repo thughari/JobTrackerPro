@@ -3,9 +3,12 @@ package com.thughari.jobtrackerpro.service;
 import com.thughari.jobtrackerpro.dto.*;
 import com.thughari.jobtrackerpro.entity.AuthProvider;
 import com.thughari.jobtrackerpro.entity.User;
+import com.thughari.jobtrackerpro.exception.ResourceNotFoundException;
+import com.thughari.jobtrackerpro.exception.UserAlreadyExistsException;
 import com.thughari.jobtrackerpro.repo.UserRepository;
 import com.thughari.jobtrackerpro.security.JwtUtils;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -22,19 +25,21 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
+    private final StorageService storageService;
     
     @Value("${app.base-url}")
     private String baseUrl;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtils jwtUtils) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtils jwtUtils, StorageService storageService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtils = jwtUtils;
+        this.storageService = storageService;
     }
 
     public AuthResponse registerUser(AuthRequest request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("Email already in use");
+        	throw new UserAlreadyExistsException("Email already in use");
         }
 
         User user = new User();
@@ -50,10 +55,10 @@ public class AuthService {
 
     public AuthResponse loginUser(AuthRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Login failed! User not found"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new IllegalArgumentException("Invalid password");
+            throw new IllegalArgumentException("Login failed! Invalid password");
         }
 
         String token = jwtUtils.generateToken(user.getEmail());
@@ -67,16 +72,16 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
-    @Transactional(readOnly = true)
-    public byte[] getProfileImage(UUID id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        
-        if (user.getProfileImage() == null) {
-            throw new IllegalArgumentException("No image found for user");
-        }
-        return user.getProfileImage();
-    }
+//    @Transactional(readOnly = true)
+//    public byte[] getProfileImage(UUID id) {
+//        User user = userRepository.findById(id)
+//                .orElseThrow(() -> new RuntimeException("User not found"));
+//        
+//        if (user.getProfileImage() == null) {
+//            throw new IllegalArgumentException("No image found for user");
+//        }
+//        return user.getProfileImage();
+//    }
 
     public UserProfileResponse updateProfile(String email, UpdateProfileRequest request) {
         User user = userRepository.findByEmail(email)
@@ -93,7 +98,6 @@ public class AuthService {
             user.setImageUrl(newImageUrl);
         } else {
             user.setImageUrl(newImageUrl);
-            user.setProfileImage(null); 
         }
         
 
@@ -128,22 +132,16 @@ public class AuthService {
 
         user.setName(name);
 
-        try {
-            if (file != null && !file.isEmpty()) {
-                user.setProfileImage(file.getBytes());
-                user.setImageUrl(baseUrl + "/api/auth/profile/image/" + user.getId());
-            } 
-            else if (imageUrl != null && !imageUrl.isEmpty()) {
-                if (!imageUrl.contains("/api/auth/profile/image/")) {
-                    user.setProfileImage(null);
-                }
-                user.setImageUrl(imageUrl);
-            }
-            else {
-                //TODO: Only clear if we explicitly sent empty string and no file
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Error processing file", e);
+        if (file != null && !file.isEmpty()) {
+        	String r2Url = storageService.uploadFile(file, user.getId().toString());
+            user.setImageUrl(r2Url);
+        } 
+        else if (imageUrl != null && !imageUrl.isEmpty()) {
+        	String r2Url = storageService.uploadFromUrl(imageUrl, user.getId().toString());
+        	user.setImageUrl(r2Url);
+        }
+        else {
+            //TODO: Only clear if we explicitly sent empty string and no file
         }
 
         userRepository.save(user);
