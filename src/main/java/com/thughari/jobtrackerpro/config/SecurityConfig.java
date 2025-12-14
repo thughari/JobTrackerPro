@@ -3,7 +3,6 @@ package com.thughari.jobtrackerpro.config;
 import com.thughari.jobtrackerpro.security.JwtAuthenticationFilter;
 import com.thughari.jobtrackerpro.security.OAuth2SuccessHandler;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -15,14 +14,10 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
-import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
-import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
+
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.filter.ForwardedHeaderFilter;
 
 import java.util.List;
 
@@ -45,45 +40,6 @@ public class SecurityConfig {
 		this.jwtAuthFilter = jwtAuthFilter;
 		this.oAuth2SuccessHandler = oAuth2SuccessHandler;
 	}
-
-	@Bean
-public OAuth2AuthorizationRequestResolver debugResolver(
-        ClientRegistrationRepository repo) {
-
-    DefaultOAuth2AuthorizationRequestResolver resolver =
-            new DefaultOAuth2AuthorizationRequestResolver(
-                    repo, "/oauth2/authorization");
-
-    return new OAuth2AuthorizationRequestResolver() {
-
-        @Override
-        public OAuth2AuthorizationRequest resolve(HttpServletRequest request) {
-            OAuth2AuthorizationRequest authRequest = resolver.resolve(request);
-            if (authRequest != null) {
-                System.out.println(
-                    "OAUTH REDIRECT_URI = " + authRequest.getRedirectUri()
-                );
-            }
-            return authRequest;
-        }
-
-        @Override
-        public OAuth2AuthorizationRequest resolve(
-                HttpServletRequest request, String clientRegistrationId) {
-
-            OAuth2AuthorizationRequest authRequest =
-                    resolver.resolve(request, clientRegistrationId);
-
-            if (authRequest != null) {
-                System.out.println(
-                    "OAUTH REDIRECT_URI = " + authRequest.getRedirectUri()
-                );
-            }
-            return authRequest;
-        }
-    };
-}
-
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
