@@ -1,0 +1,89 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: jobtracker-service  # This will be the name of your service in Cloud Run
+  labels:
+    cloud.googleapis.com/location: asia-south1
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "0"  # Scales to 0 when not used (saves money)
+        autoscaling.knative.dev/maxScale: "5"  # Limit max instances to control costs
+    spec:
+      containers:
+      - image: asia-south1-docker.pkg.dev/job-tracker-pro-480917/my-repo/my-java-app:v1
+        ports:
+        - containerPort: 8080 # Spring Boot default port
+        env:
+        # 1. Activate your 'prod' profile
+        - name: SPRING_PROFILES_ACTIVE
+          value: "prod"
+        
+        # 2. Inject Secrets (The connection to Secret Manager)
+        - name: JDBC_URL
+          valueFrom:
+            secretKeyRef:
+              name: jdbc-url
+              key: latest
+        - name: JDBC_USER
+          valueFrom:
+            secretKeyRef:
+              name: jdbc-user
+              key: latest
+        - name: JDBC_PASS
+          valueFrom:
+            secretKeyRef:
+              name: jdbc-pass
+              key: latest
+
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: jwt-secret
+              key: latest
+        - name: GOOGLE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: google-id
+              key: latest
+        - name: GOOGLE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: google-secret
+              key: latest
+        - name: GITHUB_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: github-id
+              key: latest
+        - name: GITHUB_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: github-secret
+              key: latest
+        - name: CLOUDFLARE_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cloudflare-access-key
+              key: latest
+        - name: CLOUDFLARE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cloudflare-secret-key
+              key: latest
+        - name: CLOUDFLARE_ENDPOINT
+          valueFrom:
+            secretKeyRef:
+              name: cloudflare-endpoint
+              key: latest
+        - name: CLOUDFLARE_BUCKET
+          valueFrom:
+            secretKeyRef:
+              name: cloudflare-bucket
+              key: latest
+        - name: CLOUDFLARE_PUBLIC_URL
+          valueFrom:
+            secretKeyRef:
+              name: cloudflare-public-url
+              key: latest
