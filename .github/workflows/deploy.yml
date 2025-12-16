@@ -1,13 +1,11 @@
 name: Deploy to Cloud Run
 
 on:
-  push:
-    branches: [ "main" ]
+  workflow_dispatch:
 
 env:
   PROJECT_ID: job-tracker-pro-480917
   REGION: asia-south1
-  # if not exist, create it: gcloud artifacts repositories create my-repo --repository-format=docker --location=asia-south1
   REPO_NAME: my-repo 
   SERVICE_NAME: jobtracker-service
   IMAGE_NAME: my-java-app
@@ -20,19 +18,16 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # 1. Authenticate to Google Cloud
     - name: Google Auth
       id: auth
       uses: google-github-actions/auth@v2
       with:
         credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
-    # 2. Configure Docker to use gcloud command-line tool as a credential helper
     - name: Docker Auth
       run: |
         gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
 
-    # 3. Build and Push Container
     - name: Build and Push Container
       run: |
         TAG="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
@@ -40,14 +35,12 @@ jobs:
         docker push $TAG
         echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
 
-    # 4. Update service.yaml with the new image tag
     - name: Update Service YAML
       run: |
         # Replace the hardcoded image line with the new dynamic tag
         sed -i "s|image: .*|image: ${{ env.IMAGE_TAG }}|g" service.yaml
         cat service.yaml # Optional: verify content in logs
 
-    # 5. Deploy to Cloud Run using the YAML
     - name: Deploy to Cloud Run
       uses: google-github-actions/deploy-cloudrun@v2
       with:
