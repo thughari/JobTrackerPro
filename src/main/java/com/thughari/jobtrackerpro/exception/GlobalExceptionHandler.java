@@ -12,19 +12,16 @@ import java.time.LocalDateTime;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // 1. User Logic Errors (Email exists, Bad Password)
     @ExceptionHandler({UserAlreadyExistsException.class, IllegalArgumentException.class})
     public ResponseEntity<ErrorResponse> handleBadRequest(RuntimeException ex) {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
-    // 2. Not Found Errors
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex) {
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
-    // 3. File Upload Errors
     @ExceptionHandler(InvalidImageException.class)
     public ResponseEntity<ErrorResponse> handleImageError(InvalidImageException ex) {
         return buildResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE, ex.getMessage());
@@ -34,11 +31,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMaxSizeException(MaxUploadSizeExceededException exc) {
         return buildResponse(HttpStatus.PAYLOAD_TOO_LARGE, "File size exceeds the limit (5MB).");
     }
+    
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ErrorResponse> userNotFoundException(UserNotFoundException exc) {
+        return buildResponse(HttpStatus.NOT_FOUND, "User not found.");
+    }
 
-    // 4. Catch-All
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneralException(Exception ex) {
-        // Log the real error for devs
         ex.printStackTrace(); 
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred.");
     }

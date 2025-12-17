@@ -46,18 +46,6 @@ public class AuthController {
         return ResponseEntity.ok(authService.getCurrentUser(email));
     }
 
-//    @GetMapping("/profile/image/{id}")
-//    public ResponseEntity<byte[]> getProfileImage(@PathVariable UUID id) {
-//        try {
-//            byte[] image = authService.getProfileImage(id);
-//            return ResponseEntity.ok()
-//                    .contentType(MediaType.IMAGE_JPEG)
-//                    .body(image);
-//        } catch (Exception e) {
-//            return ResponseEntity.notFound().build();
-//        }
-//    }
-
     @PutMapping(value = "/profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> updateProfile(
             @RequestParam String name,

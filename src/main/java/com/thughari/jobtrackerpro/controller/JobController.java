@@ -40,12 +40,6 @@ public class JobController {
         return ResponseEntity.ok(jobService.getDashboardData(email));
     }
     
-//    @GetMapping
-//    public ResponseEntity<JobDataResponse> getJobData() {
-//    	String email = getAuthenticatedEmail();
-//        return ResponseEntity.ok(jobService.getFullJobData(email));
-//    }
-
     @PostMapping
     public ResponseEntity<JobDTO> createJob(@RequestBody JobDTO jobDTO) {
     	String email = getAuthenticatedEmail();

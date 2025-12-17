@@ -28,9 +28,6 @@ public class User {
 
 	private String password;
 	
-//	@Lob
-//    private byte[] profileImage;
-	
 	@Column(length = 1000)
 	private String imageUrl; 
 

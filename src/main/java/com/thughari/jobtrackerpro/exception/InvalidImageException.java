@@ -2,9 +2,9 @@ package com.thughari.jobtrackerpro.exception;
 
 public class InvalidImageException extends RuntimeException {
 
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -6949666812658418320L;
 
-    public InvalidImageException(String message) {
+	public InvalidImageException(String message) {
         super(message);
     }
 

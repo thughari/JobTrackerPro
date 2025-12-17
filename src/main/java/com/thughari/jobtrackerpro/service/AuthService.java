@@ -5,11 +5,13 @@ import com.thughari.jobtrackerpro.entity.AuthProvider;
 import com.thughari.jobtrackerpro.entity.User;
 import com.thughari.jobtrackerpro.exception.ResourceNotFoundException;
 import com.thughari.jobtrackerpro.exception.UserAlreadyExistsException;
+import com.thughari.jobtrackerpro.exception.UserNotFoundException;
 import com.thughari.jobtrackerpro.repo.UserRepository;
 import com.thughari.jobtrackerpro.security.JwtUtils;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +31,9 @@ public class AuthService {
     
     @Value("${app.base-url}")
     private String baseUrl;
+    
+    @Value("${CLOUDFLARE_PUBLIC_URL}")
+    private String cloudFlarePublicUrl;
 
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtils jwtUtils, StorageService storageService) {
         this.userRepository = userRepository;
@@ -69,40 +74,7 @@ public class AuthService {
     public UserProfileResponse getCurrentUser(String email) {
         return userRepository.findByEmail(email)
                 .map(this::mapToProfileResponse)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-    }
-
-//    @Transactional(readOnly = true)
-//    public byte[] getProfileImage(UUID id) {
-//        User user = userRepository.findById(id)
-//                .orElseThrow(() -> new RuntimeException("User not found"));
-//        
-//        if (user.getProfileImage() == null) {
-//            throw new IllegalArgumentException("No image found for user");
-//        }
-//        return user.getProfileImage();
-//    }
-
-    public UserProfileResponse updateProfile(String email, UpdateProfileRequest request) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        user.setName(request.getName());
-        
-        String newImageUrl = request.getImageUrl();
-        
-        boolean isKeepingInternalImage = newImageUrl != null && 
-                                         newImageUrl.contains("/api/auth/profile/image/" + user.getId());
-
-        if (isKeepingInternalImage) {
-            user.setImageUrl(newImageUrl);
-        } else {
-            user.setImageUrl(newImageUrl);
-        }
-        
-
-        userRepository.save(user);
-        return mapToProfileResponse(user);
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
     }
 
     public void changePassword(String email, ChangePasswordRequest request) {
@@ -129,19 +101,28 @@ public class AuthService {
     public UserProfileResponse updateProfileAtomic(String email, String name, String imageUrl, MultipartFile file) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        String oldImageUrl = user.getImageUrl();
+        String newR2Url = null;
 
         user.setName(name);
 
         if (file != null && !file.isEmpty()) {
-        	String r2Url = storageService.uploadFile(file, user.getId().toString());
-            user.setImageUrl(r2Url);
-        } 
-        else if (imageUrl != null && !imageUrl.isEmpty()) {
-        	String r2Url = storageService.uploadFromUrl(imageUrl, user.getId().toString());
-        	user.setImageUrl(r2Url);
+            newR2Url = storageService.uploadFile(file, user.getId().toString());
         }
-        else {
-            //TODO: Only clear if we explicitly sent empty string and no file
+        else if (imageUrl != null && !imageUrl.isEmpty()) {
+        	
+        	if (imageUrl.startsWith(cloudFlarePublicUrl) || imageUrl.contains(baseUrl)) {
+        		newR2Url = imageUrl;
+           } else {
+        	   newR2Url = storageService.uploadFromUrl(imageUrl, user.getId().toString());
+           }
+        }
+        if (newR2Url != null) {
+            if (oldImageUrl != null && !oldImageUrl.equals(newR2Url)) {
+                storageService.deleteFile(oldImageUrl);
+            }
+            user.setImageUrl(newR2Url);
         }
 
         userRepository.save(user);

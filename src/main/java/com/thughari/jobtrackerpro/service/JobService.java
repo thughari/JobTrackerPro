@@ -6,6 +6,7 @@ import com.thughari.jobtrackerpro.dto.DashboardStatsDTO;
 import com.thughari.jobtrackerpro.dto.JobDTO;
 import com.thughari.jobtrackerpro.dto.JobDataResponse;
 import com.thughari.jobtrackerpro.entity.Job;
+import com.thughari.jobtrackerpro.exception.ResourceNotFoundException;
 import com.thughari.jobtrackerpro.repo.JobRepository;
 import org.springframework.beans.BeanUtils;
 import org.springframework.cache.annotation.CacheEvict;
@@ -60,13 +61,12 @@ public class JobService {
 
     @Transactional(readOnly = true)
     public List<JobDTO> getUserJobs(String email) {
-        // Just the list, no heavy math
         return jobRepository.findByUserEmailOrderByDateDesc(email)
                 .stream().map(this::convertToDto).collect(Collectors.toList());
     }
     
     @Transactional(readOnly = true)
-    // @Cacheable(value = "jobs", key = "#email") // Optional: Cache the list
+    // @Cacheable(value = "jobs", key = "#email")
     public List<JobDTO> getAllJobs(String email) {
         return jobRepository.findByUserEmailOrderByDateDesc(email)
                 .stream()
@@ -78,23 +78,19 @@ public class JobService {
         List<Job> jobs = jobRepository.findByUserEmailOrderByDateDesc(email);
         DashboardResponse response = new DashboardResponse();
 
-        // A. Summary Stats
         long total = jobs.size();
         long active = jobs.stream().filter(j -> !j.getStatus().equals("Rejected") && !j.getStatus().equals("Offer Received")).count();
         long interviews = jobs.stream().filter(j -> j.getStatus().equals("Interview Scheduled") || j.getStage() >= 3).count();
         long offers = jobs.stream().filter(j -> j.getStatus().equals("Offer Received")).count();
         response.setStats(new DashboardStatsDTO(total, active, interviews, offers));
 
-        // B. Status Chart
         Map<String, Long> statusMap = jobs.stream()
             .collect(Collectors.groupingBy(Job::getStatus, Collectors.counting()));
         response.setStatusChart(mapToChartData(statusMap));
 
-        // C. Monthly Chart (Chronological)
-        // Note: Using LinkedHashMap to keep insertion order if you sort beforehand
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM yy");
         Map<String, Long> monthMap = jobs.stream()
-            .sorted(java.util.Comparator.comparing(Job::getDate)) // Sort by date first
+            .sorted(java.util.Comparator.comparing(Job::getDate))
             .collect(Collectors.groupingBy(
                 job -> job.getDate().format(formatter),
                 LinkedHashMap::new, 
@@ -102,7 +98,6 @@ public class JobService {
             ));
         response.setMonthlyChart(mapToChartData(monthMap));
 
-        // D. Interview Progress
         long interviewCount = jobs.stream().filter(j -> j.getStage() >= 3).count();
         response.setInterviewChart(List.of(
             new ChartData("Interviewed", interviewCount),
@@ -113,11 +108,10 @@ public class JobService {
     }
     
     @Transactional(readOnly = true)
-    // @Cacheable(value = "jobStats", key = "#email") // Optional: Cache the stats
+    // @Cacheable(value = "jobStats", key = "#email")
     public DashboardStatsDTO getStats(String email) {
         DashboardStatsDTO stats = jobRepository.getStatsByEmail(email);
         
-        // Handle case where user has 0 jobs (SUM returns null in SQL)
         if (stats.getTotalApplications() == 0) {
             return new DashboardStatsDTO(0, 0, 0, 0);
         }
@@ -135,7 +129,7 @@ public class JobService {
     public JobDTO updateJob(UUID id, JobDTO dto, String email) {
         Job existingJob = jobRepository.findById(id)
                 .filter(job -> job.getUserEmail().equals(email))
-                .orElseThrow(() -> new RuntimeException("Job not found or unauthorized"));
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found or unauthorized"));
 
         BeanUtils.copyProperties(dto, existingJob, "id", "userEmail");
         return convertToDto(jobRepository.save(existingJob));
