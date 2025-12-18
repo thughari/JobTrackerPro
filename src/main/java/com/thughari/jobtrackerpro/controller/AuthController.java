@@ -2,6 +2,7 @@ package com.thughari.jobtrackerpro.controller;
 
 import com.thughari.jobtrackerpro.dto.AuthRequest;
 import com.thughari.jobtrackerpro.dto.ChangePasswordRequest;
+import com.thughari.jobtrackerpro.dto.ResetPasswordRequest;
 import com.thughari.jobtrackerpro.dto.UserProfileResponse;
 import com.thughari.jobtrackerpro.service.AuthService;
 import org.springframework.http.MediaType;
@@ -9,8 +10,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -63,6 +62,26 @@ public class AuthController {
             authService.changePassword(email, request);
             return ResponseEntity.ok().body("Password set successfully.");
         } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+    
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestParam String email) {
+        try {
+            authService.forgotPassword(email);
+            return ResponseEntity.ok("If that email exists, a reset link has been sent.");
+        } catch (Exception e) {
+            return ResponseEntity.ok("If that email exists, a reset link has been sent.");
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+        try {
+            authService.resetPassword(request.getToken(), request.getNewPassword());
+            return ResponseEntity.ok("Password reset successfully. Please login.");
+        } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }

@@ -2,23 +2,23 @@ package com.thughari.jobtrackerpro.service;
 
 import com.thughari.jobtrackerpro.dto.*;
 import com.thughari.jobtrackerpro.entity.AuthProvider;
+import com.thughari.jobtrackerpro.entity.PasswordResetToken;
 import com.thughari.jobtrackerpro.entity.User;
 import com.thughari.jobtrackerpro.exception.ResourceNotFoundException;
 import com.thughari.jobtrackerpro.exception.UserAlreadyExistsException;
 import com.thughari.jobtrackerpro.exception.UserNotFoundException;
+import com.thughari.jobtrackerpro.repo.PasswordResetTokenRepository;
 import com.thughari.jobtrackerpro.repo.UserRepository;
 import com.thughari.jobtrackerpro.security.JwtUtils;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
-import java.util.UUID;
 
 @Service
 @Transactional
@@ -34,12 +34,19 @@ public class AuthService {
     
     @Value("${CLOUDFLARE_PUBLIC_URL}")
     private String cloudFlarePublicUrl;
+    
+    private final PasswordResetTokenRepository tokenRepository;
+    private final EmailService emailService;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtils jwtUtils, StorageService storageService) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtUtils = jwtUtils;
-        this.storageService = storageService;
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, 
+    		JwtUtils jwtUtils, StorageService storageService, 
+    		PasswordResetTokenRepository tokenRepository, EmailService emailService) {
+    	this.userRepository = userRepository;
+    	this.passwordEncoder = passwordEncoder;
+    	this.jwtUtils = jwtUtils;
+    	this.storageService = storageService;
+    	this.tokenRepository=tokenRepository;
+    	this.emailService=emailService;
     }
 
     public AuthResponse registerUser(AuthRequest request) {
@@ -68,6 +75,46 @@ public class AuthService {
 
         String token = jwtUtils.generateToken(user.getEmail());
         return new AuthResponse(token);
+    }
+    
+    public void forgotPassword(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        PasswordResetToken tokenEntity = tokenRepository.findByUser(user)
+                .orElse(new PasswordResetToken());
+
+        tokenEntity.setUser(user);
+        tokenEntity.setToken(UUID.randomUUID().toString());
+        tokenEntity.setExpiryDate(LocalDateTime.now().plusMinutes(15));
+
+        tokenRepository.save(tokenEntity);
+
+        emailService.sendResetEmail(user.getEmail(), tokenEntity.getToken());
+    }
+
+    
+    public void resetPassword(String token, String newPassword) {
+    	if (newPassword == null || newPassword.trim().isEmpty()) {
+    		throw new IllegalArgumentException("Password cannot be empty");
+    	}
+    	if (newPassword.length() < 6) {
+    		throw new IllegalArgumentException("Password must be at least 6 characters long");
+    	}
+
+    	PasswordResetToken resetToken = tokenRepository.findByToken(token)
+    			.orElseThrow(() -> new IllegalArgumentException("Invalid token"));
+
+    	if (resetToken.isExpired()) {
+    		tokenRepository.delete(resetToken);
+    		throw new IllegalArgumentException("Token has expired");
+    	}
+
+    	User user = resetToken.getUser();
+    	user.setPassword(passwordEncoder.encode(newPassword));
+    	userRepository.save(user);
+
+    	tokenRepository.delete(resetToken);
     }
 
     @Transactional(readOnly = true)

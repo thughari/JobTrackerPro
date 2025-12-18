@@ -3,7 +3,6 @@ package com.thughari.jobtrackerpro.controller;
 import com.thughari.jobtrackerpro.dto.DashboardResponse;
 import com.thughari.jobtrackerpro.dto.DashboardStatsDTO;
 import com.thughari.jobtrackerpro.dto.JobDTO;
-import com.thughari.jobtrackerpro.dto.JobDataResponse;
 import com.thughari.jobtrackerpro.service.JobService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;

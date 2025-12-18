@@ -1,26 +1,24 @@
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
-  name: jobtracker-service  # This will be the name of your service in Cloud Run
+  name: jobtracker-service
   labels:
     cloud.googleapis.com/location: asia-south1
 spec:
   template:
     metadata:
       annotations:
-        autoscaling.knative.dev/minScale: "0"  # Scales to 0 when not used (saves money)
-        autoscaling.knative.dev/maxScale: "5"  # Limit max instances to control costs
+        autoscaling.knative.dev/minScale: "0"
+        autoscaling.knative.dev/maxScale: "5"
     spec:
       containers:
       - image: asia-south1-docker.pkg.dev/job-tracker-pro-480917/my-repo/my-java-app:v1
         ports:
-        - containerPort: 8080 # Spring Boot default port
+        - containerPort: 8080
         env:
-        # 1. Activate your 'prod' profile
         - name: SPRING_PROFILES_ACTIVE
           value: "prod"
         
-        # 2. Inject Secrets (The connection to Secret Manager)
         - name: JDBC_URL
           valueFrom:
             secretKeyRef:
@@ -86,4 +84,39 @@ spec:
           valueFrom:
             secretKeyRef:
               name: cloudflare-public-url
+              key: latest
+        - name: EMAIL_HOST
+          valueFrom:
+            secretKeyRef:
+              name: email-host
+              key: latest
+        - name: EMAIL_PORT
+          valueFrom:
+            secretKeyRef:
+              name: email-port
+              key: latest
+        - name: EMAIL_USER_NAME
+          valueFrom:
+            secretKeyRef:
+              name: email-user-name
+              key: latest
+        - name: EMAIL_SMTP_KEY
+          valueFrom:  
+            secretKeyRef:
+              name: email-smtp-key
+              key: latest
+        - name: EMAIL_SENDER
+          valueFrom:
+            secretKeyRef:
+              name: email-sender
+              key: latest
+        - name: EMAIL_SENDER_NAME
+          valueFrom:
+            secretKeyRef:
+              name: email-sender-name
+              key: latest
+        - name: EMAIL_SENDER_ADDRESS
+          valueFrom:
+            secretKeyRef:
+              name: email-sender-address
               key: latest
