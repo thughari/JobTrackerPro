@@ -8,7 +8,7 @@ RUN mvn clean package -DskipTests
 FROM amazoncorretto:21
 WORKDIR /app
 COPY --from=build /app/target/jobtrackerpro-0.0.1-SNAPSHOT.jar jobtrackerpro.jar
-EXPOSE 8082
+EXPOSE 8080
 
 # stage 3: Run the application
 ENTRYPOINT ["java", "-Dspring.profiles.active=prod", "-jar", "jobtrackerpro.jar"]
