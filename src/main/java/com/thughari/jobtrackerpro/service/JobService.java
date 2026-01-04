@@ -1,28 +1,24 @@
 package com.thughari.jobtrackerpro.service;
 
-import com.thughari.jobtrackerpro.dto.ChartData;
-import com.thughari.jobtrackerpro.dto.DashboardResponse;
-import com.thughari.jobtrackerpro.dto.DashboardStatsDTO;
-import com.thughari.jobtrackerpro.dto.JobDTO;
-import com.thughari.jobtrackerpro.dto.JobDataResponse;
+import com.thughari.jobtrackerpro.dto.*;
 import com.thughari.jobtrackerpro.entity.Job;
 import com.thughari.jobtrackerpro.exception.ResourceNotFoundException;
 import com.thughari.jobtrackerpro.repo.JobRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@Slf4j
 public class JobService {
 
     private final JobRepository jobRepository;
@@ -30,58 +26,28 @@ public class JobService {
     public JobService(JobRepository jobRepository) {
         this.jobRepository = jobRepository;
     }
-    
-    @Transactional(readOnly = true)
-    @Cacheable(value = "jobData", key = "#email")
-    public JobDataResponse getFullJobData(String email) {
-        List<Job> jobEntities = jobRepository.findByUserEmailOrderByDateDesc(email);
-
-        List<JobDTO> jobDtos = jobEntities.stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
-
-        long total = jobEntities.size();
-        
-        long active = jobEntities.stream()
-                .filter(j -> !j.getStatus().equals("Rejected") && !j.getStatus().equals("Offer Received"))
-                .count();
-
-        long interviews = jobEntities.stream()
-                .filter(j -> j.getStatus().equals("Interview Scheduled") || j.getStage() >= 3)
-                .count();
-
-        long offers = jobEntities.stream()
-                .filter(j -> j.getStatus().equals("Offer Received"))
-                .count();
-
-        DashboardStatsDTO stats = new DashboardStatsDTO(total, active, interviews, offers);
-
-        return new JobDataResponse(jobDtos, stats);
-    }
 
     @Transactional(readOnly = true)
-    public List<JobDTO> getUserJobs(String email) {
-        return jobRepository.findByUserEmailOrderByDateDesc(email)
-                .stream().map(this::convertToDto).collect(Collectors.toList());
-    }
-    
-    @Transactional(readOnly = true)
-    // @Cacheable(value = "jobs", key = "#email")
+    @Cacheable(value = "jobList", key = "#email")
     public List<JobDTO> getAllJobs(String email) {
         return jobRepository.findByUserEmailOrderByDateDesc(email)
                 .stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
-    
+
+    @Transactional(readOnly = true)
+    @Cacheable(value = "jobDashboard", key = "#email")
     public DashboardResponse getDashboardData(String email) {
         List<Job> jobs = jobRepository.findByUserEmailOrderByDateDesc(email);
+        
         DashboardResponse response = new DashboardResponse();
 
         long total = jobs.size();
         long active = jobs.stream().filter(j -> !j.getStatus().equals("Rejected") && !j.getStatus().equals("Offer Received")).count();
         long interviews = jobs.stream().filter(j -> j.getStatus().equals("Interview Scheduled") || j.getStage() >= 3).count();
         long offers = jobs.stream().filter(j -> j.getStatus().equals("Offer Received")).count();
+        
         response.setStats(new DashboardStatsDTO(total, active, interviews, offers));
 
         Map<String, Long> statusMap = jobs.stream()
@@ -90,7 +56,7 @@ public class JobService {
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM yy");
         Map<String, Long> monthMap = jobs.stream()
-            .sorted(java.util.Comparator.comparing(Job::getDate))
+            .sorted(Comparator.comparing(Job::getDate))
             .collect(Collectors.groupingBy(
                 job -> job.getDate().format(formatter),
                 LinkedHashMap::new, 
@@ -106,26 +72,15 @@ public class JobService {
 
         return response;
     }
-    
-    @Transactional(readOnly = true)
-    // @Cacheable(value = "jobStats", key = "#email")
-    public DashboardStatsDTO getStats(String email) {
-        DashboardStatsDTO stats = jobRepository.getStatsByEmail(email);
-        
-        if (stats.getTotalApplications() == 0) {
-            return new DashboardStatsDTO(0, 0, 0, 0);
-        }
-        return stats;
-    }
 
-    @CacheEvict(value = "jobData", key = "#email")
+    @CacheEvict(value = {"jobList", "jobDashboard"}, key = "#email")
     public JobDTO createJob(JobDTO dto, String email) {
         Job job = convertToEntity(dto);
         job.setUserEmail(email);
         return convertToDto(jobRepository.save(job));
     }
 
-    @CacheEvict(value = "jobData", key = "#email")
+    @CacheEvict(value = {"jobList", "jobDashboard"}, key = "#email")
     public JobDTO updateJob(UUID id, JobDTO dto, String email) {
         Job existingJob = jobRepository.findById(id)
                 .filter(job -> job.getUserEmail().equals(email))
@@ -135,12 +90,112 @@ public class JobService {
         return convertToDto(jobRepository.save(existingJob));
     }
 
-    @CacheEvict(value = "jobData", key = "#email")
+    @CacheEvict(value = {"jobList", "jobDashboard"}, key = "#email")
     public void deleteJob(UUID id, String email) {
         jobRepository.findById(id)
                 .filter(job -> job.getUserEmail().equals(email))
                 .ifPresent(jobRepository::delete);
     }
+
+    @CacheEvict(value = {"jobList", "jobDashboard"}, key = "#userEmail")
+    public void createOrUpdateJob(JobDTO incomingJob, String userEmail) {
+        List<Job> userJobs = jobRepository.findByUserEmailOrderByDateDesc(userEmail);
+
+        Job existingJob = findBestMatch(userJobs, incomingJob);
+
+        if (existingJob != null) {
+            log.info("Found existing job for company: {}. Updating status.", existingJob.getCompany());
+            updateExistingJobFromEmail(existingJob, incomingJob);
+        } else {
+            log.info("No match found. Creating new job for: {}", incomingJob.getCompany());
+            Job job = convertToEntity(incomingJob);
+            job.setUserEmail(userEmail);
+            jobRepository.save(job);
+        }
+    }
+    
+
+    private Job findBestMatch(List<Job> existingJobs, JobDTO incoming) {
+        if (incoming.getCompany() == null) return null;
+        
+        String incomingCompany = incoming.getCompany().toLowerCase().trim();
+        String incomingRole = incoming.getRole() != null ? incoming.getRole() : "";
+
+        List<Job> companyMatches = existingJobs.stream()
+                .filter(job -> {
+                    String dbCompany = job.getCompany().toLowerCase().trim();
+                    return dbCompany.contains(incomingCompany) || incomingCompany.contains(dbCompany);
+                })
+                .collect(Collectors.toList());
+
+        if (companyMatches.isEmpty()) return null;
+
+        List<Job> activeMatches = companyMatches.stream()
+                .filter(j -> !j.getStatus().equals("Rejected") && !j.getStatus().equals("Offer Received"))
+                .collect(Collectors.toList());
+
+        if (activeMatches.isEmpty()) return null;
+
+        if (activeMatches.size() > 1) {
+            return activeMatches.stream()
+                    .max((j1, j2) -> {
+                        double sim1 = calculateSimilarity(j1.getRole(), incomingRole);
+                        double sim2 = calculateSimilarity(j2.getRole(), incomingRole);
+                        return Double.compare(sim1, sim2);
+                    })
+                    .filter(bestMatch -> calculateSimilarity(bestMatch.getRole(), incomingRole) > 0.3)
+                    .orElse(activeMatches.get(0));
+        }
+
+        return activeMatches.get(0);
+    }
+
+    private void updateExistingJobFromEmail(Job existingJob, JobDTO incoming) {
+        existingJob.setStatus(incoming.getStatus());
+        existingJob.setStage(incoming.getStage());
+        existingJob.setStageStatus(incoming.getStageStatus());
+        
+        String newNote = "\n[" + LocalDate.now() + "] Update via Email: " + incoming.getNotes();
+        String currentNotes = existingJob.getNotes() != null ? existingJob.getNotes() : "";
+        existingJob.setNotes(currentNotes + newNote);
+
+        if ((existingJob.getUrl() == null || existingJob.getUrl().isEmpty()) && incoming.getUrl() != null) {
+            existingJob.setUrl(incoming.getUrl());
+        }
+        
+        existingJob.setDate(LocalDate.now());
+        jobRepository.save(existingJob);
+    }
+    
+
+    private double calculateSimilarity(String role1, String role2) {
+        if (role1 == null || role2 == null) return 0.0;
+
+        Set<String> set1 = tokenize(role1);
+        Set<String> set2 = tokenize(role2);
+
+        if (set1.isEmpty() || set2.isEmpty()) return 0.0;
+
+        Set<String> intersection = new HashSet<>(set1);
+        intersection.retainAll(set2);
+
+        Set<String> union = new HashSet<>(set1);
+        union.addAll(set2);
+
+        return (double) intersection.size() / union.size();
+    }
+
+    private Set<String> tokenize(String text) {
+        String[] words = text.toLowerCase().replaceAll("[^a-z0-9\\s]", "").split("\\s+");
+        Set<String> uniqueWords = new HashSet<>();
+        for (String w : words) {
+            if (!w.isEmpty() && w.length() > 1) { 
+                uniqueWords.add(w);
+            }
+        }
+        return uniqueWords;
+    }
+
 
     private JobDTO convertToDto(Job job) {
         JobDTO dto = new JobDTO();
@@ -159,5 +214,4 @@ public class JobService {
             .map(e -> new ChartData(e.getKey(), e.getValue()))
             .collect(Collectors.toList());
     }
-    
 }

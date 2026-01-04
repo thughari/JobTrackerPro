@@ -35,6 +35,12 @@ spec:
               name: jdbc-pass
               key: latest
 
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: gemini-api-key
+              key: latest
+
         - name: JWT_SECRET
           valueFrom:
             secretKeyRef:
