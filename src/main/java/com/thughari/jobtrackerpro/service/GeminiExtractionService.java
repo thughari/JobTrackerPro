@@ -78,10 +78,14 @@ public class GeminiExtractionService {
             2. **ROLE**: Extract job title.
             3. **STATUS**: Determine the NEW status implied by this email:
                - "Applied" (Confirmation of receipt)
+               - "Shortlisted" (Screening, HR review)
                - "Interview Scheduled" (Invites, Scheduling requests)
                - "Offer Received" (Congratulations, Offer letters)
                - "Rejected" (Unfortunately, Not moving forward)
             4. **NOTES**: Summarize the update (e.g. "Received rejection email", "Invited to technical interview").
+            5. **LOCATION**: Extract job location if mentioned, else set as "Remote".
+            6. **URL**: If a job posting URL is present, extract it; else check for the careers page url; else check for any company related URL.
+            7. **SALARY**: If salary details are mentioned, extract minimum and maximum; else set both as 0.0.
 
             ### OUTPUT FORMAT (JSON ONLY)
             {
