@@ -28,12 +28,11 @@ public class WebhookController {
         this.jobService = jobService;
         this.userRepository = userRepository;
         this.geminiService = geminiService;
-        this.emailService=emailService;
+        this.emailService = emailService;
     }
 
     @PostMapping("/inbound-email")
     public ResponseEntity<String> handleInboundEmail(@RequestBody Map<String, Object> payload) {
-    	
         try {
             if (payload == null || !payload.containsKey("headers")) {
                 log.warn("Webhook received invalid payload");
@@ -45,15 +44,23 @@ public class WebhookController {
             String from = (String) headers.getOrDefault("from", ""); 
             String to = (String) headers.getOrDefault("to", "");
             String subject = (String) headers.getOrDefault("subject", "");
-            String plainText = (String) payload.getOrDefault("plain", ""); 
+            
+            String plainText = (String) payload.get("plain"); 
+            if (plainText == null) {
+                String html = (String) payload.get("html");
+                if (html != null) {
+                    plainText = html.replaceAll("<[^>]*>", " ");
+                } else {
+                    plainText = "";
+                }
+            }
+            
             String xForwardedFor = (String) headers.getOrDefault("x-forwarded-for", "");
 
             log.info("Processing Email: '{}'", subject);
             
             if (from.contains("google.com") && subject.contains("Forwarding Confirmation")) {
-                log.info("--- Gmail Verification Received ---");
-
-                String targetEmail = null;
+                 String targetEmail = null;
                 Matcher emailMatcher = Pattern.compile("([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}) has requested").matcher(plainText);
                 if (emailMatcher.find()) {
                     targetEmail = emailMatcher.group(1);
@@ -77,31 +84,24 @@ public class WebhookController {
                     return ResponseEntity.ok("Verification Forwarded");
                 }
                 
-                log.error("Could not parse Gmail verification. Body snippet: {}", plainText.substring(0, Math.min(plainText.length(), 200)));
                 return ResponseEntity.ok("Verification Parse Failed");
             }
 
             if (subject.toLowerCase().contains("verify") || 
-            		subject.toLowerCase().contains("confirmation") || 
-            		subject.toLowerCase().contains("postmaster")) {
-
-            	log.info("Ignored System/Verification email from: {}", from);
-            	return ResponseEntity.ok("Ignored System Email");
+                subject.toLowerCase().contains("confirmation") || 
+                subject.toLowerCase().contains("postmaster")) {
+                return ResponseEntity.ok("Ignored System Email");
             }
 
             User user = null;
             String identifiedEmail = null;
 
             identifiedEmail = extractEmailAddress(from);
-            if (identifiedEmail != null) {
-                user = userRepository.findByEmail(identifiedEmail).orElse(null);
-            }
+            if (identifiedEmail != null) user = userRepository.findByEmail(identifiedEmail).orElse(null);
 
             if (user == null) {
                 identifiedEmail = extractEmailAddress(to);
-                if (identifiedEmail != null) {
-                    user = userRepository.findByEmail(identifiedEmail).orElse(null);
-                }
+                if (identifiedEmail != null) user = userRepository.findByEmail(identifiedEmail).orElse(null);
             }
 
             if (user == null && xForwardedFor != null && !xForwardedFor.isEmpty()) {
@@ -115,18 +115,21 @@ public class WebhookController {
                 }
             }
 
-
             if (user == null) {
-                log.warn("❌ User unknown. From: [{}], To: [{}], Forwarded: [{}]", from, to, xForwardedFor);
+                log.warn("User unknown. From: [{}], To: [{}]", from, to);
                 return ResponseEntity.ok("User Unknown");
             }
 
             JobDTO job = geminiService.extractJobFromEmail(from, subject, plainText);
-
+            
+            if (job == null) {
+                log.info("Skipping email (Not a job application or extraction failed)");
+                return ResponseEntity.ok("Skipped");
+            }
+            
             jobService.createOrUpdateJob(job, user.getEmail());
             
-            log.info("✅ Processed Email for User: {} | Company: {}", user.getEmail(), job.getCompany());
-
+            log.info("Processed Email for User: {} | Company: {}", user.getEmail(), job.getCompany());
             return ResponseEntity.ok("Processed");
 
         } catch (Exception e) {
@@ -137,11 +140,8 @@ public class WebhookController {
     
     private String extractEmailAddress(String raw) {
         if (raw == null) return null;
-        
         Matcher m = Pattern.compile("([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6})").matcher(raw);
-        if (m.find()) {
-            return m.group(1).toLowerCase().trim();
-        }
+        if (m.find()) return m.group(1).toLowerCase().trim();
         return null;
     }
 }

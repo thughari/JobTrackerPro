@@ -55,39 +55,44 @@ public class GeminiExtractionService {
             return parseGeminiResponse(response);
 
         } catch (Exception e) {
-            log.error("AI Extraction failed", e);
-            return createFallback(subject);
+            log.error("AI Extraction failed or timed out", e);
+            return null; 
         }
     }
 
     private String buildPrompt(String from, String subject, String body) {
-        String safeBody = body.length() > 4000 ? body.substring(0, 4000) : body;
+        String safeBody = (body != null) ? (body.length() > 4000 ? body.substring(0, 4000) : body) : "";
 
         return """
-            Act as a strict Data Extraction System. Extract job application metadata from the email below into a JSON object.
+            Act as a strict Data Extraction System.
             
-            CONTEXT: This email could be a NEW application OR an UPDATE (Interview invite, Rejection) for an existing one.
-
+            ### TASK
+            Analyze the email below. Determine if it is a **Job Application Update** (e.g., Application Received, Interview Invite, Rejection, Offer).
+            
+            **CRITICAL RULE:** 
+            If this email is SPAM, a Newsletter, a Receipt, or NOT related to a specific job application, return the JSON literal: `null`
+            
             ### EMAIL CONTENT
             FROM: %s
             SUBJECT: %s
             BODY: %s
 
-            ### EXTRACTION RULES
-            1. **COMPANY**: Identify the hiring company.
-            2. **ROLE**: Extract job title.
-            3. **STATUS**: Determine the NEW status implied by this email:
-               - "Applied" (Confirmation of receipt)
-               - "Shortlisted" (Screening, HR review)
-               - "Interview Scheduled" (Invites, Scheduling requests)
-               - "Offer Received" (Congratulations, Offer letters)
-               - "Rejected" (Unfortunately, Not moving forward)
-            4. **NOTES**: Summarize the update (e.g. "Received rejection email", "Invited to technical interview").
-            5. **LOCATION**: Extract job location if mentioned, else set as "Remote".
-            6. **URL**: If a job posting URL is present, extract it; else check for the careers page url; else check for any company related URL.
-            7. **SALARY**: If salary details are mentioned, extract minimum and maximum; else set both as 0.0.
+            ### EXTRACTION RULES (If it IS a job email)
+            1. **COMPANY**: Identify the hiring company. Remove text like "Careers", "Talent Acquisition".
+            2. **ROLE**: Extract the specific job title.
+            3. **STATUS**: Map to one of these exact statuses:
+               - "Applied" (Default/Receipt confirmation)
+               - "Shortlisted" (Assessment invite, HR screen)
+               - "Interview Scheduled" (Technical/Manager interview invites)
+               - "Offer Received" (Offer letters)
+               - "Rejected" (Rejection emails)
+            4. **NOTES**: A 1-sentence summary of the update.
+            5. **LOCATION**: Extract City/Country if found, otherwise "Remote".
+            6. **URL**: Extract the "View Application" or "Job Posting" link if present.
+            7. **SALARY**: Extract numbers if present (e.g. 120k), else 0.0.
 
-            ### OUTPUT FORMAT (JSON ONLY)
+            ### OUTPUT FORMAT
+            Return ONLY raw JSON (no markdown blocks, no explanations):
             {
               "company": "String",
               "role": "String",
@@ -98,46 +103,53 @@ public class GeminiExtractionService {
               "salaryMax": 0.0,
               "notes": "String"
             }
+            OR just: null
             """.formatted(from, subject, safeBody);
     }
 
     private JobDTO parseGeminiResponse(String rawResponse) {
         try {
             JsonNode root = objectMapper.readTree(rawResponse);
-            String contentText = root.path("candidates").get(0)
+            JsonNode candidates = root.path("candidates");
+            
+            if (candidates.isMissingNode() || candidates.isEmpty()) {
+                return null;
+            }
+
+            String contentText = candidates.get(0)
                     .path("content").path("parts").get(0)
                     .path("text").asText();
 
             contentText = contentText.replaceAll("```json", "").replaceAll("```", "").trim();
 
+            if (contentText.equalsIgnoreCase("null")) {
+                log.info("AI determined this email is NOT a job application.");
+                return null;
+            }
+
             JobDTO job = objectMapper.readValue(contentText, JobDTO.class);
             
             job.setDate(LocalDate.now());
             job.setStage(mapStatusToStage(job.getStatus()));
-            job.setStageStatus(job.getStatus().equalsIgnoreCase("Rejected") ? "failed" : "active");
             
-            if(job.getCompany() != null) {
-                job.setCompany(job.getCompany().replace("Careers", "").trim());
+            if ("Rejected".equalsIgnoreCase(job.getStatus())) {
+                job.setStageStatus("failed");
+            } else if ("Offer Received".equalsIgnoreCase(job.getStatus())) {
+                job.setStageStatus("passed");
+            } else {
+                job.setStageStatus("active");
             }
-
+            
             return job;
+
         } catch (Exception e) {
-            throw new RuntimeException("Failed to parse AI JSON", e);
+            log.error("Failed to parse AI response: {}", rawResponse);
+            return null;
         }
     }
 
-    private JobDTO createFallback(String subject) {
-        JobDTO fallback = new JobDTO();
-        fallback.setCompany("Unknown Company");
-        fallback.setRole(subject);
-        fallback.setStatus("Applied");
-        fallback.setDate(LocalDate.now());
-        fallback.setStage(1);
-        fallback.setStageStatus("active");
-        return fallback;
-    }
-
     private Integer mapStatusToStage(String status) {
+        if (status == null) return 1;
         if (status.contains("Offer")) return 4;
         if (status.contains("Interview")) return 3;
         if (status.contains("Shortlisted")) return 2;
