@@ -127,7 +127,9 @@ public class WebhookController {
                 return ResponseEntity.ok("Skipped");
             }
             
-            jobService.createOrUpdateJob(job, user.getEmail());
+            String normalizedEmail = user.getEmail().toLowerCase();
+            
+            jobService.createOrUpdateJob(job, normalizedEmail);
             
             log.info("Processed Email for User: {} | Company: {}", user.getEmail(), job.getCompany());
             return ResponseEntity.ok("Processed");

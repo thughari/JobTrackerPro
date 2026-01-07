@@ -97,7 +97,7 @@ public class JobService {
                 .ifPresent(jobRepository::delete);
     }
 
-    @CacheEvict(value = {"jobList", "jobDashboard"}, key = "#email")
+    @CacheEvict(value = {"jobList", "jobDashboard"}, key = "#userEmail")
     public void createOrUpdateJob(JobDTO incomingJob, String userEmail) {
         List<Job> userJobs = jobRepository.findByUserEmailOrderByDateDesc(userEmail);
 

@@ -87,6 +87,6 @@ public class AuthController {
     }
 
     private String getAuthenticatedEmail() {
-        return (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        return ((String) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).toLowerCase();
     }
 }
