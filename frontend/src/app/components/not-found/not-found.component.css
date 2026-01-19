@@ -1,0 +1,94 @@
+/* Comic Book Background */
+.comic-bg {
+  background-color: #0B0E14;
+  background-image: 
+    radial-gradient(#1a202c 15%, transparent 16%),
+    radial-gradient(#1a202c 15%, transparent 16%);
+  background-size: 20px 20px;
+  background-position: 0 0, 10px 10px;
+  overflow: hidden;
+}
+
+/* Spider Web SVG styling */
+.spider-web {
+  opacity: 0.1;
+  transition: transform 0.1s ease-out;
+}
+
+/* Glitch Text Effect (Spider-Verse Style) */
+.glitch-wrapper {
+  position: relative;
+}
+
+.glitch {
+  font-size: 8rem;
+  font-weight: 900;
+  color: white;
+  position: relative;
+  text-transform: uppercase;
+}
+
+.glitch::before,
+.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.glitch::before {
+  left: 2px;
+  text-shadow: -2px 0 #ff0055; /* Spider-Verse Red */
+  clip: rect(24px, 550px, 90px, 0);
+  animation: glitch-anim-2 3s infinite linear alternate-reverse;
+}
+
+.glitch::after {
+  left: -2px;
+  text-shadow: -2px 0 #00f7ff; /* Spider-Verse Cyan */
+  clip: rect(85px, 550px, 140px, 0);
+  animation: glitch-anim 2.5s infinite linear alternate-reverse;
+}
+
+/* Hanging Spider-Man Animation */
+.hanging-spidey {
+  transform-origin: top center;
+  animation: swing 3s ease-in-out infinite;
+}
+
+.spidey-body {
+  filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5));
+}
+
+/* Animations */
+@keyframes swing {
+  0% { transform: rotate(3deg); }
+  50% { transform: rotate(-3deg); }
+  100% { transform: rotate(3deg); }
+}
+
+@keyframes glitch-anim {
+  0% { clip: rect(12px, 9999px, 81px, 0); }
+  20% { clip: rect(108px, 9999px, 12px, 0); }
+  40% { clip: rect(2px, 9999px, 68px, 0); }
+  60% { clip: rect(59px, 9999px, 17px, 0); }
+  80% { clip: rect(96px, 9999px, 47px, 0); }
+  100% { clip: rect(3px, 9999px, 137px, 0); }
+}
+
+@keyframes glitch-anim-2 {
+  0% { clip: rect(65px, 9999px, 100px, 0); }
+  20% { clip: rect(32px, 9999px, 6px, 0); }
+  40% { clip: rect(14px, 9999px, 119px, 0); }
+  60% { clip: rect(120px, 9999px, 56px, 0); }
+  80% { clip: rect(48px, 9999px, 18px, 0); }
+  100% { clip: rect(88px, 9999px, 7px, 0); }
+}
+
+/* Button Glow */
+.spidey-btn:hover {
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+  transform: translateY(-2px);
+}

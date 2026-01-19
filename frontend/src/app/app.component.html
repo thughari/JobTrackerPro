@@ -1,0 +1,98 @@
+<div class="min-h-screen bg-gray-50 dark:bg-[#0B0E14] text-gray-900 dark:text-gray-300 font-sans transition-colors duration-300">
+
+  @if (showLayout) {
+  <nav class="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0B0E14] sticky top-0 z-40 transition-colors duration-300">
+    <div class="w-full px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16 md:h-20">
+
+        <div class="flex items-center gap-2.5 md:gap-3.5">
+          <a routerLink="/app/dashboard" class="cursor-pointer hover:opacity-90 transition-opacity">
+            <app-logo size="md"></app-logo>
+          </a>
+        </div>
+
+        <div class="flex items-center gap-2 md:gap-4">
+          <div class="hidden md:flex gap-1 mr-2">
+            <a routerLink="/app/dashboard" routerLinkActive="bg-gray-100 dark:bg-gray-800 text-indigo-600 dark:text-white" class="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">Dashboard</a>
+            <a routerLink="/app/applications" routerLinkActive="bg-gray-100 dark:bg-gray-800 text-indigo-600 dark:text-white" class="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">Applications</a>
+          </div>
+
+          <button (click)="exportCsv()" class="hidden md:flex items-center gap-2 p-2 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors" title="Export CSV">
+            <i class="ph ph-download-simple text-xl"></i>
+          </button>
+
+          <button (click)="toggleTheme()" class="p-2 rounded-lg border border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <i class="ph text-xl" [ngClass]="isDarkMode() ? 'ph-sun' : 'ph-moon'"></i>
+          </button>
+
+          <!-- Profile Dropdown -->
+          <div class="relative ml-4">
+            <button (click)="toggleProfileMenu()" class="flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-transparent hover:border-indigo-500 transition-all focus:outline-none overflow-hidden bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-200 cursor-pointer">
+              @if (authService.userProfile()?.imageUrl) {
+                <img [src]="authService.userProfile()?.imageUrl" alt="Profile" class="w-full h-full object-cover">
+              } @else {
+                <span class="text-xs md:text-sm font-bold">{{ getInitials() }}</span>
+              }
+            </button>
+
+            @if (isProfileMenuOpen) {
+            <div class="absolute right-0 mt-2 w-56 bg-white dark:bg-[#151A23] rounded-xl shadow-xl border border-gray-200 dark:border-gray-800 py-1 z-50 animate-fade-in origin-top-right">
+              <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+                <p class="text-sm font-bold text-gray-900 dark:text-white truncate">
+                  {{ authService.userProfile()?.name }}
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                  {{ authService.userProfile()?.email }}
+                </p>
+              </div>
+
+              <div class="py-1">
+                <a routerLink="/app/profile" (click)="closeMenu()" class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2 cursor-pointer">
+                  <i class="ph ph-user"></i> My Profile
+                </a>
+                <a routerLink="/about" (click)="closeMenu()" class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2 cursor-pointer">
+                  <i class="ph ph-info"></i> About
+                </a>
+              </div>
+
+              <div class="border-t border-gray-100 dark:border-gray-800 py-1">
+                <button (click)="logout()" class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2">
+                  <i class="ph ph-sign-out"></i> Sign Out
+                </button>
+              </div>
+            </div>
+            <div class="fixed inset-0 z-40" (click)="closeMenu()"></div>
+            }
+          </div>
+
+          <button (click)="openAddModal()" class="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition-colors shadow-lg shadow-indigo-500/20">
+            <i class="ph ph-plus text-lg"></i>
+            <span class="hidden md:inline">Add</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </nav>
+
+  <main class="w-full px-4 sm:px-6 lg:px-8 py-6 md:py-10">
+    <!-- Mobile Tabs -->
+    <div class="md:hidden flex gap-2 mb-6">
+      <a routerLink="/app/dashboard" routerLinkActive="bg-indigo-600 text-white border-transparent" class="flex-1 flex justify-center items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#151A23] text-gray-500 dark:text-gray-400">
+        <i class="ph ph-squares-four"></i> Dashboard
+      </a>
+      <a routerLink="/app/applications" routerLinkActive="bg-indigo-600 text-white border-transparent" class="flex-1 flex justify-center items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#151A23] text-gray-500 dark:text-gray-400">
+        <i class="ph ph-list-dashes"></i> List
+      </a>
+    </div>
+
+    <router-outlet></router-outlet>
+  </main>
+  } @else {
+    <router-outlet></router-outlet>
+  }
+
+  @if (jobService.showModal()) {
+    <app-job-modal [job]="jobService.selectedJob()" (close)="jobService.closeModal()"></app-job-modal>
+  }
+</div>

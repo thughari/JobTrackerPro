@@ -31,18 +31,18 @@ jobs:
     - name: Build and Push Container
       run: |
         TAG="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
-        docker build -t $TAG .
+        docker build -t $TAG ./backend
         docker push $TAG
         echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
 
     - name: Update Service YAML
       run: |
         # Replace the hardcoded image line with the new dynamic tag
-        sed -i "s|image: .*|image: ${{ env.IMAGE_TAG }}|g" service.yaml
-        cat service.yaml # Optional: verify content in logs
+        sed -i "s|image: .*|image: ${{ env.IMAGE_TAG }}|g" backend/service.yaml
+        cat backend/service.yaml # Optional: verify content in logs
 
     - name: Deploy to Cloud Run
       uses: google-github-actions/deploy-cloudrun@v2
       with:
-        metadata: service.yaml
+        metadata: backend/service.yaml
         region: ${{ env.REGION }}

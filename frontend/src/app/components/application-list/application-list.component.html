@@ -1,0 +1,305 @@
+<div class="space-y-4" (click)="closeMenu()">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-2">
+    <div>
+      <h2 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white transition-colors mb-1">All Applications
+      </h2>
+      <p class="text-sm md:text-base text-gray-500 dark:text-gray-400 transition-colors">Manage and track all your job
+        applications</p>
+    </div>
+  </div>
+
+  <!-- Search & Filter -->
+  <div class="flex gap-4 mb-6">
+    <div class="flex-1 relative">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <i class="ph ph-magnifying-glass text-gray-500 text-lg"></i>
+      </div>
+      <input type="text" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)"
+        class="block w-full pl-10 pr-3 py-2 md:py-2.5 bg-white dark:bg-[#0B0E14] border border-gray-200 dark:border-gray-800 rounded-lg text-gray-900 dark:text-gray-300 placeholder-gray-500 dark:placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-sm md:text-sm transition-colors"
+        placeholder="Search by company, role, or location...">
+    </div>
+
+    <div class="relative w-48 hidden md:block">
+      <select [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)"
+        class="appearance-none block w-full pl-3 pr-10 py-2.5 bg-white dark:bg-[#0B0E14] border border-gray-200 dark:border-gray-800 rounded-lg text-gray-900 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm cursor-pointer transition-colors">
+        <option>All Statuses</option>
+        <option>Applied</option>
+        <option>Shortlisted</option>
+        <option>Interview Scheduled</option>
+        <option>Offer Received</option>
+        <option>Rejected</option>
+      </select>
+      <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+        <i class="ph ph-caret-down"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div
+    class="bg-white dark:bg-[#151A23] border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm transition-colors duration-300">
+    <div class="overflow-x-auto min-h-[400px]">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+        <thead class="bg-gray-50 dark:bg-[#1a202c]">
+          <tr>
+            <th scope="col"
+              class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer group hover:text-gray-900 dark:hover:text-white"
+              (click)="toggleSort('company')">
+              <div class="flex items-center gap-1">
+                Company
+                <i class="ph text-sm" [ngClass]="getSortIcon('company')"></i>
+              </div>
+            </th>
+            <th scope="col"
+              class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer group hover:text-gray-900 dark:hover:text-white"
+              (click)="toggleSort('role')">
+              <div class="flex items-center gap-1">
+                Role
+                <i class="ph text-sm" [ngClass]="getSortIcon('role')"></i>
+              </div>
+            </th>
+            <th scope="col"
+              class="hidden md:table-cell px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer group hover:text-gray-900 dark:hover:text-white"
+              (click)="toggleSort('location')">
+              <div class="flex items-center gap-1">
+                Location
+                <i class="ph text-sm" [ngClass]="getSortIcon('location')"></i>
+              </div>
+            </th>
+            <th scope="col"
+              class="hidden md:table-cell px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer group hover:text-gray-900 dark:hover:text-white"
+              (click)="toggleSort('date')">
+              <div class="flex items-center gap-1">
+                Date
+                <i class="ph text-sm" [ngClass]="getSortIcon('date')"></i>
+              </div>
+            </th>
+            <!-- Status: Visible on mobile -->
+            <th scope="col"
+              class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer group hover:text-gray-900 dark:hover:text-white"
+              (click)="toggleSort('status')">
+              <div class="flex items-center gap-1">
+                Status
+                <i class="ph text-sm" [ngClass]="getSortIcon('status')"></i>
+              </div>
+            </th>
+            <!-- Progress: Hidden on mobile -->
+            <th scope="col"
+              class="hidden md:table-cell px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Progress
+            </th>
+            <th scope="col"
+              class="hidden md:table-cell px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Salary Range
+            </th>
+            <th scope="col" class="relative px-6 py-4">
+              <span class="sr-only">Actions</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
+          @for (job of paginatedJobs(); track job.id; let i = $index; let count = $count) {
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ job.company }}</span>
+                @if (job.url) {
+                <a [href]="job.url" target="_blank"
+                  class="ml-2 text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400">
+                  <i class="ph ph-arrow-square-out"></i>
+                </a>
+                }
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+              {{ job.role }}
+            </td>
+            <td class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+              {{ job.location }}
+            </td>
+            <td class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+              {{ job.date | date:'MM/dd/yyyy' }}
+            </td>
+            <!-- Status: Visible on mobile -->
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="px-2.5 py-1 text-xs font-medium rounded-full border" [ngClass]="getStatusClass(job.status)">
+                {{ job.status }}
+              </span>
+            </td>
+            <!-- Progress: Hidden on mobile -->
+            <td class="hidden md:table-cell px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center gap-0.5">
+                <div class="flex items-center">
+                  <div
+                    class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors cursor-help"
+                    [title]="'Applied' + (job.stage === 1 && job.stageStatus === 'failed' ? ' (Rejected)' : '')"
+                    [class.bg-green-500]="job.stage > 1 || (job.stage === 1 && job.stageStatus === 'passed')"
+                    [class.border-green-500]="job.stage > 1 || (job.stage === 1 && job.stageStatus === 'passed')"
+                    [class.bg-indigo-600]="job.stage === 1 && job.stageStatus === 'active'"
+                    [class.border-indigo-600]="job.stage === 1 && job.stageStatus === 'active'"
+                    [class.bg-red-500]="job.stage === 1 && job.stageStatus === 'failed'"
+                    [class.border-red-500]="job.stage === 1 && job.stageStatus === 'failed'"
+                    [class.border-gray-200]="job.stage < 1" [class.dark:border-gray-700]="job.stage < 1"
+                    [class.text-white]="job.stage >= 1" [class.text-gray-400]="job.stage < 1"
+                    [class.dark:text-gray-600]="job.stage < 1">
+                    @if (job.stage > 1 || (job.stage === 1 && job.stageStatus === 'passed')) {
+                    <i class="ph ph-check text-xs"></i>
+                    } @else if (job.stage === 1 && job.stageStatus === 'failed') {
+                    <i class="ph ph-x text-xs"></i>
+                    } @else {
+                    1
+                    }
+                  </div>
+                  <div class="w-4 h-0.5" [class.bg-green-500]="job.stage > 1" [class.bg-gray-200]="job.stage <= 1"
+                    [class.dark:bg-gray-700]="job.stage <= 1"></div>
+                </div>
+
+                <div class="flex items-center">
+                  <div
+                    class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors cursor-help"
+                    [title]="'Shortlisted' + (job.stage === 2 && job.stageStatus === 'failed' ? ' (Rejected)' : '')"
+                    [class.bg-green-500]="job.stage > 2 || (job.stage === 2 && job.stageStatus === 'passed')"
+                    [class.border-green-500]="job.stage > 2 || (job.stage === 2 && job.stageStatus === 'passed')"
+                    [class.bg-indigo-600]="job.stage === 2 && job.stageStatus === 'active'"
+                    [class.border-indigo-600]="job.stage === 2 && job.stageStatus === 'active'"
+                    [class.bg-red-500]="job.stage === 2 && job.stageStatus === 'failed'"
+                    [class.border-red-500]="job.stage === 2 && job.stageStatus === 'failed'"
+                    [class.border-gray-200]="job.stage < 2" [class.dark:border-gray-700]="job.stage < 2"
+                    [class.bg-transparent]="job.stage < 2" [class.text-white]="job.stage >= 2"
+                    [class.text-gray-400]="job.stage < 2" [class.dark:text-gray-600]="job.stage < 2">
+                    @if (job.stage > 2 || (job.stage === 2 && job.stageStatus === 'passed')) {
+                    <i class="ph ph-check text-xs"></i>
+                    } @else if (job.stage === 2 && job.stageStatus === 'failed') {
+                    <i class="ph ph-x text-xs"></i>
+                    } @else {
+                    2
+                    }
+                  </div>
+                  <div class="w-4 h-0.5" [class.bg-green-500]="job.stage > 2"
+                    [class.bg-red-500]="job.stage === 2 && job.stageStatus === 'failed'"
+                    [class.bg-gray-200]="job.stage <= 2" [class.dark:bg-gray-700]="job.stage <= 2"></div>
+                </div>
+
+                <div class="flex items-center">
+                  <div
+                    class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors cursor-help"
+                    [title]="'Interview' + (job.stage === 3 && job.stageStatus === 'failed' ? ' (Rejected)' : '')"
+                    [class.bg-green-500]="job.stage > 3 || (job.stage === 3 && job.stageStatus === 'passed')"
+                    [class.border-green-500]="job.stage > 3 || (job.stage === 3 && job.stageStatus === 'passed')"
+                    [class.bg-indigo-600]="job.stage === 3 && job.stageStatus === 'active'"
+                    [class.border-indigo-600]="job.stage === 3 && job.stageStatus === 'active'"
+                    [class.bg-red-500]="job.stage === 3 && job.stageStatus === 'failed'"
+                    [class.border-red-500]="job.stage === 3 && job.stageStatus === 'failed'"
+                    [class.border-gray-200]="job.stage < 3" [class.dark:border-gray-700]="job.stage < 3"
+                    [class.bg-transparent]="job.stage < 3" [class.text-white]="job.stage >= 3"
+                    [class.text-gray-400]="job.stage < 3" [class.dark:text-gray-600]="job.stage < 3">
+                    @if (job.stage > 3 || (job.stage === 3 && job.stageStatus === 'passed')) {
+                    <i class="ph ph-check text-xs"></i>
+                    } @else if (job.stage === 3 && job.stageStatus === 'failed') {
+                    <i class="ph ph-x text-xs"></i>
+                    } @else {
+                    3
+                    }
+                  </div>
+                  <div class="w-4 h-0.5" [class.bg-green-500]="job.stage > 3"
+                    [class.bg-red-500]="job.stage === 3 && job.stageStatus === 'failed'"
+                    [class.bg-gray-200]="job.stage <= 3" [class.dark:bg-gray-700]="job.stage <= 3"></div>
+                </div>
+
+                <div class="flex items-center">
+                  <div
+                    class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors cursor-help"
+                    [title]="'Offer' + (job.stage === 4 && job.stageStatus === 'failed' ? ' (Rejected)' : '')"
+                    [class.bg-green-500]="job.stage > 4 || (job.stage === 4 && job.stageStatus === 'passed')"
+                    [class.border-green-500]="job.stage > 4 || (job.stage === 4 && job.stageStatus === 'passed')"
+                    [class.bg-indigo-600]="job.stage === 4 && job.stageStatus === 'active'"
+                    [class.border-indigo-600]="job.stage === 4 && job.stageStatus === 'active'"
+                    [class.bg-red-500]="job.stage === 4 && job.stageStatus === 'failed'"
+                    [class.border-red-500]="job.stage === 4 && job.stageStatus === 'failed'"
+                    [class.border-gray-200]="job.stage < 4" [class.dark:border-gray-700]="job.stage < 4"
+                    [class.bg-transparent]="job.stage < 4" [class.text-white]="job.stage >= 4"
+                    [class.text-gray-400]="job.stage < 4" [class.dark:text-gray-600]="job.stage < 4">
+                    @if (job.stage > 4 || (job.stage === 4 && job.stageStatus === 'passed')) {
+                    <i class="ph ph-check text-xs"></i>
+                    } @else if (job.stage === 4 && job.stageStatus === 'failed') {
+                    <i class="ph ph-x text-xs"></i>
+                    } @else {
+                    4
+                    }
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+              @if (job.salaryMin > 0) {
+              {{ job.salaryMin | currency:'USD':'symbol':'1.0-0' }} - {{ job.salaryMax | currency:'USD':'symbol':'1.0-0'
+              }}
+              } @else {
+              <span class="text-gray-400 dark:text-gray-600">-</span>
+              }
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <div class="relative inline-block">
+                <button (click)="toggleMenu(job.id, $event)"
+                  class="text-gray-400 hover:text-gray-600 dark:hover:text-white p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                  <i class="ph ph-dots-three-vertical text-xl"></i>
+                </button>
+
+                @if (activeMenuId() === job.id) {
+                <div
+                  class="absolute right-0 w-32 rounded-lg bg-white dark:bg-[#1f2937] border border-gray-200 dark:border-gray-700 shadow-lg z-50 py-1"
+                  [class.top-full]="i < count - 2" [class.mt-1]="i < count - 2" [class.bottom-full]="i >= count - 2"
+                  [class.mb-1]="i >= count - 2">
+                  <button (click)="onEditJob(job)"
+                    class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
+                    <i class="ph ph-pencil-simple"></i> Edit
+                  </button>
+                  <button (click)="deleteJob(job.id)"
+                    class="w-full text-left px-4 py-2 text-sm text-red-500 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
+                    <i class="ph ph-trash"></i> Delete
+                  </button>
+                </div>
+                }
+              </div>
+            </td>
+          </tr>
+          }
+          @if (paginatedJobs().length === 0) {
+          <tr>
+            <td colspan="8" class="px-6 py-12 text-center text-gray-500">
+              No applications found matching your criteria.
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div
+      class="px-6 py-4 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between transition-colors">
+      <div class="text-sm text-gray-500 dark:text-gray-400">
+        Showing <span class="font-medium text-gray-900 dark:text-white">{{ (currentPage() - 1) * pageSize + 1 }}</span>
+        to
+        <span class="font-medium text-gray-900 dark:text-white">{{ (currentPage() * pageSize) > filteredJobs().length ?
+          filteredJobs().length : (currentPage() * pageSize) }}</span> of
+        <span class="font-medium text-gray-900 dark:text-white">{{ filteredJobs().length }}</span> applications
+      </div>
+      <div class="flex gap-2">
+        <button (click)="prevPage()" [disabled]="currentPage() === 1"
+          class="p-2 rounded-lg border border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+          <i class="ph ph-caret-left"></i>
+        </button>
+        <span
+          class="px-4 py-2 text-sm text-gray-900 dark:text-gray-300 border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-[#0B0E14] transition-colors">
+          Page {{ currentPage() }} of {{ totalPages() || 1 }}
+        </span>
+        <button (click)="nextPage()" [disabled]="currentPage() === totalPages() || totalPages() === 0"
+          class="p-2 rounded-lg border border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+          <i class="ph ph-caret-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

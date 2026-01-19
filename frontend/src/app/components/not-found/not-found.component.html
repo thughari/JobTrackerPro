@@ -1,0 +1,52 @@
+<div class="relative w-full h-screen comic-bg flex flex-col items-center justify-center text-center p-4">
+  
+  <div #webBackground class="absolute inset-0 pointer-events-none z-0 flex items-center justify-center">
+    <svg class="spider-web w-[150%] h-[150%] stroke-gray-700" viewBox="0 0 100 100">
+      <path d="M50 50 L0 0 M50 50 L50 0 M50 50 L100 0 M50 50 L100 50 M50 50 L100 100 M50 50 L50 100 M50 50 L0 100 M50 50 L0 50" stroke-width="0.5" fill="none"/>
+      <circle cx="50" cy="50" r="10" stroke-width="0.5" fill="none"/>
+      <circle cx="50" cy="50" r="20" stroke-width="0.5" fill="none"/>
+      <circle cx="50" cy="50" r="30" stroke-width="0.5" fill="none"/>
+      <circle cx="50" cy="50" r="40" stroke-width="0.5" fill="none"/>
+    </svg>
+  </div>
+
+  <div class="absolute top-0 left-1/2 -translate-x-1/2 z-10 hanging-spidey">
+    <div class="w-0.5 h-32 bg-white/50 mx-auto"></div>
+    
+    <div class="relative spidey-body">
+      <div class="w-16 h-20 bg-red-600 rounded-[40%_40%_60%_60%] relative border-2 border-black rotate-180">
+        <div class="absolute top-8 left-1 w-6 h-8 bg-white rounded-full border-4 border-black rotate-[-15deg] z-10" style="clip-path: ellipse(60% 80% at 50% 50%);"></div>
+        <div class="absolute top-8 right-1 w-6 h-8 bg-white rounded-full border-4 border-black rotate-[15deg] z-10" style="clip-path: ellipse(60% 80% at 50% 50%);"></div>
+        <div class="absolute inset-0 opacity-30 border-t border-black mt-4"></div>
+        <div class="absolute inset-0 opacity-30 border-t border-black mt-8"></div>
+        <div class="absolute inset-0 opacity-30 border-r border-black ml-8"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="z-20 mt-32 glitch-wrapper mb-4">
+    <h1 class="glitch font-sans" data-text="404">404</h1>
+  </div>
+
+  <div class="z-20 max-w-md space-y-6">
+    <h2 class="text-2xl md:text-3xl font-bold text-white uppercase tracking-wider">
+      Multiverse Error
+    </h2>
+    <p class="text-gray-400 text-lg">
+      My Spidey sense is tingling... this page doesn't exist in this universe. You might have been glitched to the wrong dimension.
+    </p>
+
+    <button (click)="goHome()" class="spidey-btn group relative px-8 py-4 bg-red-600 text-white font-bold rounded-xl overflow-hidden transition-all duration-300">
+      <div class="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+      <div class="flex items-center gap-2">
+        <span>Swing Home</span>
+        <i class="ph ph-arrow-right font-bold group-hover:translate-x-1 transition-transform"></i>
+      </div>
+    </button>
+  </div>
+
+  <div class="absolute bottom-10 right-10 rotate-[-5deg] bg-yellow-400 text-black p-4 font-bold border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hidden md:block z-10">
+    <p>MEANWHILE...</p>
+  </div>
+
+</div>

@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Redirecting...</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <script>
+    const base = '/JobTrackerPro-UI';
+    const path = location.pathname.replace(base, '');
+    const search = location.search;
+    const hash = location.hash;
+
+    location.replace(
+      base + '/?redirect=' +
+      encodeURIComponent(path + search + hash)
+    );
+  </script>
+</head>
+<body></body>
+</html>
