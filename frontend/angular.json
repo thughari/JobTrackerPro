@@ -53,7 +53,7 @@
                 }
               ],
               "outputHashing": "all",
-              "baseHref": "/JobTrackerPro-UI/"
+              "baseHref": "/JobTrackerPro/"
             },
             "development": {
               "optimization": false,
