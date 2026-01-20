@@ -1,7 +1,7 @@
 package com.thughari.jobtrackerpro.dto;
 
 import lombok.Data;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -10,7 +10,7 @@ public class JobDTO {
     private String company;
     private String role;
     private String location;
-    private LocalDate date;
+    private LocalDateTime date;
     private String status;
     private Integer stage;
     private String stageStatus;

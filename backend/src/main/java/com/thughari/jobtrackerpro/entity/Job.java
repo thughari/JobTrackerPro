@@ -1,7 +1,7 @@
 package com.thughari.jobtrackerpro.entity;
 
 import lombok.Data;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
@@ -25,7 +25,7 @@ public class Job {
     private String company;
     private String role;
     private String location;
-    private LocalDate date;
+    private LocalDateTime date;
 
     private String status;
     private Integer stage;

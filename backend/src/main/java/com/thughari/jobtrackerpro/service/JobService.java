@@ -11,7 +11,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -155,7 +155,7 @@ public class JobService {
         existingJob.setStage(incoming.getStage());
         existingJob.setStageStatus(incoming.getStageStatus());
         
-        String newNote = "\n[" + LocalDate.now() + "] Update via Email: " + incoming.getNotes();
+        String newNote = "\n[" + LocalDateTime.now() + "] Update via Email: " + incoming.getNotes();
         String currentNotes = existingJob.getNotes() != null ? existingJob.getNotes() : "";
         existingJob.setNotes(currentNotes + newNote);
 
@@ -163,7 +163,7 @@ public class JobService {
             existingJob.setUrl(incoming.getUrl());
         }
         
-        existingJob.setDate(LocalDate.now());
+        existingJob.setDate(LocalDateTime.now());
         jobRepository.save(existingJob);
     }
     

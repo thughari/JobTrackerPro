@@ -10,7 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -129,7 +129,7 @@ public class GeminiExtractionService {
 
             JobDTO job = objectMapper.readValue(contentText, JobDTO.class);
             
-            job.setDate(LocalDate.now());
+            job.setDate(LocalDateTime.now());
             job.setStage(mapStatusToStage(job.getStatus()));
             
             if ("Rejected".equalsIgnoreCase(job.getStatus())) {
