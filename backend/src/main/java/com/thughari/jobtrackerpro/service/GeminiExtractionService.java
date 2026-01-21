@@ -67,26 +67,33 @@ public class GeminiExtractionService {
             Act as a strict Data Extraction System.
             
             ### TASK
-            Analyze the email below. Determine if it is a **Job Application Update** (e.g., Application Received, Interview Invite, Rejection, Offer).
+            Analyze the email below. Determine if it is related to a Job Opportunity.
+            Valid categories include:
+            1. Application Confirmations (ATS).
+            2. Interview Invites.
+            3. Offers/Rejections.
+            4. **Recruiter Outreach / Walk-In Drive Invitations**.
+            5. **User sent emails** (e.g. user replying to a recruiter about a role).
             
             **CRITICAL RULE:** 
-            If this email is SPAM, a Newsletter, a Receipt, or NOT related to a specific job application, return the JSON literal: `null`
+            Only return `null` if the email is strictly commercial spam (selling products), receipts, or completely unrelated to careers.
             
             ### EMAIL CONTENT
             FROM: %s
             SUBJECT: %s
             BODY: %s
 
-            ### EXTRACTION RULES (If it IS a job email)
-            1. **COMPANY**: Identify the hiring company. Remove text like "Careers", "Talent Acquisition".
-            2. **ROLE**: Extract the specific job title.
+            ### EXTRACTION RULES
+            1. **COMPANY**: Identify the hiring company.
+            2. **ROLE**: Extract the specific job title. 
+               - If it is a Walk-In drive listing multiple roles, pick the one most relevant to "Java" or "Software Engineer", or default to "Software Engineer".
             3. **STATUS**: Map to one of these exact statuses:
-               - "Applied" (Default/Receipt confirmation)
-               - "Shortlisted" (Assessment invite, HR screen)
-               - "Interview Scheduled" (Technical/Manager interview invites)
-               - "Offer Received" (Offer letters)
-               - "Rejected" (Rejection emails)
-            4. **NOTES**: A 1-sentence summary of the update.
+               - "Applied" (Use this for Walk-in invites, Recruiter outreach, or Sent emails)
+               - "Shortlisted"
+               - "Interview Scheduled"
+               - "Offer Received"
+               - "Rejected"
+            4. **NOTES**: A 1-sentence summary (e.g., "Walk-in drive invitation", "Replied to recruiter").
             5. **LOCATION**: Extract City/Country if found, otherwise "Remote".
             6. **URL**: Extract the "View Application" or "Job Posting" link if present.
             7. **SALARY**: Extract numbers if present (e.g. 120k), else 0.0.
