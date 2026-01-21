@@ -57,11 +57,12 @@ export class JobModalComponent implements OnChanges, OnInit, OnDestroy {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['job'] && this.job) {
+      const formattedDate = this.job.date ? this.job.date.split('T')[0] : '';
       this.jobForm.patchValue({
         company: this.job.company,
         role: this.job.role,
         location: this.job.location,
-        date: this.job.date,
+        date: formattedDate,
         status: this.job.status,
         url: this.job.url || '',
         salaryMin: this.job.salaryMin ? String(this.job.salaryMin) : '',
