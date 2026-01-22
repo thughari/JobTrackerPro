@@ -15,11 +15,13 @@ import { ResetPasswordComponent } from './components/auth/reset-password/reset-p
 export const routes: Routes = [
   { 
     path: '', 
-    component: LandingComponent
+    component: LandingComponent,
+    title: 'JobTrackerPro - Automate Your Job Hunt'
   },
   { 
     path: 'about', 
-    component: AboutComponent 
+    component: AboutComponent,
+    title: 'About JobTrackerPro - Architecture & Tech Stack'
   },
   { 
     path: 'reset-password', 

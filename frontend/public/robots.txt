@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Sitemap: https://thughari.github.io/JobTrackerPro/sitemap.xml
+
+Disallow: /app/

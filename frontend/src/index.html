@@ -1,35 +1,77 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JobTrackPro</title>
+  <meta name="description"
+    content="JobTrackerPro is a modern job application tracker for developers to manage applications, interviews, follow-ups, and job statuses in one dashboard." />
+  <meta name="robots" content="index, follow" />
+  <meta name="author" content="Hari" />
+
+  <meta property="og:title" content="JobTrackerPro – Smart Job Application Tracker" />
+  <meta property="og:description"
+    content="Track job applications, interviews, and follow-ups with a clean Angular + Spring Boot dashboard." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://thughari.github.io/JobTrackerPro/" />
+  <meta property="og:image" content="og-preview.png" />
+
+  <title>JobTrackerPro - Track Job Applications, Interviews & Follow-ups</title>
   <base href="/">
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+
+  <link rel="icon" type="image/png" href="favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="shortcut icon" href="favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-title" content="JobTrackerPro" />
+
+  <link rel="manifest" href="site.webmanifest" />
+
+  <meta name="theme-color" content="#0B0E14">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/@phosphor-icons/web"></script>
-<script type="importmap">
+
+<link rel="canonical" href="https://thughari.github.io/JobTrackerPro/" />
+
+<script type="application/ld+json">
 {
-  "imports": {
-    "rxjs": "https://aistudiocdn.com/rxjs@^7.8.2?conditions=es2015",
-    "rxjs/operators": "https://aistudiocdn.com/rxjs@^7.8.2/operators?conditions=es2015",
-    "rxjs/ajax": "https://aistudiocdn.com/rxjs@^7.8.2/ajax?conditions=es2015",
-    "rxjs/webSocket": "https://aistudiocdn.com/rxjs@^7.8.2/webSocket?conditions=es2015",
-    "rxjs/testing": "https://aistudiocdn.com/rxjs@^7.8.2/testing?conditions=es2015",
-    "rxjs/fetch": "https://aistudiocdn.com/rxjs@^7.8.2/fetch?conditions=es2015",
-    "@angular/compiler": "https://next.esm.sh/@angular/compiler@^21.0.2?external=rxjs",
-    "@angular/platform-browser": "https://next.esm.sh/@angular/platform-browser@^21.0.2?external=rxjs",
-    "@angular/core": "https://next.esm.sh/@angular/core@^21.0.2?external=rxjs",
-    "@angular/common": "https://next.esm.sh/@angular/common@^21.0.2?external=rxjs",
-    "@angular/forms": "https://next.esm.sh/@angular/forms@^21.0.2?external=rxjs",
-    "d3": "https://next.esm.sh/d3@^7.9.0?external=rxjs"
-  }
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "JobTrackerPro",
+  "operatingSystem": "Web",
+  "applicationCategory": "ProductivityApplication",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "description": "An enterprise-grade job application tracker with AI email parsing, analytics, and automation.",
+  "author": {
+    "@type": "Person",
+    "name": "Hari Thatikonda",
+    "url": "https://thughari.github.io/"
+  },
+  "screenshot": "https://thughari.github.io/JobTrackerPro/og-preview.png",
+  "featureList": "AI Email Parsing, Kanban Board, Interview Analytics, Job Tracking"
 }
 </script>
+
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-1MN6ERYHN5"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-1MN6ERYHN5');
+  </script>
 </head>
+
 <body class="bg-gray-50 dark:bg-[#0B0E14] text-gray-900 dark:text-[#e2e8f0] transition-colors duration-200">
   <app-root></app-root>
+  <noscript>Please enable JavaScript to continue using this application.</noscript>
 </body>
+
 </html>
