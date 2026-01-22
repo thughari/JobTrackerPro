@@ -27,6 +27,8 @@ public class JobService {
         this.jobRepository = jobRepository;
     }
 
+    private final DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     @Transactional(readOnly = true)
     @Cacheable(value = "jobList", key = "#email")
     public List<JobDTO> getAllJobs(String email) {
@@ -155,7 +157,7 @@ public class JobService {
         existingJob.setStage(incoming.getStage());
         existingJob.setStageStatus(incoming.getStageStatus());
         
-        String newNote = "\n[" + LocalDateTime.now() + "] Update via Email: " + incoming.getNotes();
+        String newNote = "\n[" + LocalDateTime.now().format(fmt) + "] Update via Email: " + incoming.getNotes();
         String currentNotes = existingJob.getNotes() != null ? existingJob.getNotes() : "";
         existingJob.setNotes(currentNotes + newNote);
 
