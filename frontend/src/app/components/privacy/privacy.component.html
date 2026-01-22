@@ -1,1 +1,129 @@
-<p>privacy works!</p>
+<div class="min-h-screen bg-[#0B0E14] text-gray-300 font-sans selection:bg-indigo-500/30 flex flex-col">
+
+  <nav class="sticky top-0 z-50 bg-[#0B0E14]/80 backdrop-blur-md border-b border-gray-800">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-20">
+        <a routerLink="/" class="cursor-pointer hover:opacity-80 transition-opacity">
+          <app-logo size="md"></app-logo>
+        </a>
+        <a routerLink="/" class="text-sm font-medium text-gray-400 hover:text-white transition-colors">
+          Back to Home
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="flex-grow max-w-3xl mx-auto py-8 md:py-16 px-4 space-y-8 md:space-y-12">
+
+    <div class="space-y-4">
+      <h1 class="text-3xl md:text-4xl font-bold text-white tracking-tight">Privacy Policy</h1>
+      <p class="text-gray-500 text-sm md:text-base">Last updated: January 22, 2026</p>
+    </div>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-bold text-white">1. Introduction</h2>
+      <p class="leading-relaxed text-sm md:text-base">
+        Welcome to <strong>JobTrackPro</strong>. This is an open-source portfolio project designed and developed by me, <strong>Hari Thatikonda</strong>.
+      </p>
+      <p class="leading-relaxed text-sm md:text-base">
+        I built this application to demonstrate enterprise-grade software architecture. I respect your privacy and am committed to protecting the personal information you share while using this demo.
+      </p>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-bold text-white">2. Information I Collect</h2>
+      <ul class="list-disc pl-5 space-y-2 text-gray-400 text-sm md:text-base">
+        <li><strong>Account Information:</strong> I collect your name, email address, and profile picture (via Google/GitHub OAuth or manual upload) to create your user profile.</li>
+        <li><strong>Job Application Data:</strong> The data you enter regarding your job hunt (Company, Role, Salary) is stored securely in my database.</li>
+        <li><strong>Email Content (Optional):</strong> If you use the "Import from Email" feature, I process specific emails you forward to extract job details.</li>
+      </ul>
+    </section>
+
+    <section class="space-y-4">
+      <div class="p-5 md:p-6 bg-indigo-500/10 border border-indigo-500/20 rounded-xl">
+        <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+          <img src="google-logo.svg" alt="Google" class="w-5 h-5 object-contain">
+          Google User Data & AI Processing
+        </h3>
+        <p class="text-sm leading-relaxed mb-4 text-gray-300">
+          JobTrackPro's use of information received from Google APIs adheres to the 
+          <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" class="text-indigo-400 hover:underline">Google API Services User Data Policy</a>, including the Limited Use requirements.
+        </p>
+        <p class="text-sm leading-relaxed text-gray-300">
+          <strong>How I use AI:</strong> When you forward an email, the text content is sent to <strong>Google Gemini AI</strong> solely for entity extraction. I do <strong>not</strong> store your emails for training purposes, nor do I share them with third parties other than the AI provider for processing.
+        </p>
+      </div>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-bold text-white">3. How I Use Your Information</h2>
+      <p class="leading-relaxed text-sm md:text-base">I use your data strictly to:</p>
+      <ul class="list-disc pl-5 space-y-2 text-gray-400 text-sm md:text-base">
+        <li>Provide the functionality of the dashboard.</li>
+        <li>Demonstrate the technical capabilities of this application.</li>
+        <li>Authenticate you securely.</li>
+      </ul>
+      <p class="leading-relaxed mt-2 text-sm md:text-base">
+        I do <strong>not</strong> sell, trade, or rent your personal information.
+      </p>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-bold text-white">4. Data Storage & Security</h2>
+      <p class="leading-relaxed text-sm md:text-base">
+        <strong>Database:</strong> Data is stored in a secure PostgreSQL instance managed by Supabase.<br>
+        <strong>Images:</strong> Profile images are stored in my Cloudflare R2 bucket with strict access controls.<br>
+        <strong>Encryption:</strong> All data is encrypted in transit. I do not have access to your passwords (they are hashed using BCrypt).
+      </p>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-bold text-white">5. Your Rights</h2>
+      <p class="leading-relaxed text-sm md:text-base">
+        Since this is a demo application, you have full control. You can delete your account at any time via the database administrator, or by contacting me directly.
+      </p>
+    </section>
+
+    <section class="space-y-4 border-t border-gray-800 pt-8">
+      <h2 class="text-xl font-bold text-white">Contact Me</h2>
+      <p class="leading-relaxed text-sm md:text-base">
+        If you have any questions about this project or its privacy practices, feel free to reach out:
+      </p>
+      <div class="flex flex-col gap-3">
+        <a href="mailto:haribabutatikonda3@gmail.com" class="text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-2 text-sm md:text-base">
+            <i class="ph ph-envelope text-lg"></i> haribabutatikonda3&#64;gmail.com
+        </a>
+        <a href="https://www.linkedin.com/in/hari-thatikonda/" target="_blank" class="text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-2 text-sm md:text-base">
+            <i class="ph ph-linkedin-logo text-lg"></i> LinkedIn Profile
+        </a>
+      </div>
+    </section>
+
+  </div>
+  
+  <footer class="border-t border-white/5 bg-[#0B0E14] py-10 mt-auto">
+    <div class="max-w-4xl mx-auto px-4 text-center">
+      
+    <p class="text-gray-400 mb-6 text-sm">Designed & Developed by
+        <a href="https://thughari.github.io/">
+            <span class="text-white font-semibold">Hari Thatikonda</span>
+        </a>
+    </p>
+      <div class="flex justify-center gap-6 mb-8">
+        <a href="https://github.com/thughari" target="_blank" class="text-gray-500 hover:text-white transition-colors text-2xl" title="GitHub">
+          <i class="ph ph-github-logo"></i>
+        </a>
+        <a href="https://www.linkedin.com/in/hari-thatikonda/" target="_blank" class="text-gray-500 hover:text-blue-500 transition-colors text-2xl" title="LinkedIn">
+          <i class="ph ph-linkedin-logo"></i>
+        </a>
+        <a href="https://thughari.github.io/" target="_blank" class="text-gray-500 hover:text-blue-400 transition-colors text-2xl" title="Portfolio">
+          <i class="ph ph-globe"></i>
+        </a>
+      </div>
+
+      <p class="text-xs text-gray-600">© 2026 JobTrackPro. Open Source Software.</p>
+
+    </div>
+  </footer>
+
+</div>

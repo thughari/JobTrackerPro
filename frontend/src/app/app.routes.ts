@@ -11,6 +11,7 @@ import { authGuard } from './core/guards/auth.guard';
 import { guestGuard } from './core/guards/guest.guard';
 import { AboutComponent } from './components/about/about.component';
 import { ResetPasswordComponent } from './components/auth/reset-password/reset-password.component';
+import { PrivacyComponent } from './components/privacy/privacy.component';
 
 export const routes: Routes = [
   { 
@@ -22,6 +23,11 @@ export const routes: Routes = [
     path: 'about', 
     component: AboutComponent,
     title: 'About JobTrackerPro - Architecture & Tech Stack'
+  },
+  { 
+    path: 'privacy', 
+    component: PrivacyComponent, 
+    title: 'Privacy Policy'
   },
   { 
     path: 'reset-password', 
