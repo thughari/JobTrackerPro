@@ -32,7 +32,7 @@ public class JobService {
     @Transactional(readOnly = true)
     @Cacheable(value = "jobList", key = "#email")
     public List<JobDTO> getAllJobs(String email) {
-        return jobRepository.findByUserEmailOrderByDateDesc(email)
+        return jobRepository.findByUserEmailOrderByUpdatedAtDesc(email)
                 .stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
@@ -41,7 +41,7 @@ public class JobService {
     @Transactional(readOnly = true)
     @Cacheable(value = "jobDashboard", key = "#email")
     public DashboardResponse getDashboardData(String email) {
-        List<Job> jobs = jobRepository.findByUserEmailOrderByDateDesc(email);
+        List<Job> jobs = jobRepository.findByUserEmailOrderByUpdatedAtDesc(email);
         
         DashboardResponse response = new DashboardResponse();
 
@@ -58,9 +58,9 @@ public class JobService {
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM yy");
         Map<String, Long> monthMap = jobs.stream()
-            .sorted(Comparator.comparing(Job::getDate))
+            .sorted(Comparator.comparing(Job::getAppliedDate))
             .collect(Collectors.groupingBy(
-                job -> job.getDate().format(formatter),
+                job -> job.getAppliedDate().format(formatter),
                 LinkedHashMap::new, 
                 Collectors.counting()
             ));
@@ -79,6 +79,11 @@ public class JobService {
     public JobDTO createJob(JobDTO dto, String email) {
         Job job = convertToEntity(dto);
         job.setUserEmail(email);
+        LocalDateTime now = LocalDateTime.now();
+        if (job.getAppliedDate() == null) job.setAppliedDate(now);
+        job.setUpdatedAt(now); 
+        if (job.getStage() == null) job.setStage(1);
+        if (job.getStageStatus() == null) job.setStageStatus("active");
         return convertToDto(jobRepository.save(job));
     }
 
@@ -87,8 +92,12 @@ public class JobService {
         Job existingJob = jobRepository.findById(id)
                 .filter(job -> job.getUserEmail().equals(email))
                 .orElseThrow(() -> new ResourceNotFoundException("Job not found or unauthorized"));
-
-        BeanUtils.copyProperties(dto, existingJob, "id", "userEmail");
+        
+        LocalDateTime originalAppliedDate = existingJob.getAppliedDate();
+        
+        BeanUtils.copyProperties(dto, existingJob, "id", "userEmail", "appliedDate", "updatedAt");
+        existingJob.setAppliedDate(originalAppliedDate);
+        existingJob.setUpdatedAt(LocalDateTime.now());
         return convertToDto(jobRepository.save(existingJob));
     }
 
@@ -101,7 +110,7 @@ public class JobService {
 
     @CacheEvict(value = {"jobList", "jobDashboard"}, key = "#userEmail")
     public void createOrUpdateJob(JobDTO incomingJob, String userEmail) {
-        List<Job> userJobs = jobRepository.findByUserEmailOrderByDateDesc(userEmail);
+        List<Job> userJobs = jobRepository.findByUserEmailOrderByUpdatedAtDesc(userEmail);
 
         Job existingJob = findBestMatch(userJobs, incomingJob);
 
@@ -165,7 +174,7 @@ public class JobService {
             existingJob.setUrl(incoming.getUrl());
         }
         
-        existingJob.setDate(LocalDateTime.now());
+        existingJob.setUpdatedAt(LocalDateTime.now());
         jobRepository.save(existingJob);
     }
     

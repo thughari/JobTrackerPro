@@ -73,12 +73,12 @@ export class ApplicationListComponent implements OnInit, OnDestroy {
       const field = this.sortField();
       const direction = this.sortDirection() === 'asc' ? 1 : -1;
 
-      let valA: string | number = a[field];
-      let valB: string | number = b[field];
+      let valA: string | number = a[field as keyof Job] || '';
+      let valB: string | number = b[field as keyof Job] || '';
 
       if (field === 'date') {
-        valA = new Date(a.date).getTime();
-        valB = new Date(b.date).getTime();
+        valA = new Date(a.updatedAt).getTime();
+        valB = new Date(b.updatedAt).getTime();
       }
 
       if (typeof valA === 'string' && typeof valB === 'string') {

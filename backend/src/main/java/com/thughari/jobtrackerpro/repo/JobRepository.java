@@ -12,7 +12,7 @@ import java.util.UUID;
 
 public interface JobRepository extends JpaRepository<Job, UUID> {
 
-	List<Job> findByUserEmailOrderByDateDesc(String userEmail);
+	List<Job> findByUserEmailOrderByUpdatedAtDesc(String userEmail);
 
 	@Query("""
 			    SELECT new com.thughari.jobtrackerpro.dto.DashboardStatsDTO(

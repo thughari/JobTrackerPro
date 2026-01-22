@@ -22,7 +22,7 @@ public class DashboardService {
 	}
 
 	public DashboardStatsDTO getStats(String email) {
-		List<Job> jobs = jobRepository.findByUserEmailOrderByDateDesc(email);
+		List<Job> jobs = jobRepository.findByUserEmailOrderByUpdatedAtDesc(email);
 
 
 		CompletableFuture<Long> activeFuture = CompletableFuture.supplyAsync(() -> 

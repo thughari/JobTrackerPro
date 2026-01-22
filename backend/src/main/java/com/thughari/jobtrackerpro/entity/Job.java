@@ -25,7 +25,9 @@ public class Job {
     private String company;
     private String role;
     private String location;
-    private LocalDateTime date;
+    private LocalDateTime appliedDate;
+    
+    private LocalDateTime updatedAt;
 
     private String status;
     private Integer stage;

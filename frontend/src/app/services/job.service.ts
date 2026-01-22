@@ -9,7 +9,8 @@ export interface Job {
   company: string;
   role: string;
   location: string;
-  date: string;
+  appliedDate: string;
+  updatedAt: string;
   status: string;
   stage: number;
   stageStatus: string;

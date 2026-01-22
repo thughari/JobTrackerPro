@@ -136,7 +136,10 @@ public class GeminiExtractionService {
 
             JobDTO job = objectMapper.readValue(contentText, JobDTO.class);
             
-            job.setDate(LocalDateTime.now());
+            LocalDateTime now = LocalDateTime.now();
+            job.setAppliedDate(now); 
+            job.setUpdatedAt(now);
+            
             job.setStage(mapStatusToStage(job.getStatus()));
             
             if ("Rejected".equalsIgnoreCase(job.getStatus())) {

@@ -121,7 +121,7 @@ export class AppComponent implements OnInit {
           `"${job.company}"`,
           `"${job.role}"`,
           `"${job.location}"`,
-          `"${job.date}"`,
+          `"${job.appliedDate}"`,
           `"${job.status}"`,
           `"${job.stage}"`,
           `"${job.salaryMin || ''}"`,

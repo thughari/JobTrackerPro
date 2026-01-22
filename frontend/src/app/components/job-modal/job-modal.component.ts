@@ -57,7 +57,7 @@ export class JobModalComponent implements OnChanges, OnInit, OnDestroy {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['job'] && this.job) {
-      const formattedDate = this.job.date ? this.job.date.split('T')[0] : '';
+      const formattedDate = this.job.appliedDate ? this.job.appliedDate.split('T')[0] : '';
       this.jobForm.patchValue({
         company: this.job.company,
         role: this.job.role,
@@ -69,6 +69,9 @@ export class JobModalComponent implements OnChanges, OnInit, OnDestroy {
         salaryMax: this.job.salaryMax ? String(this.job.salaryMax) : '',
         notes: this.job.notes || '',
       });
+      this.jobForm.get('date')?.disable();
+    } else {
+      this.jobForm.get('date')?.enable();
     }
   }
 
@@ -78,8 +81,12 @@ export class JobModalComponent implements OnChanges, OnInit, OnDestroy {
 
   onSubmit() {
     if (this.jobForm.valid) {
-      const formVal = this.jobForm.value;
+      const formVal = this.jobForm.getRawValue();
       const status = formVal.status;
+      const now = new Date();
+      const currentTime = now.toTimeString().split(' ')[0];
+
+      const isoDateWithTime = `${formVal.date}T${currentTime}`
 
       let stage = 1;
       let stageStatus: Job['stageStatus'] = 'active';
@@ -114,7 +121,7 @@ export class JobModalComponent implements OnChanges, OnInit, OnDestroy {
         company: formVal.company!,
         role: formVal.role!,
         location: formVal.location!,
-        date: formVal.date!,
+        appliedDate: isoDateWithTime,
         status: formVal.status as any,
         stage: stage,
         stageStatus: stageStatus,
