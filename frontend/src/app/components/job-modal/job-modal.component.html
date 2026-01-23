@@ -38,7 +38,7 @@
           </div>
           <div class="space-y-1.5">
             <label class="text-xs font-semibold text-gray-500 dark:text-gray-400">
-              {{ job ? 'Application Date (Fixed)' : 'Application Date *' }}
+              {{ job ? 'Application Date' : 'Application Date *' }}
             </label>
             <input type="date" formControlName="date" [class.opacity-60]="job" [class.cursor-not-allowed]="job"
               class="w-full bg-white dark:bg-[#151A23] border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all [color-scheme:light] dark:[color-scheme:dark]">
