@@ -18,6 +18,14 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Get latest commit message
+      id: get_msg
+      run: |
+        # %s gets the subject line of the last commit
+        MSG=$(git log -1 --pretty=%s)
+        echo "COMMIT_MESSAGE=$MSG" >> $GITHUB_ENV
+        echo "Deploying commit: $MSG"
+
     - name: Google Auth
       id: auth
       uses: google-github-actions/auth@v2

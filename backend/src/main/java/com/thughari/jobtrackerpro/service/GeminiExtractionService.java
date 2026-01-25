@@ -37,14 +37,14 @@ public class GeminiExtractionService {
         String prompt = buildPrompt(from, subject, body);
 
         try {
-            Map<String, Object> requestBody = Map.of(
-                "contents", List.of(
-                	Map.of("role", "user"),
-                    Map.of("parts", List.of(
-                        Map.of("text", prompt)
-                    ))
-                )
-            );
+        	Map<String, Object> requestBody = Map.of(
+                    "contents", List.of(
+                        Map.of(
+                            "role", "user",
+                            "parts", List.of(Map.of("text", prompt))
+                        )
+                    )
+                );
 
             String response = restClient.post()
                     .uri(apiUrl + "?key=" + apiKey)
