@@ -12,11 +12,20 @@ env:
   IMAGE_NAME: my-java-app
 
 jobs:
-  deploy:
+  setup:
     runs-on: ubuntu-latest
-    permissions:
-      actions: write
-      contents: read
+    outputs:
+      commit_msg: ${{ steps.get_msg.outputs.msg }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: get_msg
+        run: |
+          MSG=$(git log -1 --pretty=%s)
+          echo "msg=$MSG" >> $GITHUB_OUTPUT
+  deploy:
+    needs: setup
+    name: "Deploying: ${{ needs.setup.outputs.commit_msg }}"
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
