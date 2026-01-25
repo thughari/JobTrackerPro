@@ -39,6 +39,7 @@ public class GeminiExtractionService {
         try {
             Map<String, Object> requestBody = Map.of(
                 "contents", List.of(
+                	Map.of("role", "user"),
                     Map.of("parts", List.of(
                         Map.of("text", prompt)
                     ))
