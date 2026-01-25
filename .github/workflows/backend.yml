@@ -1,6 +1,5 @@
 name: Deploy to Cloud Run
-run-name: "Deploy #${{ github.run_number }}: ${{ github.event.head_commit.message }} by @${{ github.actor }}"
-
+run-name: "Deploy #${{ github.run_number }} by @${{ github.actor }}"
 
 on:
   workflow_dispatch:
@@ -19,6 +18,13 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
+    - name: Update Run Name with Commit Message
+      run: |
+        MSG=$(git log -1 --pretty=%s)
+        gh run edit ${{ github.run_id }} --name "Deploy #${{ github.run_number }}: $MSG by @${{ github.actor }}"
+      env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Google Auth
       id: auth
