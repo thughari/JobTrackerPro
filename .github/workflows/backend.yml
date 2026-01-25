@@ -1,4 +1,6 @@
 name: Deploy to Cloud Run
+run-name: "Deploy #${{ github.run_number }}: ${{ github.event.head_commit.message || github.sha }} by @${{ github.actor }}"
+
 
 on:
   workflow_dispatch:
@@ -18,13 +20,25 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Get latest commit message
-      id: get_msg
+    - name: Deployment Summary
       run: |
-        # %s gets the subject line of the last commit
-        MSG=$(git log -1 --pretty=%s)
-        echo "COMMIT_MESSAGE=$MSG" >> $GITHUB_ENV
-        echo "Deploying commit: $MSG"
+        FULL_MSG=$(git log -1 --pretty=%B)
+        SUBJECT=$(git log -1 --pretty=%s)
+        AUTHOR=$(git log -1 --pretty=%an)
+        
+        echo "::notice title= DEPLOYING COMMIT::$SUBJECT"
+
+        echo "# Deployment details" >> $GITHUB_STEP_SUMMARY
+        echo "## Commit Message" >> $GITHUB_STEP_SUMMARY
+        echo "> ### $SUBJECT" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "---" >> $GITHUB_STEP_SUMMARY
+        echo "### Metadata" >> $GITHUB_STEP_SUMMARY
+        echo "- **Author:** $AUTHOR" >> $GITHUB_STEP_SUMMARY
+        echo "- **Status:** Processing..." >> $GITHUB_STEP_SUMMARY
+        
+        # Save to environment
+        echo "COMMIT_MESSAGE=$SUBJECT" >> $GITHUB_ENV
 
     - name: Google Auth
       id: auth
@@ -45,9 +59,9 @@ jobs:
 
     - name: Update Service YAML
       run: |
-        # Replace the hardcoded image line with the new dynamic tag
         sed -i "s|image: .*|image: ${{ env.IMAGE_TAG }}|g" backend/service.yaml
-        cat backend/service.yaml # Optional: verify content in logs
+        sed -i "/template:/a \    metadata:\n      annotations:\n        run.googleapis.com/description: \"${{ env.COMMIT_MESSAGE }}\"" backend/service.yaml
+        cat backend/service.yaml # verify content in logs
 
     - name: Deploy to Cloud Run
       uses: google-github-actions/deploy-cloudrun@v2
