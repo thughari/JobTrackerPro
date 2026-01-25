@@ -102,6 +102,7 @@ public class GeminiExtractionService {
                - Look for URLs immediately following words like "Apply", "View Job", "Click here", or "Check status".
                - If multiple links exist, prioritize ones containing "careers", "jobs", "apply", or "lever.co", "greenhouse.io", "myworkday".
                - Return the full raw URL string.
+               - If no URL is found, return the company's website mentioned in the email.
             7. **SALARY**: Extract numbers if present (e.g. 120k), else 0.0.
 
             ### MULTILINGUAL RULE
