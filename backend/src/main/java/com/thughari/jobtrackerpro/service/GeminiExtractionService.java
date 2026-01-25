@@ -61,12 +61,14 @@ public class GeminiExtractionService {
     }
 
     private String buildPrompt(String from, String subject, String body) {
-        String safeBody = (body != null) ? (body.length() > 4000 ? body.substring(0, 4000) : body) : "";
+        String safeBody = (body != null) ? (body.length() > 8000 ? body.substring(0, 8000 ) : body) : "";
 
         return """
-            Act as a strict Data Extraction System.
+            Act as a strict Global Data Extraction System.
             
             ### TASK
+            Analyze the email. It may be in any language (Dutch, German, etc.). 
+            Identify if it relates to a Job Application, Interview, or Recruiter Outreach.
             Analyze the email below. Determine if it is related to a Job Opportunity.
             Valid categories include:
             1. Application Confirmations (ATS).
@@ -84,7 +86,8 @@ public class GeminiExtractionService {
             BODY: %s
 
             ### EXTRACTION RULES
-            1. **COMPANY**: Identify the hiring company.
+            1. **COMPANY**: Identify the hiring company. 
+               - If multiple companies are mentioned, choose the one most relevant to the job opportunity.
             2. **ROLE**: Extract the specific job title. 
                - If it is a Walk-In drive listing multiple roles, pick the one most relevant to "Java" or "Software Engineer", or default to "Software Engineer".
             3. **STATUS**: Map to one of these exact statuses:
@@ -94,9 +97,15 @@ public class GeminiExtractionService {
                - "Offer Received"
                - "Rejected"
             4. **NOTES**: A 1-sentence summary (e.g., "Walk-in drive invitation", "Replied to recruiter").
-            5. **LOCATION**: Extract City/Country if found, otherwise "Remote".
-            6. **URL**: Extract the "View Application" or "Job Posting" link if present.
+            5. **LOCATION**: Extract City/Country if found, otherwise default to "Remote" but never make it null.
+            6. **URL**: Hunt for the primary call-to-action link. 
+               - Look for URLs immediately following words like "Apply", "View Job", "Click here", or "Check status".
+               - If multiple links exist, prioritize ones containing "careers", "jobs", "apply", or "lever.co", "greenhouse.io", "myworkday".
+               - Return the full raw URL string.
             7. **SALARY**: Extract numbers if present (e.g. 120k), else 0.0.
+
+            ### MULTILINGUAL RULE
+            If the email is in Dutch, French, or any other language, you MUST process it normally but provide the JSON output values in English so the user can understand their dashboard.
 
             ### OUTPUT FORMAT
             Return ONLY raw JSON (no markdown blocks, no explanations):

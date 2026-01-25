@@ -26,9 +26,9 @@ export class DashboardComponent implements OnInit {
 
   inboundEmail = environment.inboundEmail;
   
-  readonly atsFilterQuery = `from:(myworkday.com OR greenhouse.io OR lever.co OR smartrecruiters.com OR icims.com OR jobvite.com OR bamboo.hr OR workablemail.com OR successfactors.com OR taleo.net OR avature.net)`;
-  
-  readonly subjectFilterQuery = `subject:("Application Received" OR "Application Confirmation" OR "Thank you for applying" OR "Interview Invitation" OR "Interview Request" OR "Coding Challenge" OR "Assessment Invitation" OR "Status of your application")`;
+  readonly atsFilterQuery = `from:(myworkday.com OR greenhouse.io OR lever.co OR smartrecruiters.com OR icims.com OR jobvite.com OR bamboo.hr OR workablemail.com OR successfactors.com OR taleo.net OR avature.net OR jobs2careers.com OR ziprecruiter.com OR monster.com OR careerbuilder.com OR wellfound.com OR lu.ma OR breezy.hr OR jazzhr.com OR comeet.com OR recruitee.com OR teamtailor.com OR applytojob.com OR jobs.github.com)`;
+
+  readonly subjectFilterQuery = `subject:("Application" OR "Received" OR "Confirmation" OR "Interview" OR "Status" OR "Sollicitatie" OR "Engineer" OR "Developer" OR "Analyst" OR "Scientist" OR "Specialist")`;
 
   stats = this.jobService.dashboardStats;
   statusData = this.jobService.statusDistribution;

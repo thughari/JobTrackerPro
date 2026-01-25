@@ -90,10 +90,10 @@
               class="hidden md:table-cell px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               Progress
             </th>
-            <th scope="col"
+            <!-- <th scope="col"
               class="hidden md:table-cell px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               Salary Range
-            </th>
+            </th> -->
             <th scope="col" class="relative px-6 py-4">
               <span class="sr-only">Actions</span>
             </th>
@@ -234,14 +234,14 @@
                 </div>
               </div>
             </td>
-            <td class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+            <!-- <td class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
               @if (job.salaryMin > 0) {
               {{ job.salaryMin | currency:'USD':'symbol':'1.0-0' }} - {{ job.salaryMax | currency:'USD':'symbol':'1.0-0'
               }}
               } @else {
               <span class="text-gray-400 dark:text-gray-600">-</span>
               }
-            </td>
+            </td> -->
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
               <div class="relative inline-block">
                 <button (click)="toggleMenu(job.id, $event)"
