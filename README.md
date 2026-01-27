@@ -81,74 +81,33 @@ JobTrackerPro/
 
 ---
 
-## 🚀 Getting Started Locally
+## 🚀 One-Command Onboarding
 
-### Prerequisites
-*   Java 21 JDK
-*   Node.js v18+
-*   PostgreSQL or MySQL Database
+You can run the entire ecosystem locally with **zero configuration**. The app automatically uses **Mock AI** and **Local File Storage** so you don't need any paid API keys to start contributing.
 
-### 1. Clone the Repo
+### 1. Spin up Infrastructure
+Requires Docker Desktop. This starts PostgreSQL and MailHog (Email Trap).
 ```bash
-git clone https://github.com/thughari/JobTrackerPro.git
-cd JobTrackerPro
+docker-compose up -d
 ```
 
-### 2. Backend Setup
-Navigate to the backend folder.
-
+### 2. Start the Backend
 ```bash
 cd backend
-# Create .env file with the variables below
-# Run with Maven wrapper
 ./mvnw spring-boot:run
 ```
 
-<details>
-<summary>📋 <strong>Required Environment Variables (.env)</strong></summary>
-
-```properties
-# --- Database ---
-JDBC_URL=jdbc:postgresql://localhost:5432/jobtracker
-JDBC_USER=postgres
-JDBC_PASS=password
-
-# --- Security ---
-JWT_SECRET=256bit_secret_key
-
-# --- OAuth2 ---
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-GITHUB_CLIENT_ID=...
-GITHUB_CLIENT_SECRET=...
-
-# --- AI & Cloud ---
-GEMINI_API_KEY=...
-CLOUDFLARE_ACCESS_KEY=...
-CLOUDFLARE_SECRET_KEY=...
-CLOUDFLARE_ENDPOINT=...
-CLOUDFLARE_BUCKET=jobtracker-avatars
-CLOUDFLARE_PUBLIC_URL=https://r2-domain.dev
-
-# --- Email (Brevo/SMTP) ---
-EMAIL_HOST=smtp-relay.brevo.com
-EMAIL_PORT=587
-EMAIL_USER_NAME=...
-EMAIL_SMTP_KEY=...
-EMAIL_SENDER=haribabu.thatikonda3@gmail.com
-EMAIL_SENDER_NAME=JobTrackPro
-```
-</details>
-
-### 3. Frontend Setup
-Navigate to the frontend folder.
-
+### 3. Start the Frontend
 ```bash
-cd ../frontend
+cd frontend
 npm install
-ng serve
+npm start
 ```
-Open `http://localhost:4200` in your browser.
+
+### 4. Test the Features
+- **Dashboard:** Access at `http://localhost:4200`.
+- **Emails:** View outgoing emails at `http://localhost:8025` (MailHog).
+- **AI Ingestion:** Use the `scripts/simulate-email.sh` to see the Mock AI create jobs automatically.
 
 ---
 
@@ -190,3 +149,4 @@ This project is licensed under the **MIT License**.
     <img src="https://img.shields.io/badge/GitHub-Follow-black?style=for-the-badge&logo=github" alt="GitHub">
   </a>
 </div>
+
