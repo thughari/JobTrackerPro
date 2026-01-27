@@ -2,8 +2,8 @@ package com.thughari.jobtrackerpro.security;
 
 import com.thughari.jobtrackerpro.entity.AuthProvider;
 import com.thughari.jobtrackerpro.entity.User;
+import com.thughari.jobtrackerpro.interfaces.StorageService;
 import com.thughari.jobtrackerpro.repo.UserRepository;
-import com.thughari.jobtrackerpro.service.StorageService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

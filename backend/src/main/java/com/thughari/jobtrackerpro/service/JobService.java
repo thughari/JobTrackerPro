@@ -27,7 +27,7 @@ public class JobService {
         this.jobRepository = jobRepository;
     }
 
-    private final DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private final DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm 'UTC'");
 
     @Transactional(readOnly = true)
     @Cacheable(value = "jobList", key = "#email")

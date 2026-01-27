@@ -97,6 +97,12 @@ export class AppComponent implements OnInit {
     this.themeService.toggle();
   }
 
+  imageLoadFailed = signal(false);
+
+  handleImageError() {
+    this.imageLoadFailed.set(true);
+  }
+
   exportCsv() {
     const jobs = this.jobService.jobs();
     if (!jobs.length) return;

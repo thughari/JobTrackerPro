@@ -28,8 +28,8 @@
           <!-- Profile Dropdown -->
           <div class="relative ml-4">
             <button (click)="toggleProfileMenu()" class="flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-transparent hover:border-indigo-500 transition-all focus:outline-none overflow-hidden bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-200 cursor-pointer">
-              @if (authService.userProfile()?.imageUrl) {
-                <img [src]="authService.userProfile()?.imageUrl" alt="Profile" class="w-full h-full object-cover">
+              @if (authService.userProfile()?.imageUrl && !imageLoadFailed()) {
+                <img [src]="authService.userProfile()?.imageUrl" (error)="handleImageError()" alt="Profile" class="w-full h-full object-cover">
               } @else {
                 <span class="text-xs md:text-sm font-bold">{{ getInitials() }}</span>
               }

@@ -2,9 +2,9 @@ package com.thughari.jobtrackerpro.controller;
 
 import com.thughari.jobtrackerpro.dto.JobDTO;
 import com.thughari.jobtrackerpro.entity.User;
+import com.thughari.jobtrackerpro.interfaces.GeminiService;
 import com.thughari.jobtrackerpro.repo.UserRepository;
 import com.thughari.jobtrackerpro.service.EmailService;
-import com.thughari.jobtrackerpro.service.GeminiExtractionService;
 import com.thughari.jobtrackerpro.service.JobService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -21,10 +21,10 @@ public class WebhookController {
 
     private final JobService jobService;
     private final UserRepository userRepository;
-    private final GeminiExtractionService geminiService;
+    private final GeminiService geminiService;
     private final EmailService emailService;
 
-    public WebhookController(JobService jobService, UserRepository userRepository, GeminiExtractionService geminiService, EmailService emailService) {
+    public WebhookController(JobService jobService, UserRepository userRepository, GeminiService geminiService, EmailService emailService) {
         this.jobService = jobService;
         this.userRepository = userRepository;
         this.geminiService = geminiService;

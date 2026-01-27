@@ -4,6 +4,7 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 .env
+.env.*
 
 ### STS ###
 .apt_generated
@@ -32,3 +33,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### upload files ###
+uploads/

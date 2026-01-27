@@ -1,12 +1,14 @@
 package com.thughari.jobtrackerpro.service;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.thughari.jobtrackerpro.exception.InvalidImageException;
 import com.thughari.jobtrackerpro.exception.ResourceNotFoundException;
+import com.thughari.jobtrackerpro.interfaces.StorageService;
 
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -22,7 +24,8 @@ import java.time.Duration;
 
 @Service
 @Slf4j
-public class StorageService {
+@ConditionalOnProperty(name = "app.storage.type", havingValue = "r2")
+public class CloudStorageService implements StorageService {
 
     private final S3Client s3Client;
     
@@ -34,11 +37,12 @@ public class StorageService {
     @Value("${cloudflare.r2.public-url}")
     private String publicUrl;
 
-    public StorageService(S3Client s3Client) {
+    public CloudStorageService(S3Client s3Client) {
         this.s3Client = s3Client;
     }
 
     public String uploadFile(MultipartFile file, String userId) {
+    	
     	String contentType = file.getContentType();
         if (!isValidImageContent(contentType)) {
             throw new InvalidImageException("Invalid file type. Only JPG, PNG, GIF, WEBP are allowed.");

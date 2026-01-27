@@ -4,8 +4,11 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.thughari.jobtrackerpro.dto.JobDTO;
+import com.thughari.jobtrackerpro.interfaces.GeminiService;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -16,7 +19,8 @@ import java.util.Map;
 
 @Service
 @Slf4j
-public class GeminiExtractionService {
+@ConditionalOnProperty(name = "app.gemini.enabled", havingValue = "true")
+public class GeminiExtractionService implements GeminiService {
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
@@ -33,6 +37,7 @@ public class GeminiExtractionService {
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
+    @Override
     public JobDTO extractJobFromEmail(String from, String subject, String body) {
         String prompt = buildPrompt(from, subject, body);
 

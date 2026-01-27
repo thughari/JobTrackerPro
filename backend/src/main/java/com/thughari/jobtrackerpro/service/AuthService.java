@@ -7,6 +7,7 @@ import com.thughari.jobtrackerpro.entity.User;
 import com.thughari.jobtrackerpro.exception.ResourceNotFoundException;
 import com.thughari.jobtrackerpro.exception.UserAlreadyExistsException;
 import com.thughari.jobtrackerpro.exception.UserNotFoundException;
+import com.thughari.jobtrackerpro.interfaces.StorageService;
 import com.thughari.jobtrackerpro.repo.PasswordResetTokenRepository;
 import com.thughari.jobtrackerpro.repo.UserRepository;
 import com.thughari.jobtrackerpro.security.JwtUtils;
@@ -15,6 +16,8 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -93,7 +96,7 @@ public class AuthService {
         emailService.sendResetEmail(user.getEmail(), tokenEntity.getToken());
     }
 
-    
+    @CacheEvict(value = "users", key = "#result", condition = "#result != null")
     public void resetPassword(String token, String newPassword) {
     	if (newPassword == null || newPassword.trim().isEmpty()) {
     		throw new IllegalArgumentException("Password cannot be empty");
@@ -118,12 +121,14 @@ public class AuthService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "users", key = "#email")
     public UserProfileResponse getCurrentUser(String email) {
         return userRepository.findByEmail(email)
                 .map(this::mapToProfileResponse)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
     }
 
+    @CacheEvict(value = "users", key = "#email")
     public void changePassword(String email, ChangePasswordRequest request) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -144,7 +149,7 @@ public class AuthService {
         userRepository.save(user);
     }
     
-    
+    @CacheEvict(value = "users", key = "#email")
     public UserProfileResponse updateProfileAtomic(String email, String name, String imageUrl, MultipartFile file) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
