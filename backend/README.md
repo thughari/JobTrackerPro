@@ -38,19 +38,24 @@ The robust, enterprise-grade backend for **JobTrackerPro**. This REST API handle
 | `CLOUDFLARE_ENDPOINT` | R2 S3 API Endpoint |
 | `APP_UI_URL` | `https://thughari.github.io/JobTrackerPro` |
 
-## 🚀 Getting Started
+## 🛠️ Development & Caching
 
-1.  **Clone the repository**
-    ```bash
-    git clone https://github.com/thughari/JobTrackerPro.git
-    cd JobTrackerPro
-    ```
-2.  **Configure Application**
-    Update `src/main/resources/application-prod.properties` or set system Env Vars.
-3.  **Run the App**
-    ```bash
-    mvn spring-boot:run
-    ```
+The backend is architected to be **Contributor Friendly.**
+
+### Spring Profiles
+- **`local` (Default):** Uses Postgres in Docker, MailHog for emails, Mock Gemini AI, and Local Storage.
+- **`prod`:** Used for Cloud Run deployment with real Gemini, R2, and SMTP settings.
+
+### 💾 High-Performance Caching
+I am using **Caffeine Cache** (highest performance in-memory cache for Java) to optimize:
+- **User Profiles:** Cached by email to reduce Supabase hits.
+- **Dashboard Stats:** Cached and automatically evicted on job updates.
+- **Job Lists:** Leverages Spring's `@Cacheable` abstraction.
+
+### 🤖 AI & Storage Mocking
+If `app.gemini.enabled=false` (default in local), the system uses `MockGeminiService`. It generates realistic job data from any email you "forward" to it, allowing you to test UI and logic without a Google AI Key.
+
+Similarly, images are saved to the `/backend/uploads` folder instead of Cloudflare R2 during local development.
 
 ## 📄 License
 MIT License

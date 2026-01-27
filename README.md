@@ -69,14 +69,18 @@ The repository is structured as a Monorepo:
 
 ```text
 JobTrackerPro/
-├── backend/            # Spring Boot API
-│   ├── src/main/java/  # Controllers, Services, DTOs
-│   ├── Dockerfile      # Backend Container Config
-│   └── service.yaml    # Google Cloud Run Config
-├── frontend/           # Angular UI
-│   ├── src/app/        # Components, Services, Guards
-│   └── tailwind.config # CSS Configuration
-└── README.md           # Documentation
+├── backend/                # Spring Boot API
+│   ├── src/main/java/      # Controllers, Services, DTOs
+│   ├── src/main/resources/ # Configurations for local, dev, prod # use local for dev
+│   ├── Dockerfile          # Backend Container Config
+│   ├── scripts             # Utility Scripts (e.g., simulate-email.sh)
+│   └── service.yaml        # Google Cloud Run Config
+├── frontend/               # Angular UI
+│   ├── src/app/            # Components, Services, Guards
+│   └── tailwind.config     # CSS Configuration
+├── .github/workflows/      # CI/CD (GCP Cloud Run & GitHub Pages)
+├── docker-compose.yml      # Local Dev Infrastructure 
+└── README.md               # Documentation
 ```
 
 ---
