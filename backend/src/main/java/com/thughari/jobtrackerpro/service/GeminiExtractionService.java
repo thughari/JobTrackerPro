@@ -98,8 +98,8 @@ public class GeminiExtractionService implements GeminiService {
                - If it is a Walk-In drive listing multiple roles, pick the one most relevant to "Java" or "Software Engineer", or default to "Software Engineer".
             3. **STATUS**: Map to one of these exact statuses:
                - "Applied" (Use this for Walk-in invites, Recruiter outreach, or Sent emails)
-               - "Shortlisted"
-               - "Interview Scheduled"
+               - "Shortlisted" (Use this for 'Next steps', Coding Tests, Exams, or HackerRank invites or similar)
+               - "Interview Scheduled" (for any interview invites)
                - "Offer Received"
                - "Rejected"
             4. **NOTES**: A 1-sentence summary (e.g., "Walk-in drive invitation", "Replied to recruiter").
@@ -178,7 +178,8 @@ public class GeminiExtractionService implements GeminiService {
         if (status == null) return 1;
         if (status.contains("Offer")) return 4;
         if (status.contains("Interview")) return 3;
-        if (status.contains("Shortlisted")) return 2;
+        if (status.contains("Shortlisted") || status.contains("exam") || status.contains("test") || status.contains("hackerrank")) return 2;
+
         return 1;
     }
 }

@@ -88,7 +88,6 @@ public class WebhookController {
             }
 
             if (subject.toLowerCase().contains("verify") || 
-                subject.toLowerCase().contains("confirmation") || 
                 subject.toLowerCase().contains("postmaster")) {
                 return ResponseEntity.ok("Ignored System Email");
             }
