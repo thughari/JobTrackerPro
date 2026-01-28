@@ -83,10 +83,16 @@ export class JobModalComponent implements OnChanges, OnInit, OnDestroy {
     if (this.jobForm.valid) {
       const formVal = this.jobForm.getRawValue();
       const status = formVal.status;
-      const now = new Date();
-      const currentTime = now.toTimeString().split(' ')[0];
+      // const now = new Date();
+      // const currentTime = now.toTimeString().split(' ')[0];
 
-      const isoDateWithTime = `${formVal.date}T${currentTime}`
+      // const isoDateWithTime = `${formVal.date}T${currentTime}`
+
+      const selectedDate = new Date(formVal.date!);
+      const now = new Date();
+    selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
+
+      const finalDate = selectedDate.toISOString();
 
       let stage = 1;
       let stageStatus: Job['stageStatus'] = 'active';
@@ -121,7 +127,7 @@ export class JobModalComponent implements OnChanges, OnInit, OnDestroy {
         company: formVal.company!,
         role: formVal.role!,
         location: formVal.location!,
-        appliedDate: isoDateWithTime,
+        appliedDate: finalDate,
         status: formVal.status as any,
         stage: stage,
         stageStatus: stageStatus,
