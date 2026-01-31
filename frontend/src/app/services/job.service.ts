@@ -39,6 +39,16 @@ export interface DashboardResponse {
   interviewChart: ChartData[];
 }
 
+export interface PagedResponse {
+  content: Job[];
+  page: {
+    size: number;
+    number: number;
+    totalElements: number;
+    totalPages: number;
+  };
+}
+
 @Injectable({ providedIn: 'root' })
 export class JobService {
   private readonly API = environment.apiBaseUrl;
@@ -81,10 +91,10 @@ export class JobService {
     if (currentUrl.includes('/dashboard')) {
       this.loadDashboard(true);
     } else if (currentUrl.includes('/applications')) {
-      this.loadJobs(true);
+      this.loadJobs();
     } else {
       this.loadDashboard(true);
-      this.loadJobs(true);
+      this.loadJobs();
     }
   }
 
@@ -93,7 +103,7 @@ export class JobService {
 
     try {
       const data = await firstValueFrom(
-        this.http.get<DashboardResponse>(`${this.apiUrl}/dashboard`)
+        this.http.get<DashboardResponse>(`${this.apiUrl}/dashboard`),
       );
 
       this.dashboardStats.set(data.stats);
@@ -110,13 +120,33 @@ export class JobService {
     }
   }
 
-  async loadJobs(force = false) {
-    if (this.listLoaded && !force) return;
+  private totalJobsSignal = signal(0);
+  readonly totalJobs = this.totalJobsSignal.asReadonly();
 
+  async loadJobs(
+    page = 0,
+    size = 8,
+    sort = 'updatedAt',
+    dir = 'desc',
+    search = '',
+    status = 'All Statuses',
+  ) {
     try {
-      const data = await firstValueFrom(this.http.get<Job[]>(this.apiUrl));
-      this.jobsSignal.set(data);
-      this.listLoaded = true;
+      const params: any = {
+        page: page.toString(),
+        size: size.toString(),
+        sort: sort === 'date' ? 'updatedAt' : sort,
+        dir,
+        search,
+        status,
+      };
+
+      const data = await firstValueFrom(
+        this.http.get<PagedResponse>(this.apiUrl, { params }),
+      );
+
+      this.jobsSignal.set(data.content);
+      this.totalJobsSignal.set(data.page.totalElements);
     } catch (e) {
       console.error(e);
     }

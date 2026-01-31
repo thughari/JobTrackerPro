@@ -70,52 +70,55 @@ public class GeminiExtractionService implements GeminiService {
         String safeBody = (body != null) ? (body.length() > 8000 ? body.substring(0, 8000 ) : body) : "";
 
         return """
-            Act as a strict Global Data Extraction System.
+            Act as a strict Global Data Extraction System for a Professional Job Tracker.
             
             ### TASK
-            Analyze the email. It may be in any language (Dutch, German, etc.). 
-            Identify if it relates to a Job Application, Interview, or Recruiter Outreach.
-            Analyze the email below. Determine if it is related to a Job Opportunity.
-            Valid categories include:
-            1. Application Confirmations (ATS).
-            2. Interview Invites.
-            3. Offers/Rejections.
-            4. **Recruiter Outreach / Walk-In Drive Invitations**.
-            5. **User sent emails** (e.g. user replying to a recruiter about a role).
-            
-            **CRITICAL RULE:** 
-            Only return `null` if the email is strictly commercial spam (selling products), receipts, or completely unrelated to careers.
-            
+            Analyze the email content provided. Your goal is to determine if the email represents a specific, personal step in a hiring process.
+
+            ### VALID CATEGORIES
+            1. Official Application Confirmations (from an ATS like Workday, Greenhouse, Linkedin, etc.).
+            2. Personal Interview Invitations or Schedule Updates.
+            3. Job Offers or Rejection notices.
+            4. Recruiter Outreach for a specific role (Direct LinkedIn messages or emails).
+            5. Walk-In Drive Invitations for specific positions.
+            6. User-sent replies to recruiters or companies regarding a job.
+
+            ### CRITICAL EXCLUSION RULES (Return `null` for these)
+            Return `null` if the email is any of the following:
+            - Coding Contests or Challenges (e.g., LeetCode Weekly Contest, CodeChef).
+            - Hackathon Registrations or Updates (e.g., Hack2Skill, Devpost) UNLESS they explicitly mention a job interview/offer.
+            - Marketing, Newsletters, or Course Recommendations (e.g., Udemy, Coursera).
+            - General Job Alerts/Digest emails (e.g., "10 new jobs for you").
+            - Commercial receipts, social media notifications, or personal spam.
+
             ### EMAIL CONTENT
             FROM: %s
             SUBJECT: %s
             BODY: %s
 
             ### EXTRACTION RULES
-            1. **COMPANY**: Identify the hiring company. 
-               - If multiple companies are mentioned, choose the one most relevant to the job opportunity.
-            2. **ROLE**: Extract the specific job title. 
-               - If it is a Walk-In drive listing multiple roles, pick the one most relevant to "Java" or "Software Engineer", or default to "Software Engineer".
-            3. **STATUS**: Map to one of these exact statuses:
-               - "Applied" (Use this for Walk-in invites, Recruiter outreach, or Sent emails)
-               - "Shortlisted" (Use this for 'Next steps', Coding Tests, Exams, or HackerRank invites or similar)
-               - "Interview Scheduled" (for any interview invites)
-               - "Offer Received"
-               - "Rejected"
-            4. **NOTES**: A 1-sentence summary (e.g., "Walk-in drive invitation", "Replied to recruiter").
-            5. **LOCATION**: Extract City/Country if found, otherwise default to "Remote" but never make it null.
-            6. **URL**: Hunt for the primary call-to-action link. 
-               - Look for URLs immediately following words like "Apply", "View Job", "Click here", or "Check status".
-               - If multiple links exist, prioritize ones containing "careers", "jobs", "apply", or "lever.co", "greenhouse.io", "myworkday".
-               - Return the full raw URL string.
-               - If no URL is found, return the company's website mentioned in the email.
-            7. **SALARY**: Extract numbers if present (e.g. 120k), else 0.0.
+            1. **COMPANY**: Identify the hiring company. Remove "Team", "Careers", or "Recruitment" from the name (e.g., "Google" not "Google Careers").
+            2. **ROLE**: Extract the specific job title (e.g., "Software Engineer"). 
+               - If it's a Walk-In drive with multiple roles, pick the most technical one.
+               - Default to "Software Engineer" if vague.
+            3. **STATUS**: Map strictly to one of these:
+               - "Applied": Application confirmations, walk-in invites, or recruiter outreach.
+               - "Shortlisted": Coding test invites (HackerRank/Codility), assignment requests, or "next steps" emails.
+               - "Interview Scheduled": Real-time interview invites (Phone, Video, On-site).
+               - "Offer Received": Official job offers.
+               - "Rejected": Rejection emails.
+            4. **NOTES**: A concise 1-sentence summary in English (e.g., "Received technical coding assessment").
+            5. **LOCATION**: Extract City/Country. Default to "Remote" if not found.
+            6. **URL**: Hunt for the primary call-to-action link (Apply, View Job, Test Link). 
+               - Return ONLY the raw URL string.
+               - If no link is found, return null.
+            7. **SALARY**: Extract numbers if present, else 0.0.
 
             ### MULTILINGUAL RULE
-            If the email is in Dutch, French, or any other language, you MUST process it normally but provide the JSON output values in English so the user can understand their dashboard.
+            Process any language, but the output JSON values (Company, Role, Location, Notes) MUST be in English.
 
             ### OUTPUT FORMAT
-            Return ONLY raw JSON (no markdown blocks, no explanations):
+            Return ONLY raw JSON. No markdown, no conversational filler.
             {
               "company": "String",
               "role": "String",

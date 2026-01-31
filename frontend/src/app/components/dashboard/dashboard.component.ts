@@ -9,7 +9,12 @@ import { GmailSetupModalComponent } from '../gmail-setup-modal/gmail-setup-modal
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, DonutChartComponent, BarChartComponent, GmailSetupModalComponent],
+  imports: [
+    CommonModule,
+    DonutChartComponent,
+    BarChartComponent,
+    GmailSetupModalComponent,
+  ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })
@@ -19,7 +24,7 @@ export class DashboardComponent implements OnInit {
 
   isRefreshing = signal(false);
   showHelpModal = signal(false);
-  
+
   successMessage = signal('');
   errorMessage = signal('');
   private messageTimeout: any;
@@ -37,14 +42,14 @@ export class DashboardComponent implements OnInit {
     this.isRefreshing.set(true);
     await Promise.all([
       this.jobService.loadDashboard(true),
-      this.jobService.loadJobs(true)
+      this.jobService.loadJobs(),
     ]);
     this.isRefreshing.set(false);
   }
 
-  handleModalMessage(event: {type: 'success' | 'error', text: string}) {
-  this.showMessage(event.type, event.text);
-}
+  handleModalMessage(event: { type: 'success' | 'error'; text: string }) {
+    this.showMessage(event.type, event.text);
+  }
 
   openHelpModal() {
     this.showHelpModal.set(true);
@@ -80,7 +85,6 @@ export class DashboardComponent implements OnInit {
     this.jobService.openModal(null);
   }
 
-
   interviewRate = computed(() => {
     const total = this.stats().totalApplications;
     const interviews = this.stats().interviews;
@@ -96,27 +100,29 @@ export class DashboardComponent implements OnInit {
   });
 
   chartStrokeColor = computed(() =>
-    this.themeService.isDarkMode() ? '#151A23' : '#ffffff'
+    this.themeService.isDarkMode() ? '#151A23' : '#ffffff',
   );
 
   gridColor = computed(() =>
-    this.themeService.isDarkMode() ? '#374151' : '#e5e7eb'
+    this.themeService.isDarkMode() ? '#374151' : '#e5e7eb',
   );
 
   textColor = computed(() =>
-    this.themeService.isDarkMode() ? '#6b7280' : '#6b7280'
+    this.themeService.isDarkMode() ? '#6b7280' : '#6b7280',
   );
 
   public statusColorMap: Record<string, string> = {
-    'Applied': '#6366f1',
-    'Shortlisted': '#a855f7',
+    Applied: '#6366f1',
+    Shortlisted: '#a855f7',
     'Interview Scheduled': '#f59e0b',
     'Offer Received': '#10b981',
-    'Rejected': '#ef4444'
+    Rejected: '#ef4444',
   };
 
   orderedStatusColors = computed(() => {
-    return this.statusData().map(item => this.statusColorMap[item.name] || '#6b7280');
+    return this.statusData().map(
+      (item) => this.statusColorMap[item.name] || '#6b7280',
+    );
   });
 
   interviewColors = ['#10b981', '#d1d5db'];

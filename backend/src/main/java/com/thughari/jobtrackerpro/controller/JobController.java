@@ -3,6 +3,8 @@ package com.thughari.jobtrackerpro.controller;
 import com.thughari.jobtrackerpro.dto.DashboardResponse;
 import com.thughari.jobtrackerpro.dto.JobDTO;
 import com.thughari.jobtrackerpro.service.JobService;
+
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -21,10 +23,19 @@ public class JobController {
     }
 
     @GetMapping
-    public ResponseEntity<List<JobDTO>> getAllJobs() {
+    public ResponseEntity<Page<JobDTO>> getAllJobs(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "updatedAt") String sort,
+            @RequestParam(defaultValue = "desc") String dir,
+            @RequestParam(defaultValue = "") String search,
+            @RequestParam(defaultValue = "All Statuses") String status) {
+        
         String email = getAuthenticatedEmail();
-        return ResponseEntity.ok(jobService.getAllJobs(email)); 
+        
+        return ResponseEntity.ok(jobService.getAllJobsPaged(email, page, size, sort, dir, search, status));
     }
+
 
     @GetMapping("/dashboard")
     public ResponseEntity<DashboardResponse> getDashboard() {

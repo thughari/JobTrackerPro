@@ -1,7 +1,7 @@
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import {
   Component,
-  computed,
+  effect,
   inject,
   OnDestroy,
   OnInit,
@@ -9,6 +9,12 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Job, JobService } from '../../services/job.service';
+import {
+  debounceTime,
+  distinctUntilChanged,
+  Subject,
+  Subscription,
+} from 'rxjs';
 
 type SortField = 'company' | 'role' | 'date' | 'status' | 'location';
 type SortDirection = 'asc' | 'desc';
@@ -16,92 +22,75 @@ type SortDirection = 'asc' | 'desc';
 @Component({
   selector: 'app-application-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePipe, CurrencyPipe],
+  imports: [CommonModule, FormsModule, DatePipe],
   templateUrl: './application-list.component.html',
   styleUrl: './application-list.component.css',
 })
 export class ApplicationListComponent implements OnInit, OnDestroy {
-
   private jobService = inject(JobService);
 
   searchQuery = signal('');
   statusFilter = signal('All Statuses');
   sortField = signal<SortField>('date');
   sortDirection = signal<SortDirection>('desc');
-  currentPage = signal(1);
-  pageSize = 8;
-
-  intervalId : any;
+  currentPage = signal(0);
+  pageSize = signal(8);
 
   activeMenuId = signal<string | null>(null);
 
   jobs = this.jobService.jobs;
+  totalElements = this.jobService.totalJobs;
+
+  private searchSubject = new Subject<string>();
+  private searchSubscription?: Subscription;
+
+  constructor() {
+    effect(
+      () => {
+        this.loadData();
+      },
+      { allowSignalWrites: true },
+    );
+  }
 
   ngOnInit() {
-    this.jobService.loadJobs();
-
-    this.intervalId = setInterval(() => {
-      this.jobService.loadJobs(true); 
-    }, 15000);
+    this.searchSubscription = this.searchSubject
+      .pipe(debounceTime(400), distinctUntilChanged())
+      .subscribe((val) => {
+        this.currentPage.set(0);
+        this.searchQuery.set(val);
+      });
   }
 
   ngOnDestroy() {
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-    }
+    this.searchSubscription?.unsubscribe();
   }
 
-  filteredJobs = computed(() => {
-    let result = this.jobs();
-    const query = this.searchQuery().toLowerCase();
-    const status = this.statusFilter();
+  onSearchInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.searchSubject.next(input.value);
+  }
 
-    if (query) {
-      result = result.filter(
-        (job) =>
-          job.company.toLowerCase().includes(query) ||
-          job.role.toLowerCase().includes(query) ||
-          job.location.toLowerCase().includes(query)
-      );
-    }
+  onPageSizeChange(size: number) {
+    this.pageSize.set(size);
+    this.currentPage.set(0);
+  }
 
-    if (status !== 'All Statuses') {
-      result = result.filter((job) => job.status === status);
-    }
+  onStatusChange(status: string) {
+    this.statusFilter.set(status);
+    this.currentPage.set(0);
+  }
 
-    result = [...result].sort((a, b) => {
-      const field = this.sortField();
-      const direction = this.sortDirection() === 'asc' ? 1 : -1;
-
-      let valA: string | number = a[field as keyof Job] || '';
-      let valB: string | number = b[field as keyof Job] || '';
-
-      if (field === 'date') {
-        valA = new Date(a.updatedAt).getTime();
-        valB = new Date(b.updatedAt).getTime();
-      }
-
-      if (typeof valA === 'string' && typeof valB === 'string') {
-        valA = valA.toLowerCase();
-        valB = valB.toLowerCase();
-      }
-
-      if (valA < valB) return -1 * direction;
-      if (valA > valB) return 1 * direction;
-      return 0;
-    });
-
-    return result;
-  });
-
-  paginatedJobs = computed(() => {
-    const start = (this.currentPage() - 1) * this.pageSize;
-    return this.filteredJobs().slice(start, start + this.pageSize);
-  });
-
-  totalPages = computed(() =>
-    Math.ceil(this.filteredJobs().length / this.pageSize)
-  );
+  loadData() {
+    this.jobService.loadJobs(
+      this.currentPage(),
+      this.pageSize(),
+      this.sortField(),
+      this.sortDirection(),
+      this.searchQuery(),
+      this.statusFilter(),
+    );
+  }
 
   toggleSort(field: SortField) {
     if (this.sortField() === field) {
@@ -109,6 +98,32 @@ export class ApplicationListComponent implements OnInit, OnDestroy {
     } else {
       this.sortField.set(field);
       this.sortDirection.set('asc');
+    }
+    this.currentPage.set(0);
+  }
+
+  get totalPages() {
+    return Math.ceil(this.totalElements() / this.pageSize());
+  }
+
+  get startIndex() {
+    return this.currentPage() * this.pageSize() + 1;
+  }
+
+  get endIndex() {
+    const end = (this.currentPage() + 1) * this.pageSize();
+    return end > this.totalElements() ? this.totalElements() : end;
+  }
+
+  nextPage() {
+    if (this.currentPage() + 1 < this.totalPages) {
+      this.currentPage.update((p) => p + 1);
+    }
+  }
+
+  prevPage() {
+    if (this.currentPage() > 0) {
+      this.currentPage.update((p) => p - 1);
     }
   }
 
@@ -136,33 +151,18 @@ export class ApplicationListComponent implements OnInit, OnDestroy {
 
   toggleMenu(id: string, event: Event) {
     event.stopPropagation();
-    if (this.activeMenuId() === id) {
-      this.activeMenuId.set(null);
-    } else {
-      this.activeMenuId.set(id);
-    }
+    this.activeMenuId.update((current) => (current === id ? null : id));
   }
 
   closeMenu() {
     this.activeMenuId.set(null);
   }
-
   onEditJob(job: Job) {
     this.jobService.openModal(job);
-    this.activeMenuId.set(null);
+    this.closeMenu();
   }
-
   deleteJob(id: string) {
     this.jobService.deleteJob(id);
-    this.activeMenuId.set(null);
-  }
-
-  prevPage() {
-    if (this.currentPage() > 1) this.currentPage.update((p) => p - 1);
-  }
-
-  nextPage() {
-    if (this.currentPage() < this.totalPages())
-      this.currentPage.update((p) => p + 1);
+    this.closeMenu();
   }
 }

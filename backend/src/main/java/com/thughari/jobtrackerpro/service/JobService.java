@@ -8,6 +8,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +41,18 @@ public class JobService {
                 .stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
+    }
+    
+    @Transactional(readOnly = true)
+    @Cacheable(value = "jobPages", key = "{#email, #page, #size, #sort, #dir, #search, #status}")
+    public Page<JobDTO> getAllJobsPaged(String email, int page, int size, String sort, String dir, String search, String status) {
+        Sort sortOrder = dir.equalsIgnoreCase("asc") ? Sort.by(sort).ascending() : Sort.by(sort).descending();
+        Pageable pageable = PageRequest.of(page, size, sortOrder);
+        
+        String statusFilter = "All Statuses".equalsIgnoreCase(status) ? null : status;
+        
+        return jobRepository.findWithFilters(email, search, statusFilter, pageable)
+                .map(this::convertToDto);
     }
 
     @Transactional(readOnly = true)
@@ -75,19 +92,26 @@ public class JobService {
         return response;
     }
 
-    @CacheEvict(value = {"jobList", "jobDashboard"}, key = "#email")
+    @Caching(evict = {
+    		@CacheEvict(value = {"jobList", "jobDashboard"}, key = "#email"),
+    		@CacheEvict(value = "jobPages", allEntries = true)
+    })
     public JobDTO createJob(JobDTO dto, String email) {
         Job job = convertToEntity(dto);
         job.setUserEmail(email);
         LocalDateTime now = LocalDateTime.now();
         if (job.getAppliedDate() == null) job.setAppliedDate(now);
+        if (job.getLocation() == null) job.setLocation("Remote");
         job.setUpdatedAt(now); 
         if (job.getStage() == null) job.setStage(1);
         if (job.getStageStatus() == null) job.setStageStatus("active");
         return convertToDto(jobRepository.save(job));
     }
 
-    @CacheEvict(value = {"jobList", "jobDashboard"}, key = "#email")
+    @Caching(evict = {
+    		@CacheEvict(value = {"jobList", "jobDashboard"}, key = "#email"),
+    		@CacheEvict(value = "jobPages", allEntries = true)
+    })
     public JobDTO updateJob(UUID id, JobDTO dto, String email) {
         Job existingJob = jobRepository.findById(id)
                 .filter(job -> job.getUserEmail().equals(email))
@@ -100,15 +124,21 @@ public class JobService {
         existingJob.setUpdatedAt(LocalDateTime.now());
         return convertToDto(jobRepository.save(existingJob));
     }
-
-    @CacheEvict(value = {"jobList", "jobDashboard"}, key = "#email")
+    
+    @Caching(evict = {
+    		@CacheEvict(value = {"jobList", "jobDashboard"}, key = "#email"),
+    	    @CacheEvict(value = "jobPages", allEntries = true)
+    })
     public void deleteJob(UUID id, String email) {
         jobRepository.findById(id)
                 .filter(job -> job.getUserEmail().equals(email))
                 .ifPresent(jobRepository::delete);
     }
 
-    @CacheEvict(value = {"jobList", "jobDashboard"}, key = "#userEmail")
+    @Caching(evict = {
+    		@CacheEvict(value = {"jobList", "jobDashboard"}, key = "#userEmail"),
+    	    @CacheEvict(value = "jobPages", allEntries = true)
+    })
     public void createOrUpdateJob(JobDTO incomingJob, String userEmail) {
         List<Job> userJobs = jobRepository.findByUserEmailOrderByUpdatedAtDesc(userEmail);
 
@@ -162,20 +192,46 @@ public class JobService {
     }
 
     private void updateExistingJobFromEmail(Job existingJob, JobDTO incoming) {
-        existingJob.setStatus(incoming.getStatus());
-        existingJob.setStage(incoming.getStage());
-        existingJob.setStageStatus(incoming.getStageStatus());
-        
-        String newNote = "\n[" + LocalDateTime.now().format(fmt) + "] Update via Email: " + incoming.getNotes();
+    	// Precaution for email auto updation
+    	if (incoming.getStage() != null && incoming.getStage() >= existingJob.getStage()) {
+            existingJob.setStatus(incoming.getStatus());
+            existingJob.setStage(incoming.getStage());
+            existingJob.setStageStatus(incoming.getStageStatus());
+        }
+    	
+    	String timestamp = LocalDateTime.now().format(fmt); 
+        String newNote = "\n[" + timestamp + "] Update via Email: " + incoming.getNotes();
         String currentNotes = existingJob.getNotes() != null ? existingJob.getNotes() : "";
         existingJob.setNotes(currentNotes + newNote);
-
-        if ((existingJob.getUrl() == null || existingJob.getUrl().isEmpty()) && incoming.getUrl() != null) {
-            existingJob.setUrl(incoming.getUrl());
+        
+        if (incoming.getUrl() != null && incoming.getUrl().toLowerCase().startsWith("http")) {
+            
+            boolean currentUrlMissing = existingJob.getUrl() == null || 
+                                         existingJob.getUrl().isEmpty() || 
+                                         !existingJob.getUrl().startsWith("http");
+                                         
+            if (currentUrlMissing) {
+                existingJob.setUrl(incoming.getUrl());
+            }
         }
         
         existingJob.setUpdatedAt(LocalDateTime.now());
         jobRepository.save(existingJob);
+        
+//        existingJob.setStatus(incoming.getStatus());
+//        existingJob.setStage(incoming.getStage());
+//        existingJob.setStageStatus(incoming.getStageStatus());
+//        
+//        String newNote = "\n[" + LocalDateTime.now().format(fmt) + "] Update via Email: " + incoming.getNotes();
+//        String currentNotes = existingJob.getNotes() != null ? existingJob.getNotes() : "";
+//        existingJob.setNotes(currentNotes + newNote);
+//
+//        if ((existingJob.getUrl() == null || existingJob.getUrl().isEmpty()) && incoming.getUrl() != null) {
+//            existingJob.setUrl(incoming.getUrl());
+//        }
+//        
+//        existingJob.setUpdatedAt(LocalDateTime.now());
+//        jobRepository.save(existingJob);
     }
     
 
