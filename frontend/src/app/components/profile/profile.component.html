@@ -220,23 +220,27 @@
         <div class="p-6">
             <div
                 class="mb-6 p-4 bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-800 rounded-lg flex gap-3">
-                <div
-                    class="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400 h-fit">
+                <div class="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400 h-fit">
                     <i class="ph ph-envelope-open text-xl"></i>
                 </div>
                 <div>
-                    <h4 class="text-sm font-bold text-gray-900 dark:text-white">Import from Email</h4>
+                    <h4 class="text-sm font-bold text-gray-900 dark:text-white">
+                        Auto-import from Email
+                    </h4>
+                    
                     <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-                        Forward "Application Received" emails to your unique address below.
-                        <span class="text-indigo-600 dark:text-indigo-400 font-medium">You can also send a manual test
-                            email to see it work instantly!</span>
+                        Automatically pull job applications, interview invites, and updates from your inbox.
+                        <span class="text-indigo-600 dark:text-indigo-400 font-medium">
+                            One-time setup - no manual tracking.
+                        </span>
                     </p>
-
+                    
                     <button (click)="openHelpModal()"
                         class="mt-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
-                        <i class="ph ph-question"></i> Setup Guide & Test Templates
+                        <i class="ph ph-envelope-simple-open"></i>
+                        Set up Gmail import
                     </button>
-                </div>
+                </div>  
             </div>
 
             <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Your Inbound
@@ -299,125 +303,7 @@
 }
 
 @if (showHelpModal()) {
-<div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" (click)="closeHelpModal()"></div>
-    <div
-        class="relative w-full max-w-2xl bg-white dark:bg-[#151A23] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl overflow-hidden animate-scale-in max-h-[90vh] flex flex-col">
-        <div
-            class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-[#151A23]">
-            <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2"><img src="google-logo.svg" alt="Google" class="w-5 h-5 object-contain"> Gmail Auto-Forwarding Setup</h3>
-            <button (click)="closeHelpModal()"
-                class="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><i
-                    class="ph ph-x text-xl"></i></button>
-        </div>
-        <div class="p-6 overflow-y-auto custom-scrollbar space-y-8">
-            <div class="space-y-3">
-                <div class="flex items-center gap-3"><span
-                        class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm">1</span>
-                    <h4 class="text-base font-semibold text-gray-900 dark:text-white">Add Forwarding Address</h4>
-                </div>
-                <div class="ml-11 text-sm text-gray-500 dark:text-gray-400 space-y-2">
-                    <p>Go to <strong>Gmail Settings > Forwarding and POP/IMAP</strong>.</p>
-                    <p>Click "Add a forwarding address" and enter your unique address:</p>
-                    <div class="flex gap-2">
-                        <code
-                            class="bg-gray-100 dark:bg-black px-2 py-1 rounded border border-gray-200 dark:border-gray-700 font-mono text-xs truncate">{{ inboundEmailAddress }}</code>
-                        <button (click)="copyEmail()" class="text-indigo-500 hover:underline text-xs">Copy</button>
-                    </div>
-                </div>
-            </div>
-            <div class="space-y-3">
-                <div class="flex items-center gap-3"><span
-                        class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm">2</span>
-                    <h4 class="text-base font-semibold text-gray-900 dark:text-white">Verify the Address</h4>
-                </div>
-                <div class="ml-11 text-sm text-gray-500 dark:text-gray-400 space-y-2">
-                    <p>Gmail will ask for a verification code.</p>
-                    <div
-                        class="p-3 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-100 dark:border-yellow-900/30 rounded-lg text-yellow-700 dark:text-yellow-500 text-xs">
-                        <strong>We handle this!</strong> Wait ~10 seconds. JobTrackPro will receive the code from Google
-                        and automatically email it to your personal inbox. Check your email for the code/link.
-                    </div>
-                </div>
-            </div>
-            <div class="space-y-3">
-                <div class="flex items-center gap-3"><span
-                        class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm">3</span>
-                    <h4 class="text-base font-semibold text-gray-900 dark:text-white">Create Smart Filters</h4>
-                </div>
-                <div class="ml-11 text-sm text-gray-500 dark:text-gray-400 space-y-4">
-                    <p>Do <strong>not</strong> enable "Forward a copy of incoming mail". Instead, create a
-                        <strong>Filter</strong> to only forward job emails.</p>
-                    <div
-                        class="bg-gray-50 dark:bg-[#0B0E14] border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                        <p class="text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Filter 1: Standard ATS
-                            Systems (Workday, Greenhouse, etc.)</p>
-                        <div class="flex gap-2">
-                            <code
-                                class="flex-1 bg-white dark:bg-black p-2 rounded border border-gray-200 dark:border-gray-800 font-mono text-[10px] break-all leading-tight text-gray-600 dark:text-gray-400">{{ atsFilterQuery }}</code>
-                            <button (click)="copyText(atsFilterQuery)" class="text-indigo-500 hover:text-indigo-400"><i
-                                    class="ph ph-copy text-lg"></i></button>
-                        </div>
-                    </div>
-                    <div
-                        class="bg-gray-50 dark:bg-[#0B0E14] border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                        <p class="text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Filter 2: Subject Matching
-                        </p>
-                        <div class="flex gap-2">
-                            <code
-                                class="flex-1 bg-white dark:bg-black p-2 rounded border border-gray-200 dark:border-gray-800 font-mono text-[10px] break-all leading-tight text-gray-600 dark:text-gray-400">{{ subjectFilterQuery }}</code>
-                            <button (click)="copyText(subjectFilterQuery)"
-                                class="text-indigo-500 hover:text-indigo-400"><i
-                                    class="ph ph-copy text-lg"></i></button>
-                        </div>
-                    </div>
-                    <p class="italic text-xs mt-2">Paste these into Gmail Search > Create Filter > Check "Forward it
-                        to..." > Select JobTrackPro address.</p>
-                </div>
-            </div>
-            <div class="space-y-3">
-                <div class="flex items-center gap-3">
-                    <span
-                        class="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 flex items-center justify-center font-bold text-sm">4</span>
-                    <h4 class="text-base font-semibold text-gray-900 dark:text-white">Test it Manually (Demo)</h4>
-                </div>
-                <div class="ml-11 text-sm text-gray-500 dark:text-gray-400 space-y-2">
-                    <p>Want to see the AI in action? Compose a new email from your registered email address and send it
-                        to your inbound address.</p>
-
-                    <div class="bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg p-3">
-                        <div class="flex justify-between items-start gap-3 mb-1">
-                            <p class="font-mono text-xs text-gray-600 dark:text-gray-300 break-all">
-                                <span class="text-gray-400 select-none">To:</span> {{ inboundEmailAddress }}
-                            </p>
-                            <button
-                                (click)="copyText('Subject: Interview Invitation - Google\n\nHi there,\nWe reviewed your application for the Senior Software Engineer role at Google. We would like to schedule a technical interview.\n\nBest,\nGoogle Recruiting')"
-                                class="text-indigo-500 hover:text-indigo-400 text-xs font-bold whitespace-nowrap shrink-0">
-                                Copy Template
-                            </button>
-                        </div>
-                        <div class="space-y-1 font-mono text-xs text-gray-600 dark:text-gray-300">
-                            <p><span class="text-gray-400 select-none">Subject:</span> Interview Invitation - Google</p>
-                            <p class="mt-2"><span class="text-gray-400 select-none">Body:</span></p>
-                            <p>Hi there,</p>
-                            <p>We reviewed your application for the <strong>Senior Software Engineer</strong> role at
-                                <strong>Google</strong>.</p>
-                            <p>We would like to schedule a technical interview.</p>
-                        </div>
-                    </div>
-                    <p class="italic text-xs mt-1">
-                        *Wait ~10 seconds after sending, then refresh your dashboard. A new "Interview" card for Google
-                        will appear!
-                    </p>
-                </div>
-            </div>
-        </div>
-        <div
-            class="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#151A23] flex justify-end">
-            <button (click)="closeHelpModal()"
-                class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg text-sm transition-colors">Got
-                it</button>
-        </div>
-    </div>
-</div>
+<app-gmail-setup-modal [isVisible]="showHelpModal()" (onClose)="closeHelpModal()"
+    (onMessage)="handleModalMessage($event)">
+</app-gmail-setup-modal>
 }

@@ -4,12 +4,12 @@ import { JobService } from '../../services/job.service';
 import { CommonModule } from '@angular/common';
 import { DonutChartComponent } from '../donut-chart/donut-chart.component';
 import { BarChartComponent } from '../bar-chart/bar-chart.component';
-import { environment } from '../../../environments/environment';
+import { GmailSetupModalComponent } from '../gmail-setup-modal/gmail-setup-modal.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, DonutChartComponent, BarChartComponent],
+  imports: [CommonModule, DonutChartComponent, BarChartComponent, GmailSetupModalComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })
@@ -23,12 +23,6 @@ export class DashboardComponent implements OnInit {
   successMessage = signal('');
   errorMessage = signal('');
   private messageTimeout: any;
-
-  inboundEmail = environment.inboundEmail;
-  
-  readonly atsFilterQuery = `from:(myworkday.com OR greenhouse.io OR lever.co OR smartrecruiters.com OR icims.com OR jobvite.com OR bamboo.hr OR workablemail.com OR successfactors.com OR taleo.net OR avature.net OR jobs2careers.com OR ziprecruiter.com OR monster.com OR careerbuilder.com OR wellfound.com OR lu.ma OR breezy.hr OR jazzhr.com OR comeet.com OR recruitee.com OR teamtailor.com OR applytojob.com OR jobs.github.com OR hackerrankforwork.com OR hackerrank.com OR hackerearth.com OR codility.com OR testgorilla.com OR hirevue.com OR vidcruiter.com OR codemetry.com OR pymetrics.com OR hired.com OR triplebyte.com)`;
-
-  readonly subjectFilterQuery = `subject:("Application" OR "Applied" OR "Received" OR "Confirmation" OR "Interview" OR "Status" OR "Sollicitatie" OR "Engineer" OR "Developer" OR "Analyst" OR "Scientist" OR "Specialist" OR "Invitation" OR "Invite" OR "Assessment" OR "Challenge" OR "Test")`;
 
   stats = this.jobService.dashboardStats;
   statusData = this.jobService.statusDistribution;
@@ -47,6 +41,10 @@ export class DashboardComponent implements OnInit {
     ]);
     this.isRefreshing.set(false);
   }
+
+  handleModalMessage(event: {type: 'success' | 'error', text: string}) {
+  this.showMessage(event.type, event.text);
+}
 
   openHelpModal() {
     this.showHelpModal.set(true);
@@ -68,16 +66,6 @@ export class DashboardComponent implements OnInit {
     this.messageTimeout = setTimeout(() => {
       this.clearMessages();
     }, 5000);
-  }
-
-  copyEmail() {
-    navigator.clipboard.writeText(this.inboundEmail);
-    this.showMessage('success', 'Forwarding address copied to clipboard!');
-  }
-
-  copyText(text: string) {
-    navigator.clipboard.writeText(text);
-    this.showMessage('success', 'Copied to clipboard!');
   }
 
   clearMessages() {

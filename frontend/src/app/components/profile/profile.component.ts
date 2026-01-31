@@ -3,11 +3,12 @@ import { AuthService } from '../../services/auth.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { environment } from '../../../environments/environment';
+import { GmailSetupModalComponent } from '../gmail-setup-modal/gmail-setup-modal.component';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, GmailSetupModalComponent],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.css',
 })
@@ -40,10 +41,7 @@ export class ProfileComponent {
   localPreviewUrl = signal<string | null>(null);
 
   showHelpModal = signal(false);
-
-  readonly atsFilterQuery = `from:(myworkday.com OR greenhouse.io OR lever.co OR smartrecruiters.com OR icims.com OR jobvite.com OR bamboo.hr OR workablemail.com OR successfactors.com OR taleo.net OR avature.net OR jobs2careers.com OR ziprecruiter.com OR monster.com OR careerbuilder.com OR wellfound.com OR lu.ma OR breezy.hr OR jazzhr.com OR comeet.com OR recruitee.com OR teamtailor.com OR applytojob.com OR jobs.github.com OR hackerrankforwork.com OR hackerrank.com OR hackerearth.com OR codility.com OR testgorilla.com OR hirevue.com OR vidcruiter.com OR codemetry.com OR pymetrics.com OR hired.com OR triplebyte.com)`;
-
-  readonly subjectFilterQuery = `subject:("Application" OR "Applied" OR "Received" OR "Confirmation" OR "Interview" OR "Status" OR "Sollicitatie" OR "Engineer" OR "Developer" OR "Analyst" OR "Scientist" OR "Specialist" OR "Invitation" OR "Invite" OR "Assessment" OR "Challenge" OR "Test")`;
+  
 
   private messageTimeout: any;
 
@@ -257,9 +255,8 @@ export class ProfileComponent {
     this.showHelpModal.set(false);
   }
 
-  copyText(text: string) {
-    navigator.clipboard.writeText(text);
-    this.showMessage('success', 'Copied to clipboard!');
+  handleModalMessage(event: { type: 'success' | 'error'; text: string }) {
+    this.showMessage(event.type, event.text);
   }
 
   get inboundEmailAddress(): string {
