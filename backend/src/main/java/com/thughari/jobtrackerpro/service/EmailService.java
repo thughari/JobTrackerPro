@@ -38,7 +38,7 @@ public class EmailService {
 
 			helper.setFrom(fromEmail, fromName);             
 			helper.setTo(to);
-			helper.setSubject("Reset Password - JobTrackPro");
+			helper.setSubject("Reset Password - JobTrackerPro");
 
 			String resetLink = uiUrl + "/reset-password?token=" + token;
 
@@ -47,7 +47,7 @@ public class EmailService {
 					    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
 					        <h2 style="color: #111827; margin-top: 0;">Reset Your Password</h2>
 					        <p style="color: #4b5563; line-height: 1.6;">Hello,</p>
-					        <p style="color: #4b5563; line-height: 1.6;">You requested to reset your password for JobTrackPro. Please click the button below to proceed:</p>
+					        <p style="color: #4b5563; line-height: 1.6;">You requested to reset your password for JobTrackerPro. Please click the button below to proceed:</p>
 
 					        <div style="text-align: center; margin: 30px 0;">
 					            <a href="%s" style="background-color: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Reset Password</a>
@@ -83,7 +83,7 @@ public class EmailService {
 			StringBuilder html = new StringBuilder();
 			html.append("<div style='font-family: Arial, sans-serif; padding: 20px; color: #333;'>");
 			html.append("<h2>Gmail Forwarding Verification</h2>");
-			html.append("<p>Google requires verification to start forwarding emails to JobTrackPro.</p>");
+			html.append("<p>Google requires verification to start forwarding emails to JobTrackerPro.</p>");
 
 			if (link != null) {
 				html.append("<p><strong>Option 1 (Recommended):</strong> Click the link below to verify instantly:</p>");

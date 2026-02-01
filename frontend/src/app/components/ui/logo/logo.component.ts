@@ -29,7 +29,7 @@ import { CommonModule } from '@angular/common';
       @if (showText) {
         <div class="flex flex-col justify-center">
           <span class="font-bold tracking-tight text-gray-900 dark:text-white leading-none" [class]="textClasses">
-            JobTrack<span class="text-indigo-600 dark:text-indigo-400">Pro</span>
+            JobTracker<span class="text-indigo-600 dark:text-indigo-400">Pro</span>
           </span>
         </div>
       }
