@@ -23,9 +23,8 @@
 
 ## 🔗 Quick Links
 
-| 🚀 **Live Demo** | 📂 **Source Code** |
-|:---:|:---:|
-| [**Launch App**](https://thughari.github.io/JobTrackerPro) | [**GitHub Repo**](https://github.com/thughari/JobTrackerPro) |
+- 🚀 Live Demo: https://thughari.github.io/JobTrackerPro
+- 📂 Source Code: https://github.com/thughari/JobTrackerPro
 
 ---
 
@@ -160,5 +159,6 @@ This project is licensed under the **MIT License**.
     <img src="https://img.shields.io/badge/GitHub-Follow-black?style=for-the-badge&logo=github" alt="GitHub">
   </a>
 </div>
+
 
 
