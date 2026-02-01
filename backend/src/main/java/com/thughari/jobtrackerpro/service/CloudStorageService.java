@@ -70,7 +70,6 @@ public class CloudStorageService implements StorageService {
         }
     }
 
-    // 2. Import from Social URL (Google/GitHub)
     public String uploadFromUrl(String externalUrl, String userId) {
     	if (externalUrl == null || !externalUrl.startsWith("http")) {
             throw new InvalidImageException("Invalid URL format");
