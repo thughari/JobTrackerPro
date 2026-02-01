@@ -1,5 +1,13 @@
 # Contributor Covenant Code of Conduct
 
+## Branch Strategy
+
+- `dev` is the default development branch
+- All feature branches must be created from `dev`
+- Pull requests should target `dev`
+- `main` is reserved for stable releases and deployments
+
+
 ## Our Pledge
 
 We as members, contributors, and leaders pledge to make participation in our
