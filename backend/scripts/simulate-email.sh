@@ -9,7 +9,7 @@ curl -X POST http://127.0.0.1:8080/api/webhooks/inbound-email \
   \"headers\": {
     \"subject\": \"Interview Invitation - Google\",
     \"from\": \"$USER_EMAIL\",
-    \"to\": \"save@jobtrackpro.com\"
+    \"to\": \"save@jobtrackerpro.com\"
   },
   \"plain\": \"Hi Hari, we reviewed your application for the Senior Software Engineer role at Google and want to schedule an interview!\"
 }"
