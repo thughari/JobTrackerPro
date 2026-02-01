@@ -13,6 +13,13 @@
 **JobTrackerPro** is a robust, full-stack solution designed to visualize, automate, and manage the interview pipeline. Unlike simple CRUD tutorials, this project demonstrates **Advanced System Design**, **Cloud-Native Architecture**, and **Production-Grade Security**.
 
 ---
+## Who Is This For?
+
+- Job seekers who want zero-effort tracking via email automation
+- Engineers interested in real-world AI ingestion pipelines
+- Developers learning enterprise Spring Boot + Angular architecture
+- Open-source contributors looking for a non-trivial system to extend
+---
 
 ## 🔗 Quick Links
 
@@ -153,4 +160,5 @@ This project is licensed under the **MIT License**.
     <img src="https://img.shields.io/badge/GitHub-Follow-black?style=for-the-badge&logo=github" alt="GitHub">
   </a>
 </div>
+
 
