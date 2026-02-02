@@ -29,14 +29,15 @@ public interface JobRepository extends JpaRepository<Job, UUID> {
 	    );
 
 	@Query("""
-			    SELECT new com.thughari.jobtrackerpro.dto.DashboardStatsDTO(
-			        COUNT(j),
-			        SUM(CASE WHEN j.status NOT IN ('Rejected', 'Offer Received') THEN 1 ELSE 0 END),
-			        SUM(CASE WHEN j.status = 'Interview Scheduled' OR j.stage >= 3 THEN 1 ELSE 0 END),
-			        SUM(CASE WHEN j.status = 'Offer Received' THEN 1 ELSE 0 END)
-			    )
-			    FROM Job j
-			    WHERE j.userEmail = :email
+			   SELECT new com.thughari.jobtrackerpro.dto.DashboardStatsDTO(
+			       COUNT(j), 
+			       SUM(CASE WHEN j.status NOT IN ('Rejected', 'Offer Received') THEN 1L ELSE 0L END),
+			       SUM(CASE WHEN j.status = 'Interview Scheduled' OR j.stage >= 3 THEN 1L ELSE 0L END),
+			       SUM(CASE WHEN j.status = 'Interview Scheduled' THEN 1L ELSE 0L END),
+			       SUM(CASE WHEN j.status = 'Offer Received' THEN 1L ELSE 0L END)
+			   )
+			   FROM Job j
+			   WHERE j.userEmail = :email
 			""")
 	DashboardStatsDTO getStatsByEmail(@Param("email") String email);
 
