@@ -24,6 +24,7 @@ export interface DashboardStats {
   totalApplications: number;
   activePipeline: number;
   interviews: number;
+  activeInterviews: number;
   offers: number;
 }
 
@@ -63,6 +64,7 @@ export class JobService {
     totalApplications: 0,
     activePipeline: 0,
     interviews: 0,
+    activeInterviews: 0,
     offers: 0,
   });
 
@@ -159,6 +161,7 @@ export class JobService {
       totalApplications: 0,
       activePipeline: 0,
       interviews: 0,
+      activeInterviews: 0,
       offers: 0,
     });
 

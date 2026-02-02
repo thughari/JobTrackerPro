@@ -66,8 +66,9 @@ public class JobService {
         long active = jobs.stream().filter(j -> !j.getStatus().equals("Rejected") && !j.getStatus().equals("Offer Received")).count();
         long interviews = jobs.stream().filter(j -> j.getStatus().equals("Interview Scheduled") || j.getStage() >= 3).count();
         long offers = jobs.stream().filter(j -> j.getStatus().equals("Offer Received")).count();
+        long activeInterviews = jobs.stream().filter(j -> "Interview Scheduled".equals(j.getStatus())).count();
         
-        response.setStats(new DashboardStatsDTO(total, active, interviews, offers));
+        response.setStats(new DashboardStatsDTO(total, active, interviews, activeInterviews, offers));
 
         Map<String, Long> statusMap = jobs.stream()
             .collect(Collectors.groupingBy(Job::getStatus, Collectors.counting()));

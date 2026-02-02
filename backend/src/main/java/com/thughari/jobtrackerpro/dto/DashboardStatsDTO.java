@@ -9,5 +9,6 @@ public class DashboardStatsDTO {
     private long totalApplications;
     private long activePipeline;
     private long interviews;
+    private long activeInterviews;
     private long offers;
 }

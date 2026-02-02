@@ -82,7 +82,9 @@
             <i class="ph ph-target text-purple-500 dark:text-purple-400 text-lg sm:text-xl"></i>
             </div>
         </div>
-        <div class="text-xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1 transition-colors">{{ stats().interviews}}</div>
+        <div class="text-xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1 transition-colors">
+          {{ stats().interviews}}<span class="text-sm sm:text-lg text-gray-400 font-medium ml-1">({{ stats().activeInterviews }} active)</span>
+        </div>
         <div class="text-[10px] sm:text-xs text-red-500 dark:text-red-400 font-medium">{{ interviewRate() }}% interview rate</div>
         </div>
 
