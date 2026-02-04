@@ -96,8 +96,15 @@ public class GeminiExtractionService implements GeminiService {
 
             ### EXTRACTION RULES
             1. **COMPANY**: Identify the hiring company. 
-                - If multiple companies are mentioned, choose the one most relevant to the job opportunity.
-                - If no comapny name mentioned, extract it from the sender's email domain. but avoid generic domains like gmail.com, yahoo.com. and never return null. instead use "Unknown Company".
+                - If multiple companies are mentioned, select the one most directly related to the role, interview, assessment, offer, or rejection.
+                - If no company name is explicitly mentioned in the email content:
+                    - Attempt a fallback extraction from the sender's email domain.
+                    - Derive the company name from the domain (for example, careers@stripe.com -> Stripe).
+                    - Ignore generic email providers such as gmail.com, yahoo.com, outlook.com, and similar.
+                - If both content-based and domain-based extraction fail:
+                    - Never return null
+                    - Return "Unknown Company" as the default value.
+
             2. **ROLE**: Extract the specific job title. 
                 - If it is a Walk-In drive listing multiple roles, pick the one most relevant to "Java" or "Software Engineer", or default to "Software Engineer".
                 - Default to "Software Engineer" only if no role is clear.
