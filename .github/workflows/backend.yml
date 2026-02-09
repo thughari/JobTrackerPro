@@ -1,42 +1,60 @@
-name: Deploy to Cloud Run
-run-name: "Deploy #${{ github.run_number }} by @${{ github.actor }}"
+name: Backend CI + Deploy to Cloud Run
+run-name: "Backend #${{ github.run_number }} by @${{ github.actor }}"
 
 on:
+  push:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend.yml'
   workflow_dispatch:
 
 env:
   PROJECT_ID: job-tracker-pro-480917
   REGION: asia-south1
-  REPO_NAME: my-repo 
+  REPO_NAME: my-repo
   SERVICE_NAME: jobtracker-service
   IMAGE_NAME: my-java-app
 
 jobs:
-  setup:
+  test:
+    name: Backend Tests
     runs-on: ubuntu-latest
-    outputs:
-      commit_msg: ${{ steps.get_msg.outputs.msg }}
+    defaults:
+      run:
+        working-directory: ./backend
     steps:
-      - uses: actions/checkout@v4
-      - id: get_msg
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Run backend tests
+        run: mvn test
+
+  deploy:
+    if: github.event_name == 'workflow_dispatch'
+    needs: test
+    name: Deploy to Cloud Run
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Update Run Title with Commit Message
         run: |
           MSG=$(git log -1 --pretty=%s)
-          echo "msg=$MSG" >> $GITHUB_OUTPUT
-  deploy:
-    needs: setup
-    name: "Deploying: ${{ needs.setup.outputs.commit_msg }}"
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Update Run Title with Commit Message
-      run: |
-          MSG=$(git log -1 --pretty=%s)
-          
           NEW_TITLE="Deploy #${{ github.run_number }}: $MSG by @${{ github.actor }}"
-          
+
           curl -L \
             -X PATCH \
             -H "Accept: application/vnd.github+json" \
@@ -44,34 +62,33 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             -d "{\"display_title\":\"$NEW_TITLE\"}"
-            
+
           echo "# Deploying: $MSG" >> $GITHUB_STEP_SUMMARY
-          echo "::notice title = Deploying Commit::$MSG"
+          echo "::notice title=Deploying Commit::$MSG"
 
-    - name: Google Auth
-      id: auth
-      uses: google-github-actions/auth@v2
-      with:
-        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
-    - name: Docker Auth
-      run: |
-        gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+      - name: Docker Auth
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
 
-    - name: Build and Push Container
-      run: |
-        TAG="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
-        docker build -t $TAG ./backend
-        docker push $TAG
-        echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
+      - name: Build and Push Container
+        run: |
+          TAG="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          docker build -t $TAG ./backend
+          docker push $TAG
+          echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
 
-    - name: Update Service YAML
-      run: |
-        sed -i "s|image: .*|image: ${{ env.IMAGE_TAG }}|g" backend/service.yaml
-        cat backend/service.yaml # verify content in logs
+      - name: Update Service YAML
+        run: |
+          sed -i "s|image: .*|image: ${{ env.IMAGE_TAG }}|g" backend/service.yaml
+          cat backend/service.yaml
 
-    - name: Deploy to Cloud Run
-      uses: google-github-actions/deploy-cloudrun@v2
-      with:
-        metadata: backend/service.yaml
-        region: ${{ env.REGION }}
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          metadata: backend/service.yaml
+          region: ${{ env.REGION }}
