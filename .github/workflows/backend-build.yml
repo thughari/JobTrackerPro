@@ -1,0 +1,38 @@
+name: Backend Build & Test
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-build.yml'
+  pull_request:
+    branches: ["**"]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-build.yml'
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    name: Build and Test Backend
+
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Run tests
+        run: mvn -B test
+
+      - name: Build artifact
+        run: mvn -B -DskipTests package

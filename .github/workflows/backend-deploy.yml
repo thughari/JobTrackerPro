@@ -1,0 +1,50 @@
+name: Backend Deploy to Cloud Run
+
+on:
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: job-tracker-pro-480917
+  REGION: asia-south1
+  REPO_NAME: my-repo
+  SERVICE_NAME: jobtracker-service
+  IMAGE_NAME: my-java-app
+
+jobs:
+  deploy:
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+
+    # Optional guard: deploy only from main
+    if: github.ref == 'refs/heads/main'
+
+    environment:
+      name: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Google Auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+      - name: Docker Auth
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+      - name: Build and Push Image
+        run: |
+          TAG="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          docker build -t $TAG ./backend
+          docker push $TAG
+          echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
+
+      - name: Update Service YAML
+        run: |
+          sed -i "s|image: .*|image: ${{ env.IMAGE_TAG }}|g" backend/service.yaml
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          metadata: backend/service.yaml
+          region: ${{ env.REGION }}
