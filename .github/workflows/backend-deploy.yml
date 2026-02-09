@@ -12,9 +12,10 @@ env:
 
 jobs:
   deploy:
-    name: Deploy Backend (main only)
+    name: Deploy Backend
     runs-on: ubuntu-latest
 
+    # Optional guard: deploy only from main
     if: github.ref == 'refs/heads/main'
 
     environment:
