@@ -16,6 +16,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -57,7 +58,7 @@ class JobControllerIntegrationTest {
         job.setRole("Engineer");
 
         when(jobService.getAllJobsPaged(eq("user@example.com"), eq(0), eq(10), eq("updatedAt"), eq("desc"), eq(""), eq("All Statuses")))
-                .thenReturn(new PageImpl<>(List.of(job)));
+                .thenReturn(new PageImpl<>(new ArrayList<>(List.of(job))));
 
         mockMvc.perform(get("/api/jobs"))
                 .andExpect(status().isOk())
