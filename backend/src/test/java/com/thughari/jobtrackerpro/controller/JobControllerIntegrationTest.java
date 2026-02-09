@@ -11,6 +11,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
@@ -58,7 +59,7 @@ class JobControllerIntegrationTest {
         job.setRole("Engineer");
 
         when(jobService.getAllJobsPaged(eq("user@example.com"), eq(0), eq(10), eq("updatedAt"), eq("desc"), eq(""), eq("All Statuses")))
-                .thenReturn(new PageImpl<>(new ArrayList<>(List.of(job))));
+                .thenReturn(new PageImpl<>(new ArrayList<>(List.of(job)), PageRequest.of(0, 10), 1));
 
         mockMvc.perform(get("/api/jobs"))
                 .andExpect(status().isOk())

@@ -5,7 +5,6 @@ import com.thughari.jobtrackerpro.dto.JobDTO;
 import com.thughari.jobtrackerpro.entity.Job;
 import com.thughari.jobtrackerpro.exception.ResourceNotFoundException;
 import com.thughari.jobtrackerpro.repo.JobRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -48,10 +47,6 @@ class JobServiceTest {
         return job;
     }
 
-    @BeforeEach
-    void setUp() {
-        when(jobRepository.save(any(Job.class))).thenAnswer(invocation -> invocation.getArgument(0));
-    }
 
     @Test
     void createJob_setsDefaultsAndEmail() {
@@ -59,6 +54,8 @@ class JobServiceTest {
         dto.setCompany("Acme");
         dto.setRole("Engineer");
         dto.setStatus("Applied");
+
+        when(jobRepository.save(any(Job.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         JobDTO created = jobService.createJob(dto, EMAIL);
 
@@ -91,6 +88,8 @@ class JobServiceTest {
         update.setCompany("NewCo");
         update.setRole("Senior Developer");
         update.setAppliedDate(LocalDateTime.of(2026, 1, 1, 0, 0));
+
+        when(jobRepository.save(any(Job.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         JobDTO result = jobService.updateJob(id, update, EMAIL);
 
