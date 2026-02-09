@@ -47,10 +47,12 @@ jobs:
     if: |
       needs.test_and_build.result == 'success' &&
       github.ref == 'refs/heads/main' &&
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      github.event_name == 'workflow_dispatch'
     needs: test_and_build
     name: Deploy to Cloud Run (main only)
     runs-on: ubuntu-latest
+    environment:
+      name: production
 
     steps:
       - name: Checkout code
