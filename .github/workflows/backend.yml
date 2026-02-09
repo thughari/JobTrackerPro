@@ -20,8 +20,8 @@ env:
   IMAGE_NAME: my-java-app
 
 jobs:
-  test:
-    name: Backend Tests
+  test_and_build:
+    name: Backend Test + Build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -37,13 +37,19 @@ jobs:
           java-version: '21'
           cache: maven
 
-      - name: Run backend tests
-        run: mvn test
+      - name: Run tests
+        run: mvn -B test
+
+      - name: Build backend artifact
+        run: mvn -B -DskipTests package
 
   deploy:
-    if: github.event_name == 'workflow_dispatch'
-    needs: test
-    name: Deploy to Cloud Run
+    if: |
+      needs.test_and_build.result == 'success' &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    needs: test_and_build
+    name: Deploy to Cloud Run (main only)
     runs-on: ubuntu-latest
 
     steps:
