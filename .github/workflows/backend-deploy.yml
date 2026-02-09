@@ -1,4 +1,5 @@
 name: Backend Deploy to Cloud Run
+run-name: "Cloud Deploy #${{ github.run_number }} by @${{ github.actor }}"
 
 on:
   workflow_dispatch:
@@ -42,6 +43,7 @@ jobs:
       - name: Update Service YAML
         run: |
           sed -i "s|image: .*|image: ${{ env.IMAGE_TAG }}|g" backend/service.yaml
+          cat backend/service.yaml
 
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
