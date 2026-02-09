@@ -21,5 +21,4 @@ try {
     Write-Error $_
 }
 
-
 Write-Host "Check your local dashboard at http://localhost:4200/app/dashboard"
