@@ -51,18 +51,18 @@ export class AuthService {
             this.userProfile.set(user);
             return;
           } catch {
-            // fall through to logout
+            // fall through and clear session below
           }
         }
-        this.logout();
+
+        this.clearClientSession();
+        this.router.navigate(['/']);
         return;
       }
 
-      if (status === 0) {
-        return;
+      if (status !== 0) {
+        console.warn('Profile bootstrap failed without auth error; keeping session.', e);
       }
-
-      this.logout();
     }
   }
 
@@ -128,14 +128,17 @@ export class AuthService {
       }
     });
 
+    this.clearClientSession();
+    this.router.navigate(['/']);
+  }
+
+  private clearClientSession() {
     localStorage.removeItem('token');
     this.userProfile.set(null);
     this.currentUser.set(null);
 
     const jobService = this.injector.get(JobService);
     jobService.clearState();
-
-    this.router.navigate(['/']);
   }
 
   async updateProfile(name: string, imageUrl: string, file: File | null) {
