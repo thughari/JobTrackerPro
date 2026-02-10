@@ -7,16 +7,14 @@ import com.thughari.jobtrackerpro.dto.ChangePasswordRequest;
 import com.thughari.jobtrackerpro.dto.ResetPasswordRequest;
 import com.thughari.jobtrackerpro.dto.UserProfileResponse;
 import com.thughari.jobtrackerpro.service.AuthService;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import jakarta.servlet.http.HttpServletResponse;
-
-import org.springframework.beans.factory.annotation.Value;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -29,6 +27,9 @@ public class AuthController {
 
     @Value("${app.jwt.refresh-cookie-secure}")
     private boolean refreshCookieSecure;
+
+    @Value("${app.jwt.refresh-cookie-same-site:Lax}")
+    private String refreshCookieSameSite;
 
     public AuthController(AuthService authService) {
         this.authService = authService;
@@ -105,7 +106,7 @@ public class AuthController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    
+
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestParam String email) {
         try {
@@ -135,7 +136,7 @@ public class AuthController {
                 .httpOnly(true)
                 .secure(refreshCookieSecure)
                 .path("/api/auth")
-                .sameSite("Strict")
+                .sameSite(refreshCookieSameSite)
                 .maxAge(refreshExpirationMs / 1000)
                 .build();
         response.addHeader("Set-Cookie", cookie.toString());
@@ -146,7 +147,7 @@ public class AuthController {
                 .httpOnly(true)
                 .secure(refreshCookieSecure)
                 .path("/api/auth")
-                .sameSite("Strict")
+                .sameSite(refreshCookieSameSite)
                 .maxAge(0)
                 .build();
         response.addHeader("Set-Cookie", cookie.toString());

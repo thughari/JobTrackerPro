@@ -43,6 +43,7 @@ class AuthControllerTest {
     void registerUser_returnsOkWhenServiceSucceeds() {
         ReflectionTestUtils.setField(authController, "refreshExpirationMs", 1000L);
         ReflectionTestUtils.setField(authController, "refreshCookieSecure", false);
+        ReflectionTestUtils.setField(authController, "refreshCookieSameSite", "Lax");
 
         AuthRequest request = new AuthRequest();
         when(authService.registerUser(request)).thenReturn(new AuthTokens("token", "refresh"));

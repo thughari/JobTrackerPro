@@ -1,6 +1,6 @@
 import { Injectable, signal, inject, Injector } from '@angular/core';
 import { Router } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { JobService } from './job.service';
 import { environment } from '../../environments/environment';
@@ -41,6 +41,27 @@ export class AuthService {
       );
       this.userProfile.set(user);
     } catch (e) {
+      const status = (e as HttpErrorResponse)?.status;
+
+      if (status === 401 && this.isAuthenticated()) {
+        const refreshed = await this.refreshToken();
+        if (refreshed) {
+          try {
+            const user = await firstValueFrom(this.http.get<UserProfile>(`${this.apiUrl}/me`));
+            this.userProfile.set(user);
+            return;
+          } catch {
+            // fall through to logout
+          }
+        }
+        this.logout();
+        return;
+      }
+
+      if (status === 0) {
+        return;
+      }
+
       this.logout();
     }
   }
@@ -79,7 +100,7 @@ export class AuthService {
         );
         this.setAccessToken(res.token);
         return true;
-      } catch (e) {
+      } catch {
         return false;
       } finally {
         this.refreshInFlight = null;
@@ -179,7 +200,7 @@ export class AuthService {
           .join('')
       );
       return JSON.parse(jsonPayload);
-    } catch (e) {
+    } catch {
       return {};
     }
   }

@@ -4,11 +4,9 @@ import com.thughari.jobtrackerpro.entity.AuthProvider;
 import com.thughari.jobtrackerpro.entity.User;
 import com.thughari.jobtrackerpro.interfaces.StorageService;
 import com.thughari.jobtrackerpro.repo.UserRepository;
-
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
@@ -16,6 +14,7 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+
 import java.io.IOException;
 import java.util.Map;
 
@@ -35,6 +34,9 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
 	@Value("${app.jwt.refresh-cookie-secure}")
 	private boolean refreshCookieSecure;
+
+	@Value("${app.jwt.refresh-cookie-same-site:Lax}")
+	private String refreshCookieSameSite;
 
 	public OAuth2SuccessHandler(UserRepository userRepository, JwtUtils jwtUtils, StorageService storageService) {
 		this.userRepository = userRepository;
@@ -58,7 +60,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 		if (isNewUser) {
 			user.setEmail(userInfo.email());
 			user.setProvider(AuthProvider.valueOf(registrationId.toUpperCase()));
-			user = userRepository.save(user); 
+			user = userRepository.save(user);
 		}
 
 		if (user.getName() == null || !user.getName().equals(userInfo.name())) {
@@ -88,7 +90,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 				.httpOnly(true)
 				.secure(refreshCookieSecure)
 				.path("/api/auth")
-				.sameSite("Strict")
+				.sameSite(refreshCookieSameSite)
 				.maxAge(refreshExpirationMs / 1000)
 				.build();
 		response.addHeader("Set-Cookie", cookie.toString());
@@ -112,7 +114,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 			name = (String) attributes.get("name");
 			imageUrl = (String) attributes.get("avatar_url");
 			if (email == null) {
-				email = attributes.get("login") + "@github.com"; 
+				email = attributes.get("login") + "@github.com";
 			}
 			if (name == null) {
 				name = (String) attributes.get("login");
