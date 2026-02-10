@@ -1,6 +1,6 @@
 import { Injectable, signal, inject, Injector } from '@angular/core';
 import { Router } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { JobService } from './job.service';
 import { environment } from '../../environments/environment';
@@ -23,6 +23,7 @@ export class AuthService {
   private injector = inject(Injector);
 
   private apiUrl = `${this.API}/api/auth`;
+  private refreshInFlight: Promise<boolean> | null = null;
 
   userProfile = signal<UserProfile | null>(null);
   currentUser = signal<{ email: string } | null>(this.decodeToken());
@@ -40,6 +41,27 @@ export class AuthService {
       );
       this.userProfile.set(user);
     } catch (e) {
+      const status = (e as HttpErrorResponse)?.status;
+
+      if (status === 401 && this.isAuthenticated()) {
+        const refreshed = await this.refreshToken();
+        if (refreshed) {
+          try {
+            const user = await firstValueFrom(this.http.get<UserProfile>(`${this.apiUrl}/me`));
+            this.userProfile.set(user);
+            return;
+          } catch {
+            // fall through to logout
+          }
+        }
+        this.logout();
+        return;
+      }
+
+      if (status === 0) {
+        return;
+      }
+
       this.logout();
     }
   }
@@ -48,27 +70,64 @@ export class AuthService {
     return !!localStorage.getItem('token');
   }
 
+  getAccessToken() {
+    return localStorage.getItem('token');
+  }
+
   async login(credentials: any) {
     const res: any = await firstValueFrom(
-      this.http.post(`${this.apiUrl}/login`, credentials)
+      this.http.post(`${this.apiUrl}/login`, credentials, { withCredentials: true })
     );
     this.handleToken(res.token);
   }
 
   async signup(data: any) {
     const res: any = await firstValueFrom(
-      this.http.post(`${this.apiUrl}/signup`, data)
+      this.http.post(`${this.apiUrl}/signup`, data, { withCredentials: true })
     );
     this.handleToken(res.token);
   }
 
+  async refreshToken(): Promise<boolean> {
+    if (this.refreshInFlight) {
+      return this.refreshInFlight;
+    }
+
+    this.refreshInFlight = (async () => {
+      try {
+        const res: any = await firstValueFrom(
+          this.http.post(`${this.apiUrl}/refresh`, {}, { withCredentials: true })
+        );
+        this.setAccessToken(res.token);
+        return true;
+      } catch {
+        return false;
+      } finally {
+        this.refreshInFlight = null;
+      }
+    })();
+
+    return this.refreshInFlight;
+  }
+
   handleToken(token: string) {
-    localStorage.setItem('token', token);
+    this.setAccessToken(token);
     this.router.navigate(['/app/dashboard']);
     this.fetchUserProfile();
   }
 
+  setAccessToken(token: string) {
+    localStorage.setItem('token', token);
+    this.currentUser.set(this.decodeToken());
+  }
+
   logout() {
+    this.http.post(`${this.apiUrl}/logout`, {}, { withCredentials: true }).subscribe({
+      error: () => {
+        // no-op: continue client logout even if backend logout fails
+      }
+    });
+
     localStorage.removeItem('token');
     this.userProfile.set(null);
     this.currentUser.set(null);
@@ -107,7 +166,7 @@ export class AuthService {
     formData.append('email', email);
 
     return await firstValueFrom(
-      this.http.post(`${this.apiUrl}/forgot-password`, formData, { 
+      this.http.post(`${this.apiUrl}/forgot-password`, formData, {
         responseType: 'text'
       })
     );
@@ -115,8 +174,8 @@ export class AuthService {
 
   async resetPassword(token: string, newPassword: string) {
     return await firstValueFrom(
-      this.http.post(`${this.apiUrl}/reset-password`, 
-        { token, newPassword }, 
+      this.http.post(`${this.apiUrl}/reset-password`,
+        { token, newPassword },
         { responseType: 'text' }
       )
     );
@@ -141,7 +200,7 @@ export class AuthService {
           .join('')
       );
       return JSON.parse(jsonPayload);
-    } catch (e) {
+    } catch {
       return {};
     }
   }
