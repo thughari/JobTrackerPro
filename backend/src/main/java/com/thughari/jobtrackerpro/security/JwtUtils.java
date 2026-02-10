@@ -23,7 +23,7 @@ public class JwtUtils {
     private String refreshJwtSecret;
 
     @Value("${app.jwt.refresh-expiration-ms}")
-    private int refreshJwtExpirationMs;
+    private long refreshJwtExpirationMs;
 
     @Value("${spring.profiles.active:local}")
     private String activeProfile;

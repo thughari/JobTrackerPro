@@ -46,6 +46,11 @@ spec:
             secretKeyRef:
               name: jwt-secret
               key: latest
+        - name: JWT_REFRESH_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: jwt-refresh-secret
+              key: latest
         - name: GOOGLE_CLIENT_ID
           valueFrom:
             secretKeyRef:
