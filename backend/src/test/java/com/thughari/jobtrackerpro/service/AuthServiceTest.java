@@ -46,11 +46,13 @@ class AuthServiceTest {
 
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.empty());
         when(passwordEncoder.encode("secret")).thenReturn("encoded");
-        when(jwtUtils.generateToken("test@example.com")).thenReturn("jwt");
+        when(jwtUtils.generateAccessToken("test@example.com")).thenReturn("jwt");
+        when(jwtUtils.generateRefreshToken("test@example.com")).thenReturn("refresh-jwt");
 
         var response = authService.registerUser(request);
 
-        assertEquals("jwt", response.getToken());
+        assertEquals("jwt", response.accessToken());
+        assertEquals("refresh-jwt", response.refreshToken());
         verify(userRepository).save(any(User.class));
     }
 

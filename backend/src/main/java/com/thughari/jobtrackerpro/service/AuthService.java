@@ -52,7 +52,7 @@ public class AuthService {
     	this.emailService=emailService;
     }
 
-    public AuthResponse registerUser(AuthRequest request) {
+    public AuthTokens registerUser(AuthRequest request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
         	throw new UserAlreadyExistsException("Email already in use");
         }
@@ -64,11 +64,10 @@ public class AuthService {
         user.setProvider(AuthProvider.LOCAL);
         userRepository.save(user);
 
-        String token = jwtUtils.generateToken(user.getEmail());
-        return new AuthResponse(token);
+        return generateAuthTokens(user.getEmail());
     }
 
-    public AuthResponse loginUser(AuthRequest request) {
+    public AuthTokens loginUser(AuthRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("Login failed! User not found"));
 
@@ -76,8 +75,20 @@ public class AuthService {
             throw new IllegalArgumentException("Login failed! Invalid password");
         }
 
-        String token = jwtUtils.generateToken(user.getEmail());
-        return new AuthResponse(token);
+        return generateAuthTokens(user.getEmail());
+    }
+
+    public AuthTokens refreshAccessToken(String refreshToken) {
+        if (!jwtUtils.validateRefreshToken(refreshToken)) {
+            throw new IllegalArgumentException("Invalid refresh token");
+        }
+
+        String email = jwtUtils.getEmailFromRefreshToken(refreshToken);
+        if (userRepository.findByEmail(email).isEmpty()) {
+            throw new IllegalArgumentException("Invalid refresh token");
+        }
+
+        return generateAuthTokens(email);
     }
     
     public void forgotPassword(String email) {
@@ -190,5 +201,11 @@ public class AuthService {
         response.setProvider(user.getProvider().toString());
         response.setHasPassword(user.getPassword() != null && !user.getPassword().isEmpty());
         return response;
+    }
+
+    private AuthTokens generateAuthTokens(String email) {
+        String accessToken = jwtUtils.generateAccessToken(email);
+        String refreshToken = jwtUtils.generateRefreshToken(email);
+        return new AuthTokens(accessToken, refreshToken);
     }
 }

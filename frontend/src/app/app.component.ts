@@ -43,6 +43,10 @@ export class AppComponent implements OnInit {
   isProfileMenuOpen = false;
 
   ngOnInit() {
+    if (this.authService.isAuthenticated()) {
+      this.authService.fetchUserProfile();
+    }
+
     this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event: any) => {

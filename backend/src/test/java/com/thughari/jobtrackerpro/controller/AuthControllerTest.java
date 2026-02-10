@@ -1,10 +1,11 @@
 package com.thughari.jobtrackerpro.controller;
 
 import com.thughari.jobtrackerpro.dto.AuthRequest;
-import com.thughari.jobtrackerpro.dto.AuthResponse;
+import com.thughari.jobtrackerpro.dto.AuthTokens;
 import com.thughari.jobtrackerpro.dto.ChangePasswordRequest;
 import com.thughari.jobtrackerpro.dto.UserProfileResponse;
 import com.thughari.jobtrackerpro.service.AuthService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.doThrow;
@@ -26,6 +28,9 @@ class AuthControllerTest {
     @Mock
     private AuthService authService;
 
+    @Mock
+    private HttpServletResponse httpServletResponse;
+
     @InjectMocks
     private AuthController authController;
 
@@ -36,14 +41,16 @@ class AuthControllerTest {
 
     @Test
     void registerUser_returnsOkWhenServiceSucceeds() {
-        AuthRequest request = new AuthRequest();
-        AuthResponse response = new AuthResponse("token");
-        when(authService.registerUser(request)).thenReturn(response);
+        ReflectionTestUtils.setField(authController, "refreshExpirationMs", 1000L);
+        ReflectionTestUtils.setField(authController, "refreshCookieSecure", false);
+        ReflectionTestUtils.setField(authController, "refreshCookieSameSite", "Lax");
 
-        var result = authController.registerUser(request);
+        AuthRequest request = new AuthRequest();
+        when(authService.registerUser(request)).thenReturn(new AuthTokens("token", "refresh"));
+
+        var result = authController.registerUser(request, httpServletResponse);
 
         assertEquals(HttpStatusCode.valueOf(200), result.getStatusCode());
-        assertEquals(response, result.getBody());
     }
 
     @Test
@@ -51,7 +58,7 @@ class AuthControllerTest {
         AuthRequest request = new AuthRequest();
         when(authService.loginUser(request)).thenThrow(new IllegalArgumentException("bad creds"));
 
-        var result = authController.loginUser(request);
+        var result = authController.loginUser(request, httpServletResponse);
 
         assertEquals(HttpStatusCode.valueOf(400), result.getStatusCode());
         assertEquals("bad creds", result.getBody());
