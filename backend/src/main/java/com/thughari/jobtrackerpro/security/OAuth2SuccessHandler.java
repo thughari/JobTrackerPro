@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -28,6 +29,12 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
 	@Value("${app.ui.url}")
 	private String uiUrl;
+
+	@Value("${app.jwt.refresh-expiration-ms}")
+	private long refreshExpirationMs;
+
+	@Value("${app.jwt.refresh-cookie-secure}")
+	private boolean refreshCookieSecure;
 
 	public OAuth2SuccessHandler(UserRepository userRepository, JwtUtils jwtUtils, StorageService storageService) {
 		this.userRepository = userRepository;
@@ -75,7 +82,16 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 			userRepository.save(user);
 		}
 
-		String token = jwtUtils.generateToken(user.getEmail());
+		String token = jwtUtils.generateAccessToken(user.getEmail());
+		String refreshToken = jwtUtils.generateRefreshToken(user.getEmail());
+		ResponseCookie cookie = ResponseCookie.from("refresh_token", refreshToken)
+				.httpOnly(true)
+				.secure(refreshCookieSecure)
+				.path("/api/auth")
+				.sameSite("Strict")
+				.maxAge(refreshExpirationMs / 1000)
+				.build();
+		response.addHeader("Set-Cookie", cookie.toString());
 		getRedirectStrategy().sendRedirect(request, response, uiUrl + "/login-success?token=" + token);
 	}
 
