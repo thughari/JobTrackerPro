@@ -28,11 +28,7 @@ export class AuthService {
   userProfile = signal<UserProfile | null>(null);
   currentUser = signal<{ email: string } | null>(this.decodeToken());
 
-  constructor() {
-    if (this.isAuthenticated()) {
-      this.fetchUserProfile();
-    }
-  }
+  constructor() {}
 
   async fetchUserProfile() {
     try {
