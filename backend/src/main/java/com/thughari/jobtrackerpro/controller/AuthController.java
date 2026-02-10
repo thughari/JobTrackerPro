@@ -135,7 +135,7 @@ public class AuthController {
         ResponseCookie cookie = ResponseCookie.from("refresh_token", refreshToken)
                 .httpOnly(true)
                 .secure(refreshCookieSecure)
-                .path("/api/auth")
+                .path("/")
                 .sameSite(refreshCookieSameSite)
                 .maxAge(refreshExpirationMs / 1000)
                 .build();
@@ -146,7 +146,7 @@ public class AuthController {
         ResponseCookie cookie = ResponseCookie.from("refresh_token", "")
                 .httpOnly(true)
                 .secure(refreshCookieSecure)
-                .path("/api/auth")
+                .path("/")
                 .sameSite(refreshCookieSameSite)
                 .maxAge(0)
                 .build();
