@@ -86,14 +86,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
 		String token = jwtUtils.generateAccessToken(user.getEmail());
 		String refreshToken = jwtUtils.generateRefreshToken(user.getEmail());
-		ResponseCookie cookie = ResponseCookie.from("refresh_token", refreshToken)
-				.httpOnly(true)
-				.secure(refreshCookieSecure)
-				.path("/")
-				.sameSite(refreshCookieSameSite)
-				.maxAge(refreshExpirationMs / 1000)
-				.build();
-		response.addHeader("Set-Cookie", cookie.toString());
+		response.addHeader("Set-Cookie", buildRefreshCookie(refreshToken, "/", refreshExpirationMs / 1000).toString());
+		response.addHeader("Set-Cookie", buildRefreshCookie("", "/api/auth", 0).toString());
 		getRedirectStrategy().sendRedirect(request, response, uiUrl + "/login-success?token=" + token);
 	}
 
@@ -122,6 +116,16 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 			break;
 		}
 		return new UserInfo(email, name, imageUrl);
+	}
+
+	private ResponseCookie buildRefreshCookie(String value, String path, long maxAgeSeconds) {
+		return ResponseCookie.from("refresh_token", value)
+				.httpOnly(true)
+				.secure(refreshCookieSecure)
+				.path(path)
+				.sameSite(refreshCookieSameSite)
+				.maxAge(maxAgeSeconds)
+				.build();
 	}
 
 	record UserInfo(String email, String name, String imageUrl) {}

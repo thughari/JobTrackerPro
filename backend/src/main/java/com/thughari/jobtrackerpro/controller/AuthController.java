@@ -132,24 +132,23 @@ public class AuthController {
     }
 
     private void attachRefreshCookie(HttpServletResponse response, String refreshToken) {
-        ResponseCookie cookie = ResponseCookie.from("refresh_token", refreshToken)
-                .httpOnly(true)
-                .secure(refreshCookieSecure)
-                .path("/")
-                .sameSite(refreshCookieSameSite)
-                .maxAge(refreshExpirationMs / 1000)
-                .build();
-        response.addHeader("Set-Cookie", cookie.toString());
+        response.addHeader("Set-Cookie", buildRefreshCookie(refreshToken, "/", refreshExpirationMs / 1000).toString());
+        // Clear legacy cookie written by older builds to prevent duplicate refresh_token cookies.
+        response.addHeader("Set-Cookie", buildRefreshCookie("", "/api/auth", 0).toString());
     }
 
     private void clearRefreshCookie(HttpServletResponse response) {
-        ResponseCookie cookie = ResponseCookie.from("refresh_token", "")
+        response.addHeader("Set-Cookie", buildRefreshCookie("", "/", 0).toString());
+        response.addHeader("Set-Cookie", buildRefreshCookie("", "/api/auth", 0).toString());
+    }
+
+    private ResponseCookie buildRefreshCookie(String value, String path, long maxAgeSeconds) {
+        return ResponseCookie.from("refresh_token", value)
                 .httpOnly(true)
                 .secure(refreshCookieSecure)
-                .path("/")
+                .path(path)
                 .sameSite(refreshCookieSameSite)
-                .maxAge(0)
+                .maxAge(maxAgeSeconds)
                 .build();
-        response.addHeader("Set-Cookie", cookie.toString());
     }
 }
