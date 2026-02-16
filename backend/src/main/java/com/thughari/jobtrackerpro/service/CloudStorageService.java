@@ -29,7 +29,8 @@ public class CloudStorageService implements StorageService {
 
     private final S3Client s3Client;
 
-    private static final long MAX_FILE_SIZE = 5 * 1024 * 1024;
+    private static final long MAX_IMAGE_FILE_SIZE = 5 * 1024 * 1024;
+    private static final long MAX_RESOURCE_FILE_SIZE = 10 * 1024 * 1024;
 
     @Value("${cloudflare.r2.bucket}")
     private String bucketName;
@@ -42,13 +43,14 @@ public class CloudStorageService implements StorageService {
     }
 
     public String uploadFile(MultipartFile file, String userId) {
+
         String contentType = file.getContentType();
-        if (!isValidUploadContent(contentType)) {
-            throw new InvalidImageException("Unsupported file type. Allowed: JPG, PNG, GIF, WEBP, PDF, DOC, DOCX, TXT.");
+        if (!isValidImageContent(contentType)) {
+            throw new InvalidImageException("Invalid file type. Only JPG, PNG, GIF, WEBP are allowed.");
         }
 
-        if (file.getSize() > MAX_FILE_SIZE) {
-            throw new MaxUploadSizeExceededException(0);
+        if (file.getSize() > MAX_IMAGE_FILE_SIZE) {
+            throw new MaxUploadSizeExceededException(MAX_IMAGE_FILE_SIZE);
         }
         try {
             String extension = getExtensionFromContentType(contentType, file.getOriginalFilename());
@@ -64,8 +66,38 @@ public class CloudStorageService implements StorageService {
 
             return publicUrl + "/" + fileName;
         } catch (Exception e) {
-            log.error("Failed to upload to R2: {}", e.getLocalizedMessage());
+            log.error("Failed to upload to R2: " + e.getLocalizedMessage());
             throw new RuntimeException("Failed to upload to R2", e);
+        }
+    }
+
+    @Override
+    public String uploadResourceFile(MultipartFile file, String userId) {
+        String contentType = file.getContentType();
+        if (!isValidResourceFileType(contentType, file.getOriginalFilename())) {
+            throw new IllegalArgumentException("Invalid file type. Only PDF, DOC, DOCX and TXT are allowed.");
+        }
+
+        if (file.getSize() > MAX_RESOURCE_FILE_SIZE) {
+            throw new MaxUploadSizeExceededException(MAX_RESOURCE_FILE_SIZE);
+        }
+
+        try {
+            String extension = getExtensionFromFilename(file.getOriginalFilename());
+            String fileName = "resources/" + userId + "-" + System.currentTimeMillis() + extension;
+
+            PutObjectRequest putObj = PutObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(fileName)
+                    .contentType(contentType)
+                    .build();
+
+            s3Client.putObject(putObj, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+
+            return publicUrl + "/" + fileName;
+        } catch (Exception e) {
+            log.error("Failed to upload resource file to R2", e);
+            throw new RuntimeException("Failed to upload resource file", e);
         }
     }
 
@@ -99,7 +131,7 @@ public class CloudStorageService implements StorageService {
             }
 
             response.headers().firstValue("Content-Length").ifPresent(len -> {
-                if (Long.parseLong(len) > MAX_FILE_SIZE) {
+                if (Long.parseLong(len) > MAX_IMAGE_FILE_SIZE) {
                     throw new IllegalArgumentException("Image at URL is too large");
                 }
             });
@@ -144,17 +176,15 @@ public class CloudStorageService implements StorageService {
                     .key(key)
                     .build());
 
-            log.info("Deleted file from R2: {}", key);
+            log.info("Deleted old image from R2: {}", key);
 
         } catch (Exception e) {
             log.error("Failed to delete file from R2: {}", fileUrl, e);
         }
     }
 
-    private String getExtensionFromContentType(String contentType, String originalFilename) {
-        if (contentType == null) {
-            return getExtensionFromName(originalFilename, ".bin");
-        }
+    private String getExtensionFromContentType(String contentType) {
+        if (contentType == null) return ".jpg";
 
         return switch (contentType.toLowerCase()) {
             case "image/png" -> ".png";
@@ -169,11 +199,11 @@ public class CloudStorageService implements StorageService {
         };
     }
 
-    private String getExtensionFromName(String originalFilename, String fallback) {
-        if (originalFilename == null || !originalFilename.contains(".")) {
-            return fallback;
+    private String getExtensionFromFilename(String filename) {
+        if (filename == null || !filename.contains(".")) {
+            return ".pdf";
         }
-        return originalFilename.substring(originalFilename.lastIndexOf('.'));
+        return filename.substring(filename.lastIndexOf('.')).toLowerCase();
     }
 
     private boolean isValidImageContent(String contentType) {
@@ -184,12 +214,22 @@ public class CloudStorageService implements StorageService {
                 contentType.equals("image/webp");
     }
 
-    private boolean isValidUploadContent(String contentType) {
-        if (contentType == null) return false;
-        return isValidImageContent(contentType)
-                || contentType.equals("application/pdf")
-                || contentType.equals("application/msword")
-                || contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-                || contentType.equals("text/plain");
+    private boolean isValidResourceFileType(String contentType, String filename) {
+        String ext = getExtensionFromFilename(filename);
+        boolean extAllowed = ext.equals(".pdf") || ext.equals(".doc") || ext.equals(".docx") || ext.equals(".txt");
+
+        if (!extAllowed) {
+            return false;
+        }
+
+        if (contentType == null || contentType.isBlank()) {
+            return true;
+        }
+
+        return contentType.equals("application/pdf") ||
+                contentType.equals("application/msword") ||
+                contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document") ||
+                contentType.equals("text/plain") ||
+                contentType.equals("application/octet-stream");
     }
 }

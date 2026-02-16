@@ -6,6 +6,7 @@ public interface StorageService {
 	
 	String uploadFile(MultipartFile file, String userId);
     String uploadFromUrl(String externalUrl, String userId);
+    String uploadResourceFile(MultipartFile file, String userId);
     void deleteFile(String fileUrl);
 
 }
