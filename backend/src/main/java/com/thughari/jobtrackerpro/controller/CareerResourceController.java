@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -47,6 +48,30 @@ public class CareerResourceController {
                 url,
                 category,
                 description,
+                file
+        ));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<CareerResourceDTO> updateResource(
+            @PathVariable UUID id,
+            @RequestParam String title,
+            @RequestParam(required = false) String url,
+            @RequestParam String category,
+            @RequestParam(required = false) String description,
+            @RequestParam(defaultValue = "false") boolean removeFile,
+            @RequestParam(required = false) MultipartFile file
+    ) {
+        String email = getAuthenticatedEmail();
+
+        return ResponseEntity.ok(careerResourceService.updateResource(
+                id,
+                email,
+                title,
+                url,
+                category,
+                description,
+                removeFile,
                 file
         ));
     }

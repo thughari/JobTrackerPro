@@ -23,6 +23,16 @@ export interface CreateResourcePayload {
   file?: File | null;
 }
 
+export interface UpdateResourcePayload {
+  id: string;
+  title: string;
+  category: string;
+  url?: string;
+  description?: string;
+  file?: File | null;
+  removeFile?: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ResourceService {
   private readonly API = environment.apiBaseUrl;
@@ -34,6 +44,24 @@ export class ResourceService {
   }
 
   async createResource(payload: CreateResourcePayload) {
+    const formData = this.toFormData(payload);
+    return await firstValueFrom(this.http.post<CareerResource>(this.apiUrl, formData));
+  }
+
+  async updateResource(payload: UpdateResourcePayload) {
+    const formData = this.toFormData(payload);
+    if (payload.removeFile) {
+      formData.append('removeFile', 'true');
+    }
+
+    return await firstValueFrom(this.http.put<CareerResource>(`${this.apiUrl}/${payload.id}`, formData));
+  }
+
+  async deleteResource(id: string) {
+    return await firstValueFrom(this.http.delete(`${this.apiUrl}/${id}`));
+  }
+
+  private toFormData(payload: CreateResourcePayload | UpdateResourcePayload) {
     const formData = new FormData();
     formData.append('title', payload.title);
     formData.append('category', payload.category);
@@ -50,10 +78,6 @@ export class ResourceService {
       formData.append('file', payload.file);
     }
 
-    return await firstValueFrom(this.http.post<CareerResource>(this.apiUrl, formData));
-  }
-
-  async deleteResource(id: string) {
-    return await firstValueFrom(this.http.delete(`${this.apiUrl}/${id}`));
+    return formData;
   }
 }

@@ -3,14 +3,13 @@ package com.thughari.jobtrackerpro.service;
 import com.thughari.jobtrackerpro.dto.CareerResourceDTO;
 import com.thughari.jobtrackerpro.entity.CareerResource;
 import com.thughari.jobtrackerpro.entity.User;
+import com.thughari.jobtrackerpro.interfaces.StorageService;
 import com.thughari.jobtrackerpro.repo.CareerResourceRepository;
 import com.thughari.jobtrackerpro.repo.UserRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
-import com.thughari.jobtrackerpro.interfaces.StorageService;
 
 import java.util.List;
 import java.util.UUID;
@@ -50,7 +49,7 @@ public class CareerResourceService {
             MultipartFile file
     ) {
         String normalizedUrl = normalizeUrl(url);
-        validatePayload(title, category, normalizedUrl, file);
+        validateBasicFields(title, category);
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -60,25 +59,73 @@ public class CareerResourceService {
             uploadedFileUrl = storageService.uploadResourceFile(file, user.getId().toString());
         }
 
+        ensureLinkOrFileExists(normalizedUrl, uploadedFileUrl);
+
         CareerResource resource = new CareerResource();
         resource.setTitle(title.trim());
         resource.setUrl(normalizedUrl);
         resource.setFileUrl(uploadedFileUrl);
         resource.setCategory(category.trim());
-        resource.setDescription(description == null ? null : description.trim());
+        resource.setDescription(normalizeOptional(description));
         resource.setSubmittedByEmail(user.getEmail());
         resource.setSubmittedByName(user.getName() == null || user.getName().isBlank() ? user.getEmail() : user.getName());
 
         return toDTO(resourceRepository.save(resource));
     }
 
+    public CareerResourceDTO updateResource(
+            UUID resourceId,
+            String requesterEmail,
+            String title,
+            String url,
+            String category,
+            String description,
+            boolean removeFile,
+            MultipartFile file
+    ) {
+        CareerResource resource = resourceRepository.findById(resourceId)
+                .orElseThrow(() -> new IllegalArgumentException("Resource not found"));
+
+        enforceOwner(resource, requesterEmail);
+
+        validateBasicFields(title, category);
+        String normalizedUrl = normalizeUrl(url);
+
+        String oldFileUrl = resource.getFileUrl();
+        String nextFileUrl = oldFileUrl;
+
+        if (removeFile) {
+            nextFileUrl = null;
+        }
+
+        if (file != null && !file.isEmpty()) {
+            User user = userRepository.findByEmail(requesterEmail)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            nextFileUrl = storageService.uploadResourceFile(file, user.getId().toString());
+        }
+
+        ensureLinkOrFileExists(normalizedUrl, nextFileUrl);
+
+        resource.setTitle(title.trim());
+        resource.setUrl(normalizedUrl);
+        resource.setCategory(category.trim());
+        resource.setDescription(normalizeOptional(description));
+        resource.setFileUrl(nextFileUrl);
+
+        CareerResource saved = resourceRepository.save(resource);
+
+        if (oldFileUrl != null && !oldFileUrl.isBlank() && !oldFileUrl.equals(nextFileUrl)) {
+            storageService.deleteFile(oldFileUrl);
+        }
+
+        return toDTO(saved);
+    }
+
     public void deleteResource(UUID resourceId, String requesterEmail) {
         CareerResource resource = resourceRepository.findById(resourceId)
                 .orElseThrow(() -> new IllegalArgumentException("Resource not found"));
 
-        if (!resource.getSubmittedByEmail().equalsIgnoreCase(requesterEmail)) {
-            throw new IllegalArgumentException("You can remove only your own resources");
-        }
+        enforceOwner(resource, requesterEmail);
 
         if (resource.getFileUrl() != null && !resource.getFileUrl().isBlank()) {
             storageService.deleteFile(resource.getFileUrl());
@@ -115,20 +162,35 @@ public class CareerResourceService {
         resourceRepository.save(resource);
     }
 
-    private void validatePayload(String title, String category, String normalizedUrl, MultipartFile file) {
+    private void enforceOwner(CareerResource resource, String requesterEmail) {
+        if (!resource.getSubmittedByEmail().equalsIgnoreCase(requesterEmail)) {
+            throw new IllegalArgumentException("You can modify only your own resources");
+        }
+    }
+
+    private void validateBasicFields(String title, String category) {
         if (title == null || title.isBlank()) {
             throw new IllegalArgumentException("Title is required");
         }
         if (category == null || category.isBlank()) {
             throw new IllegalArgumentException("Category is required");
         }
+    }
 
+    private void ensureLinkOrFileExists(String normalizedUrl, String fileUrl) {
         boolean hasUrl = normalizedUrl != null && !normalizedUrl.isBlank();
-        boolean hasFile = file != null && !file.isEmpty();
+        boolean hasFile = fileUrl != null && !fileUrl.isBlank();
 
         if (!hasUrl && !hasFile) {
             throw new IllegalArgumentException("Provide either a URL or a file");
         }
+    }
+
+    private String normalizeOptional(String value) {
+        if (value == null || value.trim().isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 
     private String normalizeUrl(String url) {

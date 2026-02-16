@@ -18,6 +18,7 @@ describe('ResourcesComponent', () => {
             getResources: () => Promise.resolve([]),
             createResource: () => Promise.resolve({}),
             deleteResource: () => Promise.resolve(),
+            updateResource: () => Promise.resolve({}),
           },
         },
         {
