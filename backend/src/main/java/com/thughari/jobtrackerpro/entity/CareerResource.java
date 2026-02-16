@@ -28,11 +28,19 @@ public class CareerResource {
     @Column(nullable = false, length = 2048)
     private String url;
 
+    @Column(nullable = false, length = 16)
+    private String resourceType = "LINK";
+
     @Column(nullable = false, length = 80)
     private String category;
 
     @Column(length = 1200)
     private String description;
+
+    @Column(length = 255)
+    private String originalFileName;
+
+    private Long fileSizeBytes;
 
     @Column(nullable = false)
     private String submittedByEmail;
