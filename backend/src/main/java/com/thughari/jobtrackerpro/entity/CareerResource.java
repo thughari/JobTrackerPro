@@ -28,6 +28,14 @@ public class CareerResource {
     @Column(nullable = false, length = 2048)
     private String url;
 
+    @Column(nullable = false)
+    private boolean fileUpload = false;
+
+    @Column(length = 255)
+    private String fileName;
+
+    private Long fileSizeBytes;
+
     @Column(nullable = false, length = 80)
     private String category;
 

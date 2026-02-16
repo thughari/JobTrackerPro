@@ -28,7 +28,7 @@ import java.time.Duration;
 public class CloudStorageService implements StorageService {
 
     private final S3Client s3Client;
-    
+
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024;
 
     @Value("${cloudflare.r2.bucket}")
@@ -42,36 +42,35 @@ public class CloudStorageService implements StorageService {
     }
 
     public String uploadFile(MultipartFile file, String userId) {
-    	
-    	String contentType = file.getContentType();
-        if (!isValidImageContent(contentType)) {
-            throw new InvalidImageException("Invalid file type. Only JPG, PNG, GIF, WEBP are allowed.");
+        String contentType = file.getContentType();
+        if (!isValidUploadContent(contentType)) {
+            throw new InvalidImageException("Unsupported file type. Allowed: JPG, PNG, GIF, WEBP, PDF, DOC, DOCX, TXT.");
         }
-        
+
         if (file.getSize() > MAX_FILE_SIZE) {
-             throw new MaxUploadSizeExceededException(0);
+            throw new MaxUploadSizeExceededException(0);
         }
         try {
-            String extension = getExtensionFromContentType(file.getContentType());
+            String extension = getExtensionFromContentType(contentType, file.getOriginalFilename());
             String fileName = userId + "-" + System.currentTimeMillis() + extension;
-            
+
             PutObjectRequest putObj = PutObjectRequest.builder()
                     .bucket(bucketName)
                     .key(fileName)
-                    .contentType(file.getContentType())
+                    .contentType(contentType)
                     .build();
 
             s3Client.putObject(putObj, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
 
             return publicUrl + "/" + fileName;
         } catch (Exception e) {
-        	log.error("Failed to upload to R2: " + e.getLocalizedMessage());
+            log.error("Failed to upload to R2: {}", e.getLocalizedMessage());
             throw new RuntimeException("Failed to upload to R2", e);
         }
     }
 
     public String uploadFromUrl(String externalUrl, String userId) {
-    	if (externalUrl == null || !externalUrl.startsWith("http")) {
+        if (externalUrl == null || !externalUrl.startsWith("http")) {
             throw new InvalidImageException("Invalid URL format");
         }
         try {
@@ -89,23 +88,23 @@ public class CloudStorageService implements StorageService {
                     client.send(request, HttpResponse.BodyHandlers.ofByteArray());
 
             if (response.statusCode() != 200) {
-            	log.error("Failed to download image.");
-            	throw new ResourceNotFoundException("provided url is not accessible");
+                log.error("Failed to download image.");
+                throw new ResourceNotFoundException("provided url is not accessible");
             }
 
             String contentType = response.headers().firstValue("Content-Type").orElse("");
-            
+
             if (!isValidImageContent(contentType)) {
                 throw new InvalidImageException("URL does not point to a valid image (Type: " + contentType + ")");
             }
-            
+
             response.headers().firstValue("Content-Length").ifPresent(len -> {
                 if (Long.parseLong(len) > MAX_FILE_SIZE) {
                     throw new IllegalArgumentException("Image at URL is too large");
                 }
             });
 
-            String extension = getExtensionFromContentType(contentType);
+            String extension = getExtensionFromContentType(contentType, null);
             String fileName = userId + "-social" + extension;
 
             PutObjectRequest putObj = PutObjectRequest.builder()
@@ -123,19 +122,18 @@ public class CloudStorageService implements StorageService {
 
         } catch (InvalidImageException | IllegalArgumentException | ResourceNotFoundException e) {
             throw e;
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error("Failed to upload image From Url to R2", e);
             throw new InvalidImageException("unable to update image");
         }
     }
-    
+
     public void deleteFile(String fileUrl) {
         if (fileUrl == null || fileUrl.isEmpty()) {
             return;
         }
         if (!fileUrl.startsWith(publicUrl)) {
-            return; 
+            return;
         }
 
         try {
@@ -145,32 +143,53 @@ public class CloudStorageService implements StorageService {
                     .bucket(bucketName)
                     .key(key)
                     .build());
-            
-            log.info("Deleted old image from R2: {}", key);
+
+            log.info("Deleted file from R2: {}", key);
 
         } catch (Exception e) {
             log.error("Failed to delete file from R2: {}", fileUrl, e);
         }
     }
 
-    
-    private String getExtensionFromContentType(String contentType) {
-        if (contentType == null) return ".jpg";
-        
+    private String getExtensionFromContentType(String contentType, String originalFilename) {
+        if (contentType == null) {
+            return getExtensionFromName(originalFilename, ".bin");
+        }
+
         return switch (contentType.toLowerCase()) {
             case "image/png" -> ".png";
             case "image/jpeg", "image/jpg" -> ".jpg";
             case "image/gif" -> ".gif";
             case "image/webp" -> ".webp";
-            default -> ".jpg";
+            case "application/pdf" -> ".pdf";
+            case "application/msword" -> ".doc";
+            case "application/vnd.openxmlformats-officedocument.wordprocessingml.document" -> ".docx";
+            case "text/plain" -> ".txt";
+            default -> getExtensionFromName(originalFilename, ".bin");
         };
     }
-    
+
+    private String getExtensionFromName(String originalFilename, String fallback) {
+        if (originalFilename == null || !originalFilename.contains(".")) {
+            return fallback;
+        }
+        return originalFilename.substring(originalFilename.lastIndexOf('.'));
+    }
+
     private boolean isValidImageContent(String contentType) {
         if (contentType == null) return false;
         return contentType.equals("image/jpeg") ||
-               contentType.equals("image/png") ||
-               contentType.equals("image/gif") ||
-               contentType.equals("image/webp");
+                contentType.equals("image/png") ||
+                contentType.equals("image/gif") ||
+                contentType.equals("image/webp");
+    }
+
+    private boolean isValidUploadContent(String contentType) {
+        if (contentType == null) return false;
+        return isValidImageContent(contentType)
+                || contentType.equals("application/pdf")
+                || contentType.equals("application/msword")
+                || contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                || contentType.equals("text/plain");
     }
 }

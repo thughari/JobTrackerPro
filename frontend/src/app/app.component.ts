@@ -22,6 +22,7 @@ import { LogoComponent } from './components/ui/logo/logo.component';
     JobModalComponent,
     RouterOutlet,
     RouterLink,
+    RouterLinkActive,
     LogoComponent
   ],
   templateUrl: './app.component.html',

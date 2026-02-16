@@ -1,95 +1,107 @@
 <div class="min-h-screen bg-[#0B0E14] text-gray-300 font-sans selection:bg-indigo-500/30">
   <nav class="sticky top-0 z-50 bg-[#0B0E14]/80 backdrop-blur-md border-b border-gray-800">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-20">
-        <a routerLink="/" class="cursor-pointer hover:opacity-80 transition-opacity">
+      <div class="flex items-center justify-between h-16 sm:h-20">
+        <a [routerLink]="authService.isAuthenticated() ? '/app/dashboard' : '/'" class="cursor-pointer hover:opacity-80 transition-opacity">
           <app-logo size="md"></app-logo>
         </a>
 
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-3">
           @if (authService.isAuthenticated()) {
             <a routerLink="/app/dashboard"
-              class="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors shadow-lg shadow-indigo-500/20 flex items-center gap-2">
-              <i class="ph ph-squares-four text-lg"></i>
+              class="px-3 sm:px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-medium transition-colors shadow-lg shadow-indigo-500/20 flex items-center gap-2">
+              <i class="ph ph-squares-four text-base"></i>
               Dashboard
             </a>
           } @else {
             <a routerLink="/login" class="text-sm font-medium text-gray-400 hover:text-white transition-colors whitespace-nowrap">Log in</a>
-            <a routerLink="/signup"
-              class="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm font-medium transition-all shadow-lg shadow-indigo-500/25 whitespace-nowrap">
-              Sign up
-            </a>
           }
         </div>
       </div>
     </div>
   </nav>
 
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 space-y-10">
-    <header class="text-center max-w-3xl mx-auto space-y-4">
-      <p class="text-indigo-400 font-semibold tracking-wide uppercase text-sm">Community Career Resource Mine</p>
-      <h1 class="text-3xl md:text-5xl font-bold text-white tracking-tight">Backend-powered resources for everyone</h1>
-      <p class="text-gray-400 text-base md:text-lg">Resources are now served from Postgres through the API, and logged-in users can contribute links to make this page community friendly.</p>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 space-y-8">
+    <header class="text-left sm:text-center max-w-3xl mx-auto space-y-3">
+      <p class="text-indigo-400 font-semibold tracking-wide uppercase text-xs sm:text-sm">Community Resource Hub</p>
+      <h1 class="text-2xl sm:text-4xl font-bold text-white tracking-tight">Share links and files with your community</h1>
+      <p class="text-gray-400 text-sm sm:text-base">Upload PDFs/docs up to 5MB or add direct links. You can remove your own resources anytime.</p>
     </header>
 
     @if (authService.isAuthenticated()) {
-      <section class="rounded-2xl border border-indigo-500/30 bg-[#151A23] p-6 md:p-8 space-y-4">
-        <h2 class="text-xl font-bold text-white">Share a resource</h2>
-        <p class="text-sm text-gray-400">Contribute helpful links so the whole community benefits.</p>
+      <section class="rounded-2xl border border-indigo-500/30 bg-[#151A23] p-4 sm:p-6 md:p-8 space-y-4">
+        <h2 class="text-lg sm:text-xl font-bold text-white">Add a resource</h2>
+        <p class="text-xs sm:text-sm text-gray-400">Mobile-first form: add either a URL or a file (PDF, DOC, DOCX, TXT, JPG, PNG up to 5MB).</p>
 
-        <div class="grid md:grid-cols-2 gap-4">
+        <div class="grid gap-3 sm:grid-cols-2">
           <input [(ngModel)]="title" type="text" placeholder="Resource title"
             class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
-          <input [(ngModel)]="category" type="text" placeholder="Category (e.g., DSA, Resume, Sheets)"
+          <input [(ngModel)]="category" type="text" placeholder="Category (e.g., Resume, DSA)"
             class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
         </div>
 
-        <input [(ngModel)]="url" type="url" placeholder="https://..."
-          class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
+        <input [(ngModel)]="url" type="url" [disabled]="!!selectedFile" placeholder="https://..."
+          class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500 disabled:opacity-50" />
+
+        <div class="rounded-lg border border-dashed border-gray-700 p-3 sm:p-4 space-y-2">
+          <label class="text-sm text-gray-300 font-medium">Or upload file</label>
+          <input type="file" (change)="onFileSelected($event)" accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg" class="block w-full text-xs sm:text-sm text-gray-400 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:text-xs sm:file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500" />
+          @if (selectedFile) {
+            <p class="text-xs text-gray-400">Selected: {{ selectedFile.name }} ({{ formatBytes(selectedFile.size) }})</p>
+          }
+        </div>
 
         <textarea [(ngModel)]="description" rows="3" placeholder="What is this resource about?"
           class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500"></textarea>
 
-        <div class="flex items-center gap-3">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-3">
           <button (click)="addResource()" [disabled]="isSaving()"
             class="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-sm font-semibold transition-colors">
-            {{ isSaving() ? 'Adding...' : 'Add Resource' }}
+            {{ isSaving() ? 'Saving...' : 'Add Resource' }}
           </button>
           @if (saveMessage()) {
-            <p class="text-sm text-gray-300">{{ saveMessage() }}</p>
+            <p class="text-xs sm:text-sm text-gray-300">{{ saveMessage() }}</p>
           }
         </div>
-      </section>
-    } @else {
-      <section class="rounded-2xl border border-gray-800 bg-[#151A23] p-5 text-sm text-gray-400">
-        Want to contribute? <a routerLink="/login" class="text-indigo-400 hover:text-indigo-300">Log in</a> and add your own career resources.
       </section>
     }
 
     @if (errorMessage()) {
-      <p class="text-red-400">{{ errorMessage() }}</p>
+      <p class="text-red-400 text-sm">{{ errorMessage() }}</p>
     }
 
     @if (isLoading()) {
-      <p class="text-gray-400">Loading resources...</p>
+      <p class="text-gray-400 text-sm">Loading resources...</p>
     } @else {
-      <section class="grid md:grid-cols-2 gap-6 md:gap-8">
+      <section class="grid gap-4 sm:gap-6 md:grid-cols-2 md:gap-8">
         @for (section of groupedResources(); track section.category) {
-          <article class="rounded-2xl border border-gray-800 bg-[#151A23] p-6 md:p-7 shadow-sm">
-            <h2 class="text-xl font-bold text-white mb-1">{{ section.category }}</h2>
+          <article class="rounded-2xl border border-gray-800 bg-[#151A23] p-4 sm:p-6 shadow-sm">
+            <h2 class="text-lg sm:text-xl font-bold text-white mb-1">{{ section.category }}</h2>
             <p class="text-xs uppercase tracking-wide text-gray-500 mb-4">{{ section.links.length }} resources</p>
 
-            <ul class="space-y-2">
+            <ul class="space-y-2.5">
               @for (link of section.links; track link.id) {
-                <li>
-                  <a [href]="link.url" target="_blank" rel="noopener noreferrer"
-                    class="group flex items-center justify-between rounded-lg border border-gray-800 bg-[#0B0E14] px-3 py-2.5 text-sm text-gray-300 hover:text-white hover:border-indigo-500/40 transition-colors">
-                    <div>
-                      <p>{{ link.title }}</p>
+                <li class="rounded-lg border border-gray-800 bg-[#0B0E14] px-3 py-3">
+                  <div class="flex items-start justify-between gap-3">
+                    <a [href]="link.url" target="_blank" rel="noopener noreferrer" class="group min-w-0 flex-1">
+                      <p class="text-sm text-gray-200 group-hover:text-white truncate">{{ link.title }}</p>
                       <p class="text-xs text-gray-500">Shared by {{ link.submittedByName }}</p>
+                      @if (link.fileUpload) {
+                        <p class="text-xs text-indigo-300 mt-1">{{ link.fileName || 'Uploaded file' }} {{ link.fileSizeBytes ? '(' + formatBytes(link.fileSizeBytes) + ')' : '' }}</p>
+                      }
+                    </a>
+
+                    <div class="flex items-center gap-2 shrink-0">
+                      <a [href]="link.url" target="_blank" rel="noopener noreferrer" class="text-gray-500 hover:text-indigo-400 transition-colors" aria-label="Open resource">
+                        <i class="ph ph-arrow-up-right text-base"></i>
+                      </a>
+                      @if (canDelete(link)) {
+                        <button (click)="removeResource(link)" class="text-red-400 hover:text-red-300 transition-colors" aria-label="Delete resource">
+                          <i class="ph ph-trash text-base"></i>
+                        </button>
+                      }
                     </div>
-                    <i class="ph ph-arrow-up-right text-base text-gray-500 group-hover:text-indigo-400"></i>
-                  </a>
+                  </div>
                 </li>
               }
             </ul>

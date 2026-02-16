@@ -28,10 +28,11 @@ public class LocalStorageService implements StorageService {
     @Override
     public String uploadFile(MultipartFile file, String userId) {
         try {
-            String fileName = userId + "-" + System.currentTimeMillis() + ".jpg";
+            String ext = extractExtension(file.getOriginalFilename());
+            String fileName = userId + "-" + System.currentTimeMillis() + ext;
             Path path = Paths.get(UPLOAD_DIR, fileName);
             Files.write(path, file.getBytes());
-            
+
             return baseUrl + "/api/storage/files/" + fileName;
         } catch (Exception e) {
             throw new RuntimeException("Local upload failed", e);
@@ -52,5 +53,12 @@ public class LocalStorageService implements StorageService {
         } catch (Exception e) {
             System.err.println("Could not delete local file: " + e.getMessage());
         }
+    }
+
+    private String extractExtension(String fileName) {
+        if (fileName == null || !fileName.contains(".")) {
+            return ".bin";
+        }
+        return fileName.substring(fileName.lastIndexOf('.'));
     }
 }
