@@ -12,6 +12,7 @@ import { guestGuard } from './core/guards/guest.guard';
 import { AboutComponent } from './components/about/about.component';
 import { ResetPasswordComponent } from './components/auth/reset-password/reset-password.component';
 import { PrivacyComponent } from './components/privacy/privacy.component';
+import { ResourcesComponent } from './components/resources/resources.component';
 
 export const routes: Routes = [
   { 
@@ -28,6 +29,11 @@ export const routes: Routes = [
     path: 'privacy', 
     component: PrivacyComponent, 
     title: 'Privacy Policy'
+  },
+  { 
+    path: 'resources', 
+    component: ResourcesComponent,
+    title: 'Career Resources - JobTrackerPro'
   },
   { 
     path: 'reset-password', 
