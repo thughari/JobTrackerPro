@@ -2,13 +2,15 @@ import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
+import { filter } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { CareerResource, ResourceService } from '../../services/resource.service';
 import { LogoComponent } from '../ui/logo/logo.component';
-import { filter } from 'rxjs';
 
 const PAGE_SIZE = 20;
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+
+type ResourceTypeFilter = 'all' | 'LINK' | 'FILE';
 
 @Component({
   selector: 'app-resources',
@@ -31,6 +33,11 @@ export class ResourcesComponent {
   readonly saveMessage = signal('');
   readonly isSaving = signal(false);
   readonly isInAppRoute = signal(false);
+  readonly showAddResourceModal = signal(false);
+
+  searchQuery = '';
+  selectedCategoryFilter = 'all';
+  selectedTypeFilter: ResourceTypeFilter = 'all';
 
   title = '';
   url = '';
@@ -40,10 +47,37 @@ export class ResourcesComponent {
   selectedFile: File | null = null;
   selectedFileError = '';
 
+  readonly categoryOptions = computed(() => {
+    const categories = new Set<string>();
+    for (const resource of this.resources()) {
+      categories.add(resource.category?.trim() || 'General');
+    }
+    return ['all', ...Array.from(categories).sort((a, b) => a.localeCompare(b))];
+  });
+
+  readonly filteredResources = computed(() => {
+    const normalizedQuery = this.searchQuery.trim().toLowerCase();
+
+    return this.resources().filter((resource) => {
+      const matchesQuery =
+        !normalizedQuery ||
+        resource.title.toLowerCase().includes(normalizedQuery) ||
+        resource.category.toLowerCase().includes(normalizedQuery) ||
+        (resource.description || '').toLowerCase().includes(normalizedQuery) ||
+        resource.submittedByName.toLowerCase().includes(normalizedQuery);
+
+      const resourceCategory = resource.category?.trim() || 'General';
+      const matchesCategory = this.selectedCategoryFilter === 'all' || resourceCategory === this.selectedCategoryFilter;
+      const matchesType = this.selectedTypeFilter === 'all' || resource.resourceType === this.selectedTypeFilter;
+
+      return matchesQuery && matchesCategory && matchesType;
+    });
+  });
+
   readonly groupedResources = computed(() => {
     const grouped = new Map<string, CareerResource[]>();
 
-    for (const resource of this.resources()) {
+    for (const resource of this.filteredResources()) {
       const key = resource.category?.trim() || 'General';
       const list = grouped.get(key) ?? [];
       list.push(resource);
@@ -67,6 +101,17 @@ export class ResourcesComponent {
 
   private syncRouteContext() {
     this.isInAppRoute.set(this.router.url.startsWith('/app/'));
+  }
+
+  openAddResourceModal() {
+    this.saveMessage.set('');
+    this.showAddResourceModal.set(true);
+  }
+
+  closeAddResourceModal() {
+    this.showAddResourceModal.set(false);
+    this.selectedFile = null;
+    this.selectedFileError = '';
   }
 
   async loadResources(reset = false) {
@@ -187,6 +232,7 @@ export class ResourcesComponent {
       this.description = '';
       this.selectedFile = null;
       this.saveMessage.set('Resource added. Thanks for contributing!');
+      this.showAddResourceModal.set(false);
     } catch {
       this.saveMessage.set('Could not add the resource. Please verify your details and try again.');
     } finally {
