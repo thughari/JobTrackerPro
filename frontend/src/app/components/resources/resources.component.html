@@ -82,15 +82,20 @@
           </datalist>
         </label>
 
-        <label>
+        <div>
           <span class="sr-only">Filter by type</span>
-          <select [ngModel]="selectedTypeFilter()" (ngModelChange)="onTypeFilterChange($event)"
-            class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
-            <option value="all">All types</option>
-            <option value="LINK">Links only</option>
-            <option value="FILE">Files only</option>
-          </select>
-        </label>
+          <div class="grid grid-cols-3 rounded-lg border border-gray-300 dark:border-gray-700 overflow-hidden bg-gray-50 dark:bg-[#0B0E14]">
+            <button type="button" (click)="onTypeFilterChange('all')"
+              [class]="selectedTypeFilter() === 'all' ? 'bg-indigo-600 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'"
+              class="px-2 py-2.5 text-xs sm:text-sm font-medium transition-colors">All</button>
+            <button type="button" (click)="onTypeFilterChange('LINK')"
+              [class]="selectedTypeFilter() === 'LINK' ? 'bg-indigo-600 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'"
+              class="px-2 py-2.5 text-xs sm:text-sm font-medium border-x border-gray-300 dark:border-gray-700 transition-colors">Links</button>
+            <button type="button" (click)="onTypeFilterChange('FILE')"
+              [class]="selectedTypeFilter() === 'FILE' ? 'bg-indigo-600 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'"
+              class="px-2 py-2.5 text-xs sm:text-sm font-medium transition-colors">Files</button>
+          </div>
+        </div>
       </div>
 
       @if (saveMessage()) {
