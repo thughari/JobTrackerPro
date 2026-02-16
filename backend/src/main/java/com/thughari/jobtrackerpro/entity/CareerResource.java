@@ -25,11 +25,8 @@ public class CareerResource {
     @Column(nullable = false, length = 180)
     private String title;
 
-    @Column(length = 2048)
+    @Column(nullable = false, length = 2048)
     private String url;
-
-    @Column(length = 2048)
-    private String fileUrl;
 
     @Column(nullable = false, length = 80)
     private String category;

@@ -17,15 +17,12 @@ describe('ResourcesComponent', () => {
           useValue: {
             getResources: () => Promise.resolve([]),
             createResource: () => Promise.resolve({}),
-            deleteResource: () => Promise.resolve(),
-            updateResource: () => Promise.resolve({}),
           },
         },
         {
           provide: AuthService,
           useValue: {
             isAuthenticated: () => false,
-            currentUser: () => null,
           },
         },
       ],
