@@ -62,6 +62,7 @@ export const routes: Routes = [
       { path: 'dashboard', component: DashboardComponent },
       { path: 'applications', component: ApplicationListComponent },
       { path: 'profile', component: ProfileComponent },
+      { path: 'resources', component: ResourcesComponent },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ],
   },
