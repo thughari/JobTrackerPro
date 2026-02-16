@@ -32,8 +32,9 @@ export class ResourcesComponent {
   description = '';
   selectedFile: File | null = null;
 
-  searchTerm = '';
-  selectedCategoryFilter = 'All';
+  readonly searchTerm = signal('');
+  readonly selectedCategoryFilter = signal('All');
+  readonly showAddForm = signal(false);
 
   editingResourceId: string | null = null;
   editTitle = '';
@@ -52,10 +53,11 @@ export class ResourcesComponent {
   });
 
   readonly filteredResources = computed(() => {
-    const search = this.searchTerm.trim().toLowerCase();
+    const search = this.searchTerm().trim().toLowerCase();
 
     return this.resources().filter((resource) => {
-      const matchesCategory = this.selectedCategoryFilter === 'All' || resource.category === this.selectedCategoryFilter;
+      const selectedCategory = this.selectedCategoryFilter();
+      const matchesCategory = selectedCategory === 'All' || resource.category === selectedCategory;
 
       if (!matchesCategory) {
         return false;
@@ -91,6 +93,19 @@ export class ResourcesComponent {
       links
     }));
   });
+
+
+  onSearchTermChange(value: string) {
+    this.searchTerm.set(value);
+  }
+
+  onCategoryFilterChange(value: string) {
+    this.selectedCategoryFilter.set(value);
+  }
+
+  toggleAddForm() {
+    this.showAddForm.update((value) => !value);
+  }
 
   constructor() {
     this.loadResources();
@@ -190,6 +205,7 @@ export class ResourcesComponent {
       }
 
       this.saveMessage.set('Resource added. Thanks for contributing!');
+      this.showAddForm.set(false);
     } catch {
       this.saveMessage.set('Could not add the resource. Please check inputs and try again.');
     } finally {

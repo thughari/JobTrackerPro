@@ -36,9 +36,9 @@
 
     <section class="rounded-2xl border border-gray-800 bg-[#151A23] p-4 md:p-5">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <input [(ngModel)]="searchTerm" type="text" placeholder="Search resources..."
+        <input [ngModel]="searchTerm()" (ngModelChange)="onSearchTermChange($event)" type="text" placeholder="Search resources..."
           class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
-        <select [(ngModel)]="selectedCategoryFilter"
+        <select [ngModel]="selectedCategoryFilter()" (ngModelChange)="onCategoryFilterChange($event)"
           class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
           @for (option of categoryOptions(); track option) {
             <option [value]="option">{{ option }}</option>
@@ -52,31 +52,40 @@
 
     @if (authService.isAuthenticated()) {
       <section class="rounded-2xl border border-indigo-500/20 bg-[#151A23] p-4 md:p-7 space-y-4">
-        <h2 class="text-lg md:text-xl font-bold text-white">Share a resource</h2>
-
-        <div class="grid grid-cols-1 gap-3">
-          <input [(ngModel)]="title" type="text" placeholder="Resource title"
-            class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
-          <input [(ngModel)]="category" type="text" placeholder="Category (DSA, Resume, Jobs...)"
-            class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
-          <input [(ngModel)]="url" type="url" placeholder="Optional URL: https://..."
-            class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
-          <label class="text-xs text-gray-400">Optional file upload (PDF, DOC, DOCX, TXT • max 10MB)</label>
-          <input id="resource-file-input" (change)="onFileSelected($event)" type="file" accept=".pdf,.doc,.docx,.txt"
-            class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-indigo-600 file:px-3 file:py-2 file:text-white" />
-          <textarea [(ngModel)]="description" rows="3" placeholder="What is this resource about?"
-            class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500"></textarea>
-        </div>
-
-        <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-          <button (click)="addResource()" [disabled]="isSaving()"
-            class="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-sm font-semibold transition-colors w-full sm:w-auto">
-            {{ isSaving() ? 'Adding...' : 'Add Resource' }}
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="text-lg md:text-xl font-bold text-white">Share a resource</h2>
+          <button (click)="toggleAddForm()"
+            class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold">
+            {{ showAddForm() ? 'Close' : 'Add Resource' }}
           </button>
-          @if (saveMessage()) {
-            <p class="text-sm text-gray-300">{{ saveMessage() }}</p>
-          }
         </div>
+
+        @if (showAddForm()) {
+          <div class="grid grid-cols-1 gap-3">
+            <input [(ngModel)]="title" type="text" placeholder="Resource title"
+              class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
+            <input [(ngModel)]="category" type="text" placeholder="Category (DSA, Resume, Jobs...)"
+              class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
+            <input [(ngModel)]="url" type="url" placeholder="Optional URL: https://..."
+              class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
+            <label class="text-xs text-gray-400">Optional file upload (PDF, DOC, DOCX, TXT • max 10MB)</label>
+            <input id="resource-file-input" (change)="onFileSelected($event)" type="file" accept=".pdf,.doc,.docx,.txt"
+              class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-indigo-600 file:px-3 file:py-2 file:text-white" />
+            <textarea [(ngModel)]="description" rows="3" placeholder="What is this resource about?"
+              class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500"></textarea>
+
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+              <button (click)="addResource()" [disabled]="isSaving()"
+                class="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-sm font-semibold transition-colors w-full sm:w-auto">
+                {{ isSaving() ? 'Adding...' : 'Add Resource' }}
+              </button>
+            </div>
+          </div>
+        }
+
+        @if (saveMessage()) {
+          <p class="text-sm text-gray-300">{{ saveMessage() }}</p>
+        }
       </section>
     } @else {
       <section class="rounded-2xl border border-gray-800 bg-[#151A23] p-4 md:p-5 text-sm text-gray-400">
