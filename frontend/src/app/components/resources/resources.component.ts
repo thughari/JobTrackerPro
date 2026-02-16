@@ -35,9 +35,9 @@ export class ResourcesComponent {
   readonly isInAppRoute = signal(false);
   readonly showAddResourceModal = signal(false);
 
-  searchQuery = '';
-  selectedCategoryFilter = 'all';
-  selectedTypeFilter: ResourceTypeFilter = 'all';
+  readonly searchQuery = signal('');
+  readonly selectedCategoryFilter = signal('all');
+  readonly selectedTypeFilter = signal<ResourceTypeFilter>('all');
 
   title = '';
   url = '';
@@ -56,7 +56,9 @@ export class ResourcesComponent {
   });
 
   readonly filteredResources = computed(() => {
-    const normalizedQuery = this.searchQuery.trim().toLowerCase();
+    const normalizedQuery = this.searchQuery().trim().toLowerCase();
+    const categoryFilter = this.selectedCategoryFilter();
+    const typeFilter = this.selectedTypeFilter();
 
     return this.resources().filter((resource) => {
       const matchesQuery =
@@ -67,12 +69,24 @@ export class ResourcesComponent {
         resource.submittedByName.toLowerCase().includes(normalizedQuery);
 
       const resourceCategory = resource.category?.trim() || 'General';
-      const matchesCategory = this.selectedCategoryFilter === 'all' || resourceCategory === this.selectedCategoryFilter;
-      const matchesType = this.selectedTypeFilter === 'all' || resource.resourceType === this.selectedTypeFilter;
+      const matchesCategory = categoryFilter === 'all' || resourceCategory === categoryFilter;
+      const matchesType = typeFilter === 'all' || resource.resourceType === typeFilter;
 
       return matchesQuery && matchesCategory && matchesType;
     });
   });
+
+  onSearchQueryChange(value: string) {
+    this.searchQuery.set(value);
+  }
+
+  onCategoryFilterChange(value: string) {
+    this.selectedCategoryFilter.set(value);
+  }
+
+  onTypeFilterChange(value: ResourceTypeFilter) {
+    this.selectedTypeFilter.set(value);
+  }
 
   readonly groupedResources = computed(() => {
     const grouped = new Map<string, CareerResource[]>();

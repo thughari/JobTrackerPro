@@ -55,14 +55,14 @@
           <span class="sr-only">Search resources</span>
           <div class="relative">
             <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
-            <input [(ngModel)]="searchQuery" type="text" placeholder="Search by title, category, description or contributor"
+            <input [ngModel]="searchQuery()" (ngModelChange)="onSearchQueryChange($event)" type="text" placeholder="Search by title, category, description or contributor"
               class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
           </div>
         </label>
 
         <label>
           <span class="sr-only">Filter by category</span>
-          <select [(ngModel)]="selectedCategoryFilter"
+          <select [ngModel]="selectedCategoryFilter()" (ngModelChange)="onCategoryFilterChange($event)"
             class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
             @for (categoryOption of categoryOptions(); track categoryOption) {
               <option [value]="categoryOption">{{ categoryOption === 'all' ? 'All categories' : categoryOption }}</option>
@@ -72,7 +72,7 @@
 
         <label>
           <span class="sr-only">Filter by type</span>
-          <select [(ngModel)]="selectedTypeFilter"
+          <select [ngModel]="selectedTypeFilter()" (ngModelChange)="onTypeFilterChange($event)"
             class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
             <option value="all">All types</option>
             <option value="LINK">Links only</option>
