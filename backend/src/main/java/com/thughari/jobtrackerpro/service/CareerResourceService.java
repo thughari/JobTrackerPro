@@ -3,6 +3,7 @@ package com.thughari.jobtrackerpro.service;
 import com.thughari.jobtrackerpro.dto.CareerResourceDTO;
 import com.thughari.jobtrackerpro.dto.CareerResourcePageResponse;
 import com.thughari.jobtrackerpro.dto.CreateCareerResourceRequest;
+import com.thughari.jobtrackerpro.dto.UpdateCareerResourceRequest;
 import com.thughari.jobtrackerpro.entity.CareerResource;
 import com.thughari.jobtrackerpro.entity.User;
 import com.thughari.jobtrackerpro.interfaces.StorageService;
@@ -13,15 +14,22 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import jakarta.persistence.criteria.Predicate;
+
+import java.util.ArrayList;
+import java.util.Locale;
 
 @Service
 @Transactional
 public class CareerResourceService {
 
     private static final int MAX_PAGE_SIZE = 50;
+    private static final int DEMO_MIN_RESOURCE_COUNT = 60;
 
     private final CareerResourceRepository resourceRepository;
     private final UserRepository userRepository;
@@ -36,13 +44,21 @@ public class CareerResourceService {
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "resourcePages", key = "{#page, #size, #viewerEmail == null ? 'anon' : #viewerEmail}")
-    public CareerResourcePageResponse getResourcePage(int page, int size, String viewerEmail) {
+    @Cacheable(value = "resourcePages", key = "{#page, #size, #query == null ? '' : #query, #category == null ? '' : #category, #type == null ? '' : #type, #viewerEmail == null ? 'anon' : #viewerEmail}")
+    public CareerResourcePageResponse getResourcePage(int page,
+                                                      int size,
+                                                      String query,
+                                                      String category,
+                                                      String type,
+                                                      String viewerEmail) {
         int sanitizedPage = Math.max(0, page);
         int sanitizedSize = Math.max(1, Math.min(size, MAX_PAGE_SIZE));
+        String normalizedQuery = normalizeFilter(query);
+        String normalizedCategory = normalizeFilter(category);
+        String normalizedType = normalizeType(type);
 
         var pageable = PageRequest.of(sanitizedPage, sanitizedSize, Sort.by(Sort.Direction.DESC, "createdAt"));
-        var resourcePage = resourceRepository.findAllByOrderByCreatedAtDesc(pageable);
+        var resourcePage = resourceRepository.findAll(buildResourceFilter(normalizedQuery, normalizedCategory, normalizedType), pageable);
 
         var content = resourcePage.getContent()
                 .stream()
@@ -57,6 +73,62 @@ public class CareerResourceService {
                 resourcePage.getTotalPages(),
                 resourcePage.hasNext()
         );
+    }
+
+    private Specification<CareerResource> buildResourceFilter(String query, String category, String type) {
+        return (root, criteriaQuery, criteriaBuilder) -> {
+            var predicates = new ArrayList<Predicate>();
+
+            if (query != null) {
+                String likeQuery = "%" + query.toLowerCase(Locale.ROOT) + "%";
+                predicates.add(criteriaBuilder.or(
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("title")), likeQuery),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("category")), likeQuery),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("description")), likeQuery),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("submittedByName")), likeQuery)
+                ));
+            }
+
+            if (category != null) {
+                String likeCategory = "%" + category.toLowerCase(Locale.ROOT) + "%";
+                predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("category")), likeCategory));
+            }
+
+            if (type != null) {
+                predicates.add(criteriaBuilder.equal(criteriaBuilder.upper(root.get("resourceType")), type));
+            }
+
+            return predicates.isEmpty()
+                    ? criteriaBuilder.conjunction()
+                    : criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    private String normalizeFilter(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String trimmed = value.trim();
+        if (trimmed.isEmpty() || "all".equalsIgnoreCase(trimmed)) {
+            return null;
+        }
+
+        return trimmed;
+    }
+
+    private String normalizeType(String value) {
+        String normalized = normalizeFilter(value);
+        if (normalized == null) {
+            return null;
+        }
+
+        String upper = normalized.toUpperCase(Locale.ROOT);
+        if (!upper.equals("LINK") && !upper.equals("FILE")) {
+            return null;
+        }
+
+        return upper;
     }
 
     @CacheEvict(value = "resourcePages", allEntries = true)
@@ -120,17 +192,79 @@ public class CareerResourceService {
         resourceRepository.delete(resource);
     }
 
-    @PostConstruct
-    public void seedStarterResources() {
-        if (resourceRepository.count() > 0) {
-            return;
+    @Transactional(readOnly = true)
+    public java.util.List<CareerResourceDTO> getMyResources(String email) {
+        return resourceRepository.findAllBySubmittedByEmailOrderByCreatedAtDesc(email)
+                .stream()
+                .map(resource -> toDTO(resource, email))
+                .toList();
+    }
+
+    @CacheEvict(value = "resourcePages", allEntries = true)
+    public CareerResourceDTO updateResource(String email, java.util.UUID resourceId, UpdateCareerResourceRequest request) {
+        CareerResource resource = resourceRepository.findById(resourceId)
+                .orElseThrow(() -> new IllegalArgumentException("Resource not found"));
+
+        if (!resource.getSubmittedByEmail().equalsIgnoreCase(email)) {
+            throw new IllegalArgumentException("You can only edit resources you added");
         }
 
+        validateCommonFields(request.getTitle(), request.getCategory());
+
+        resource.setTitle(request.getTitle().trim());
+        resource.setCategory(request.getCategory().trim());
+        resource.setDescription(request.getDescription() == null ? null : request.getDescription().trim());
+
+        if ("LINK".equalsIgnoreCase(resource.getResourceType())) {
+            String normalizedUrl = normalizeUrl(request.getUrl());
+            if (normalizedUrl == null || normalizedUrl.isBlank()) {
+                throw new IllegalArgumentException("Valid URL is required for link resources");
+            }
+            resource.setUrl(normalizedUrl);
+        }
+
+        return toDTO(resourceRepository.save(resource), email);
+    }
+
+    @PostConstruct
+    public void seedStarterResources() {
         addSeedResource("Career Preparation Notes", "https://docs.google.com/document/d/1-25JrPUai6P7pjKk1g7mELpI0YUINS_NpjUk7lsMfyg/edit?tab=t.0#heading=h.kf8l3f8jftc2", "Guides & Study Docs");
         addSeedResource("Main Career Resources Folder", "https://drive.google.com/drive/folders/1ISp9GBv7ih1blEQOPYplD_idG1j0ibGq?usp=sharing", "Drive Folders & File Packs");
         addSeedResource("DSA Folder", "https://drive.google.com/drive/folders/1ei52Zc_cQe0rJK404M56BmEisUjnF6kN?usp=drive_link", "Drive Folders & File Packs");
         addSeedResource("21 Days React Study Plan", "https://thecodedose.notion.site/21-Days-React-Study-Plan-1988ff023cae48459bae8cb20cb75a67", "Structured Learning");
         addSeedResource("Opportunity Tracker Sheet", "https://docs.google.com/spreadsheets/d/1KBFiqJTaFY1164XtglKvn2vAofScCfGlkY-n54D2d14/edit?gid=584790886#gid=584790886", "Trackers & Opportunity Sheets");
+
+        seedDemoVolumeResources();
+    }
+
+    private void seedDemoVolumeResources() {
+        long currentCount = resourceRepository.count();
+        if (currentCount >= DEMO_MIN_RESOURCE_COUNT) {
+            return;
+        }
+
+        String[][] templates = {
+                {"React Interview Drill", "https://example.com/resources/react-interview-drill", "Interview Prep"},
+                {"DSA Patterns Workbook", "https://example.com/resources/dsa-patterns-workbook", "DSA"},
+                {"System Design Primer", "https://example.com/resources/system-design-primer", "System Design"},
+                {"Resume Bullet Bank", "https://example.com/resources/resume-bullet-bank", "Resume"},
+                {"Backend Fundamentals Roadmap", "https://example.com/resources/backend-fundamentals-roadmap", "Roadmaps"},
+                {"Frontend Fundamentals Roadmap", "https://example.com/resources/frontend-fundamentals-roadmap", "Roadmaps"},
+                {"Mock Interview Checklist", "https://example.com/resources/mock-interview-checklist", "Mock Interviews"},
+                {"Job Board Tracker", "https://example.com/resources/job-board-tracker", "Job Boards"},
+                {"Behavioral Question Matrix", "https://example.com/resources/behavioral-question-matrix", "Interview Prep"},
+                {"Portfolio Project Ideas", "https://example.com/resources/portfolio-project-ideas", "Portfolio"}
+        };
+
+        long resourcesToAdd = DEMO_MIN_RESOURCE_COUNT - currentCount;
+        for (int i = 0; i < resourcesToAdd; i++) {
+            String[] template = templates[i % templates.length];
+            String title = template[0] + " #" + (i + 1);
+            String url = template[1] + "?v=" + (i + 1);
+            String category = template[2];
+
+            addSeedResource(title, url, category);
+        }
     }
 
     private void addSeedResource(String title, String url, String category) {

@@ -34,6 +34,19 @@ export interface CreateResourcePayload {
   description?: string;
 }
 
+export interface UpdateResourcePayload {
+  title: string;
+  url?: string;
+  category: string;
+  description?: string;
+}
+
+export interface ResourceQueryFilters {
+  query?: string;
+  category?: string;
+  type?: 'all' | 'LINK' | 'FILE';
+}
+
 @Injectable({ providedIn: 'root' })
 export class ResourceService {
   private readonly API = environment.apiBaseUrl;
@@ -42,9 +55,12 @@ export class ResourceService {
   private apiUrl = `${this.API}/api/resources`;
   private pageCache = new Map<string, CareerResourcePage>();
 
-  async getResources(page: number, size: number, forceRefresh = false) {
+  async getResources(page: number, size: number, filters: ResourceQueryFilters = {}, forceRefresh = false) {
     const cacheScope = this.authService.currentUser()?.email ?? 'anonymous';
-    const key = `${cacheScope}:${page}:${size}`;
+    const query = filters.query?.trim() ?? '';
+    const category = filters.category?.trim() ?? '';
+    const type = filters.type && filters.type !== 'all' ? filters.type : '';
+    const key = `${cacheScope}:${page}:${size}:${query}:${category}:${type}`;
 
     if (!forceRefresh && this.pageCache.has(key)) {
       return this.pageCache.get(key)!;
@@ -54,7 +70,10 @@ export class ResourceService {
       this.http.get<CareerResourcePage>(this.apiUrl, {
         params: {
           page,
-          size
+          size,
+          ...(query ? { query } : {}),
+          ...(category ? { category } : {}),
+          ...(type ? { type } : {})
         }
       })
     );
@@ -98,5 +117,18 @@ export class ResourceService {
   async deleteResource(resourceId: string) {
     await firstValueFrom(this.http.delete<void>(`${this.apiUrl}/${resourceId}`));
     this.invalidateCache();
+  }
+
+  async getMyResources() {
+    return await firstValueFrom(this.http.get<CareerResource[]>(`${this.apiUrl}/mine`));
+  }
+
+  async updateResource(resourceId: string, payload: UpdateResourcePayload) {
+    const updated = await firstValueFrom(
+      this.http.put<CareerResource>(`${this.apiUrl}/${resourceId}`, payload)
+    );
+
+    this.invalidateCache();
+    return updated;
   }
 }

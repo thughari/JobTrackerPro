@@ -1,10 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { filter } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
-import { CareerResource, ResourceService } from '../../services/resource.service';
+import { CareerResource, ResourceQueryFilters, ResourceService } from '../../services/resource.service';
 import { LogoComponent } from '../ui/logo/logo.component';
 
 const PAGE_SIZE = 20;
@@ -41,9 +41,16 @@ export class ResourcesComponent {
   readonly currentPage = signal(0);
   readonly errorMessage = signal('');
   readonly saveMessage = signal('');
+  readonly editMessage = signal('');
   readonly isSaving = signal(false);
+  readonly isUpdating = signal(false);
   readonly isInAppRoute = signal(false);
   readonly showAddResourceModal = signal(false);
+  readonly isLoadingMyResources = signal(false);
+  readonly myResources = signal<CareerResource[]>([]);
+  readonly editingResource = signal<CareerResource | null>(null);
+  private searchDebounceRef: ReturnType<typeof setTimeout> | null = null;
+  private scrollLoadDebounceRef: ReturnType<typeof setTimeout> | null = null;
 
   readonly searchQuery = signal('');
   readonly selectedCategoryFilter = signal('all');
@@ -57,6 +64,11 @@ export class ResourcesComponent {
   selectedFile: File | null = null;
   selectedFileError = '';
 
+  editTitle = '';
+  editUrl = '';
+  editCategory = '';
+  editDescription = '';
+
   readonly categoryOptions = computed(() => {
     const categories = new Set<string>();
     for (const category of DEFAULT_RESOURCE_CATEGORIES) {
@@ -68,46 +80,26 @@ export class ResourcesComponent {
     return ['all', ...Array.from(categories).sort((a, b) => a.localeCompare(b))];
   });
 
-  readonly filteredResources = computed(() => {
-    const normalizedQuery = this.searchQuery().trim().toLowerCase();
-    const categoryFilter = this.selectedCategoryFilter();
-    const typeFilter = this.selectedTypeFilter();
-
-    return this.resources().filter((resource) => {
-      const matchesQuery =
-        !normalizedQuery ||
-        resource.title.toLowerCase().includes(normalizedQuery) ||
-        resource.category.toLowerCase().includes(normalizedQuery) ||
-        (resource.description || '').toLowerCase().includes(normalizedQuery) ||
-        resource.submittedByName.toLowerCase().includes(normalizedQuery);
-
-      const resourceCategory = resource.category?.trim() || 'General';
-      const matchesCategory =
-        categoryFilter === 'all' ||
-        resourceCategory.toLowerCase().includes(categoryFilter.toLowerCase());
-      const matchesType = typeFilter === 'all' || resource.resourceType === typeFilter;
-
-      return matchesQuery && matchesCategory && matchesType;
-    });
-  });
-
   onSearchQueryChange(value: string) {
     this.searchQuery.set(value);
+    this.scheduleFilterReload();
   }
 
   onCategoryFilterChange(value: string) {
     const normalized = value.trim();
     this.selectedCategoryFilter.set(normalized ? normalized : 'all');
+    this.loadResources(true);
   }
 
   onTypeFilterChange(value: ResourceTypeFilter) {
     this.selectedTypeFilter.set(value);
+    this.loadResources(true);
   }
 
   readonly groupedResources = computed(() => {
     const grouped = new Map<string, CareerResource[]>();
 
-    for (const resource of this.filteredResources()) {
+    for (const resource of this.resources()) {
       const key = resource.category?.trim() || 'General';
       const list = grouped.get(key) ?? [];
       list.push(resource);
@@ -127,6 +119,9 @@ export class ResourcesComponent {
       .subscribe(() => this.syncRouteContext());
 
     this.loadResources(true);
+    if (this.authService.isAuthenticated()) {
+      this.loadMyResources();
+    }
   }
 
   private syncRouteContext() {
@@ -144,6 +139,24 @@ export class ResourcesComponent {
     this.selectedFileError = '';
   }
 
+  async loadMyResources() {
+    if (!this.authService.isAuthenticated()) {
+      this.myResources.set([]);
+      return;
+    }
+
+    this.isLoadingMyResources.set(true);
+    this.editMessage.set('');
+    try {
+      const mine = await this.resourceService.getMyResources();
+      this.myResources.set(mine);
+    } catch {
+      this.editMessage.set('Could not load your shared resources right now.');
+    } finally {
+      this.isLoadingMyResources.set(false);
+    }
+  }
+
   async loadResources(reset = false) {
     if (reset) {
       this.currentPage.set(0);
@@ -157,7 +170,7 @@ export class ResourcesComponent {
 
     try {
       const page = this.currentPage();
-      const response = await this.resourceService.getResources(page, PAGE_SIZE, reset);
+      const response = await this.resourceService.getResources(page, PAGE_SIZE, this.currentFilters(), reset);
       const merged = reset ? response.content : [...this.resources(), ...response.content];
       this.resources.set(merged);
       this.hasNext.set(response.hasNext);
@@ -168,6 +181,50 @@ export class ResourcesComponent {
       this.isLoading.set(false);
       this.isLoadingMore.set(false);
     }
+  }
+
+  @HostListener('window:scroll')
+  onWindowScroll() {
+    if (!this.hasNext() || this.isLoading() || this.isLoadingMore() || this.showAddResourceModal()) {
+      return;
+    }
+
+    const scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+    const fullHeight = document.documentElement.scrollHeight || document.body.scrollHeight || 0;
+    const remaining = fullHeight - (scrollTop + viewportHeight);
+
+    if (remaining > 220) {
+      return;
+    }
+
+    if (this.scrollLoadDebounceRef) {
+      return;
+    }
+
+    this.scrollLoadDebounceRef = setTimeout(() => {
+      this.scrollLoadDebounceRef = null;
+    }, 300);
+
+    this.loadResources();
+  }
+
+  private scheduleFilterReload() {
+    if (this.searchDebounceRef) {
+      clearTimeout(this.searchDebounceRef);
+    }
+
+    this.searchDebounceRef = setTimeout(() => {
+      this.loadResources(true);
+    }, 250);
+  }
+
+  private currentFilters(): ResourceQueryFilters {
+    return {
+      query: this.searchQuery(),
+      category: this.selectedCategoryFilter(),
+      type: this.selectedTypeFilter()
+    };
   }
 
   onModeChange(mode: 'link' | 'file') {
@@ -263,6 +320,9 @@ export class ResourcesComponent {
       this.selectedFile = null;
       this.saveMessage.set('Resource added. Thanks for contributing!');
       this.showAddResourceModal.set(false);
+      if (created.ownedByCurrentUser) {
+        this.myResources.set([created, ...this.myResources()]);
+      }
     } catch {
       this.saveMessage.set('Could not add the resource. Please verify your details and try again.');
     } finally {
@@ -272,12 +332,66 @@ export class ResourcesComponent {
 
   async deleteResource(resource: CareerResource) {
     this.saveMessage.set('');
+    this.editMessage.set('');
     try {
       await this.resourceService.deleteResource(resource.id);
       this.resources.set(this.resources().filter(item => item.id !== resource.id));
+      this.myResources.set(this.myResources().filter(item => item.id !== resource.id));
       this.saveMessage.set('Resource removed successfully.');
     } catch {
       this.saveMessage.set('Could not remove this resource right now.');
+    }
+  }
+
+  startEditResource(resource: CareerResource) {
+    this.editingResource.set(resource);
+    this.editTitle = resource.title;
+    this.editUrl = resource.resourceType === 'LINK' ? resource.url : '';
+    this.editCategory = resource.category;
+    this.editDescription = resource.description ?? '';
+    this.editMessage.set('');
+  }
+
+  cancelEditResource() {
+    this.editingResource.set(null);
+    this.editMessage.set('');
+  }
+
+  async saveResourceEdit() {
+    const target = this.editingResource();
+    if (!target) {
+      return;
+    }
+
+    if (!this.editTitle.trim() || !this.editCategory.trim()) {
+      this.editMessage.set('Title and category are required.');
+      return;
+    }
+
+    if (target.resourceType === 'LINK' && !this.editUrl.trim()) {
+      this.editMessage.set('URL is required for link resources.');
+      return;
+    }
+
+    this.isUpdating.set(true);
+    this.editMessage.set('');
+
+    try {
+      const updated = await this.resourceService.updateResource(target.id, {
+        title: this.editTitle,
+        url: target.resourceType === 'LINK' ? this.editUrl : undefined,
+        category: this.editCategory,
+        description: this.editDescription
+      });
+
+      this.myResources.set(this.myResources().map(item => item.id === updated.id ? updated : item));
+      this.resources.set(this.resources().map(item => item.id === updated.id ? updated : item));
+      this.editingResource.set(null);
+      this.saveMessage.set('Resource updated successfully.');
+    } catch {
+      this.editMessage.set('Could not update this resource right now.');
+    } finally {
+      this.isUpdating.set(false);
     }
   }
 

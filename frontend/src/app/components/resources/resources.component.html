@@ -91,6 +91,55 @@
       }
     </section>
 
+    @if (authService.isAuthenticated()) {
+      <section class="rounded-2xl border border-indigo-500/30 bg-[#151A23] p-4 sm:p-5 md:p-6 space-y-4">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-semibold text-white">Your shared resources</h2>
+            <p class="text-sm text-gray-400">Edit or remove resources you have contributed.</p>
+          </div>
+          <button (click)="loadMyResources()"
+            class="inline-flex items-center gap-2 rounded-lg border border-gray-700 px-3 py-2 text-xs sm:text-sm text-gray-300 hover:text-white hover:border-indigo-500/60 transition-colors">
+            <i class="ph ph-arrows-clockwise"></i>
+            Refresh
+          </button>
+        </div>
+
+        @if (isLoadingMyResources()) {
+          <p class="text-sm text-gray-400">Loading your resources...</p>
+        } @else if (!myResources().length) {
+          <p class="text-sm text-gray-400">You have not shared any resources yet.</p>
+        } @else {
+          <ul class="space-y-2">
+            @for (resource of myResources(); track resource.id) {
+              <li class="rounded-lg border border-gray-800 bg-[#0B0E14] px-3 py-3 flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="text-sm text-white truncate">{{ resource.title }}</p>
+                  <p class="text-xs text-gray-500 mt-1">{{ resource.category }} · {{ resource.resourceType === 'FILE' ? 'File' : 'Link' }}</p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <button (click)="startEditResource(resource)"
+                    class="inline-flex items-center justify-center rounded-md border border-gray-700 p-2 text-gray-300 hover:text-white hover:border-indigo-500/60 transition-colors"
+                    title="Edit resource">
+                    <i class="ph ph-pencil-simple"></i>
+                  </button>
+                  <button (click)="deleteResource(resource)"
+                    class="inline-flex items-center justify-center rounded-md border border-red-900/70 p-2 text-red-400 hover:text-red-300 hover:border-red-700 transition-colors"
+                    title="Delete resource">
+                    <i class="ph ph-trash"></i>
+                  </button>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+
+        @if (editMessage()) {
+          <p class="text-sm text-gray-300">{{ editMessage() }}</p>
+        }
+      </section>
+    }
+
     @if (!authService.isAuthenticated()) {
       <section class="rounded-2xl border border-gray-800 bg-[#151A23] p-4 sm:p-5 text-sm text-gray-400">
         Want to contribute? <a routerLink="/login" class="text-indigo-400 hover:text-indigo-300">Log in</a> and add links or files.
@@ -185,16 +234,9 @@
         <div class="grid gap-3 sm:gap-4 md:grid-cols-2">
           <input [(ngModel)]="title" type="text" placeholder="Resource title"
             class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
-          <input [(ngModel)]="category" type="text" list="resource-category-add-list" placeholder="Choose category"
+          <input [(ngModel)]="category" type="text" list="resource-category-options" placeholder="Choose category"
             class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
         </div>
-        <datalist id="resource-category-add-list">
-          @for (categoryOption of categoryOptions(); track categoryOption) {
-            @if (categoryOption !== 'all') {
-              <option [value]="categoryOption"></option>
-            }
-          }
-        </datalist>
 
         @if (contributionMode === 'link') {
           <input [(ngModel)]="url" type="url" placeholder="https://..."
@@ -229,4 +271,58 @@
       </div>
     </div>
   }
+
+  @if (editingResource()) {
+    <div class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm p-4 sm:p-6 overflow-y-auto">
+      <div class="max-w-2xl mx-auto rounded-2xl border border-indigo-500/30 bg-[#151A23] p-4 sm:p-6 md:p-7 space-y-4 mt-8 sm:mt-12">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <h2 class="text-lg sm:text-xl font-bold text-white">Edit resource</h2>
+            <p class="text-sm text-gray-400 mt-1">Update your resource details.</p>
+          </div>
+          <button (click)="cancelEditResource()"
+            class="inline-flex items-center justify-center rounded-lg border border-gray-700 p-2 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
+            title="Close">
+            <i class="ph ph-x"></i>
+          </button>
+        </div>
+
+        <div class="grid gap-3 sm:gap-4 md:grid-cols-2">
+          <input [(ngModel)]="editTitle" type="text" placeholder="Resource title"
+            class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
+          <input [(ngModel)]="editCategory" type="text" list="resource-category-options" placeholder="Choose category"
+            class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
+        </div>
+
+        @if (editingResource()?.resourceType === 'LINK') {
+          <input [(ngModel)]="editUrl" type="url" placeholder="https://..."
+            class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
+        } @else {
+          <p class="text-xs text-gray-500">File URL cannot be edited for uploaded resources. You can edit title/category/description.</p>
+        }
+
+        <textarea [(ngModel)]="editDescription" rows="3" placeholder="What is this resource about?"
+          class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500"></textarea>
+
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
+          <button (click)="cancelEditResource()"
+            class="px-4 py-2.5 rounded-lg border border-gray-700 text-sm font-semibold hover:border-gray-500 hover:text-white transition-colors">
+            Cancel
+          </button>
+          <button (click)="saveResourceEdit()" [disabled]="isUpdating()"
+            class="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-sm font-semibold transition-colors">
+            {{ isUpdating() ? 'Saving...' : 'Save Changes' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+  <datalist id="resource-category-options">
+    @for (categoryOption of categoryOptions(); track categoryOption) {
+      @if (categoryOption !== 'all') {
+        <option [value]="categoryOption"></option>
+      }
+    }
+  </datalist>
+
 </div>
