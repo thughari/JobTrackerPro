@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { filter } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
-import { CareerResource, ResourceService } from '../../services/resource.service';
+import { CareerResource, ResourceQueryFilters, ResourceService } from '../../services/resource.service';
 import { LogoComponent } from '../ui/logo/logo.component';
 
 const PAGE_SIZE = 20;
@@ -44,6 +44,7 @@ export class ResourcesComponent {
   readonly isSaving = signal(false);
   readonly isInAppRoute = signal(false);
   readonly showAddResourceModal = signal(false);
+  private searchDebounceRef: ReturnType<typeof setTimeout> | null = null;
 
   readonly searchQuery = signal('');
   readonly selectedCategoryFilter = signal('all');
@@ -68,46 +69,26 @@ export class ResourcesComponent {
     return ['all', ...Array.from(categories).sort((a, b) => a.localeCompare(b))];
   });
 
-  readonly filteredResources = computed(() => {
-    const normalizedQuery = this.searchQuery().trim().toLowerCase();
-    const categoryFilter = this.selectedCategoryFilter();
-    const typeFilter = this.selectedTypeFilter();
-
-    return this.resources().filter((resource) => {
-      const matchesQuery =
-        !normalizedQuery ||
-        resource.title.toLowerCase().includes(normalizedQuery) ||
-        resource.category.toLowerCase().includes(normalizedQuery) ||
-        (resource.description || '').toLowerCase().includes(normalizedQuery) ||
-        resource.submittedByName.toLowerCase().includes(normalizedQuery);
-
-      const resourceCategory = resource.category?.trim() || 'General';
-      const matchesCategory =
-        categoryFilter === 'all' ||
-        resourceCategory.toLowerCase().includes(categoryFilter.toLowerCase());
-      const matchesType = typeFilter === 'all' || resource.resourceType === typeFilter;
-
-      return matchesQuery && matchesCategory && matchesType;
-    });
-  });
-
   onSearchQueryChange(value: string) {
     this.searchQuery.set(value);
+    this.scheduleFilterReload();
   }
 
   onCategoryFilterChange(value: string) {
     const normalized = value.trim();
     this.selectedCategoryFilter.set(normalized ? normalized : 'all');
+    this.loadResources(true);
   }
 
   onTypeFilterChange(value: ResourceTypeFilter) {
     this.selectedTypeFilter.set(value);
+    this.loadResources(true);
   }
 
   readonly groupedResources = computed(() => {
     const grouped = new Map<string, CareerResource[]>();
 
-    for (const resource of this.filteredResources()) {
+    for (const resource of this.resources()) {
       const key = resource.category?.trim() || 'General';
       const list = grouped.get(key) ?? [];
       list.push(resource);
@@ -157,7 +138,7 @@ export class ResourcesComponent {
 
     try {
       const page = this.currentPage();
-      const response = await this.resourceService.getResources(page, PAGE_SIZE, reset);
+      const response = await this.resourceService.getResources(page, PAGE_SIZE, this.currentFilters(), reset);
       const merged = reset ? response.content : [...this.resources(), ...response.content];
       this.resources.set(merged);
       this.hasNext.set(response.hasNext);
@@ -168,6 +149,24 @@ export class ResourcesComponent {
       this.isLoading.set(false);
       this.isLoadingMore.set(false);
     }
+  }
+
+  private scheduleFilterReload() {
+    if (this.searchDebounceRef) {
+      clearTimeout(this.searchDebounceRef);
+    }
+
+    this.searchDebounceRef = setTimeout(() => {
+      this.loadResources(true);
+    }, 250);
+  }
+
+  private currentFilters(): ResourceQueryFilters {
+    return {
+      query: this.searchQuery(),
+      category: this.selectedCategoryFilter(),
+      type: this.selectedTypeFilter()
+    };
   }
 
   onModeChange(mode: 'link' | 'file') {

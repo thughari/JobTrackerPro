@@ -34,9 +34,12 @@ public class CareerResourceController {
     @GetMapping
     public ResponseEntity<CareerResourcePageResponse> getResources(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String type
     ) {
-        return ResponseEntity.ok(careerResourceService.getResourcePage(page, size, getAuthenticatedEmailOrNull()));
+        return ResponseEntity.ok(careerResourceService.getResourcePage(page, size, query, category, type, getAuthenticatedEmailOrNull()));
     }
 
     @PostMapping

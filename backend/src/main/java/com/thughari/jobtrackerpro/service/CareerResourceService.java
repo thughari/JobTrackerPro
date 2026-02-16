@@ -13,9 +13,15 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import jakarta.persistence.criteria.Predicate;
+
+import java.util.ArrayList;
+import java.util.Locale;
 
 @Service
 @Transactional
@@ -36,13 +42,21 @@ public class CareerResourceService {
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "resourcePages", key = "{#page, #size, #viewerEmail == null ? 'anon' : #viewerEmail}")
-    public CareerResourcePageResponse getResourcePage(int page, int size, String viewerEmail) {
+    @Cacheable(value = "resourcePages", key = "{#page, #size, #query == null ? '' : #query, #category == null ? '' : #category, #type == null ? '' : #type, #viewerEmail == null ? 'anon' : #viewerEmail}")
+    public CareerResourcePageResponse getResourcePage(int page,
+                                                      int size,
+                                                      String query,
+                                                      String category,
+                                                      String type,
+                                                      String viewerEmail) {
         int sanitizedPage = Math.max(0, page);
         int sanitizedSize = Math.max(1, Math.min(size, MAX_PAGE_SIZE));
+        String normalizedQuery = normalizeFilter(query);
+        String normalizedCategory = normalizeFilter(category);
+        String normalizedType = normalizeType(type);
 
         var pageable = PageRequest.of(sanitizedPage, sanitizedSize, Sort.by(Sort.Direction.DESC, "createdAt"));
-        var resourcePage = resourceRepository.findAllByOrderByCreatedAtDesc(pageable);
+        var resourcePage = resourceRepository.findAll(buildResourceFilter(normalizedQuery, normalizedCategory, normalizedType), pageable);
 
         var content = resourcePage.getContent()
                 .stream()
@@ -57,6 +71,62 @@ public class CareerResourceService {
                 resourcePage.getTotalPages(),
                 resourcePage.hasNext()
         );
+    }
+
+    private Specification<CareerResource> buildResourceFilter(String query, String category, String type) {
+        return (root, criteriaQuery, criteriaBuilder) -> {
+            var predicates = new ArrayList<Predicate>();
+
+            if (query != null) {
+                String likeQuery = "%" + query.toLowerCase(Locale.ROOT) + "%";
+                predicates.add(criteriaBuilder.or(
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("title")), likeQuery),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("category")), likeQuery),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("description")), likeQuery),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("submittedByName")), likeQuery)
+                ));
+            }
+
+            if (category != null) {
+                String likeCategory = "%" + category.toLowerCase(Locale.ROOT) + "%";
+                predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("category")), likeCategory));
+            }
+
+            if (type != null) {
+                predicates.add(criteriaBuilder.equal(criteriaBuilder.upper(root.get("resourceType")), type));
+            }
+
+            return predicates.isEmpty()
+                    ? criteriaBuilder.conjunction()
+                    : criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    private String normalizeFilter(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String trimmed = value.trim();
+        if (trimmed.isEmpty() || "all".equalsIgnoreCase(trimmed)) {
+            return null;
+        }
+
+        return trimmed;
+    }
+
+    private String normalizeType(String value) {
+        String normalized = normalizeFilter(value);
+        if (normalized == null) {
+            return null;
+        }
+
+        String upper = normalized.toUpperCase(Locale.ROOT);
+        if (!upper.equals("LINK") && !upper.equals("FILE")) {
+            return null;
+        }
+
+        return upper;
     }
 
     @CacheEvict(value = "resourcePages", allEntries = true)
