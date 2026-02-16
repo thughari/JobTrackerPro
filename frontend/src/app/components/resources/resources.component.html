@@ -61,13 +61,18 @@
         </label>
 
         <label>
-          <span class="sr-only">Filter by category</span>
-          <select [ngModel]="selectedCategoryFilter()" (ngModelChange)="onCategoryFilterChange($event)"
-            class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+          <span class="sr-only">Search by category</span>
+          <div class="relative">
+            <i class="ph ph-funnel absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
+            <input [ngModel]="selectedCategoryFilter()" (ngModelChange)="onCategoryFilterChange($event)" list="resource-category-filter-list"
+              placeholder="All categories (type to search)"
+              class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
+          </div>
+          <datalist id="resource-category-filter-list">
             @for (categoryOption of categoryOptions(); track categoryOption) {
               <option [value]="categoryOption">{{ categoryOption === 'all' ? 'All categories' : categoryOption }}</option>
             }
-          </select>
+          </datalist>
         </label>
 
         <label>
@@ -180,9 +185,16 @@
         <div class="grid gap-3 sm:gap-4 md:grid-cols-2">
           <input [(ngModel)]="title" type="text" placeholder="Resource title"
             class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
-          <input [(ngModel)]="category" type="text" placeholder="Category (e.g., DSA, Resume, Sheets)"
+          <input [(ngModel)]="category" type="text" list="resource-category-add-list" placeholder="Choose category"
             class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
         </div>
+        <datalist id="resource-category-add-list">
+          @for (categoryOption of categoryOptions(); track categoryOption) {
+            @if (categoryOption !== 'all') {
+              <option [value]="categoryOption"></option>
+            }
+          }
+        </datalist>
 
         @if (contributionMode === 'link') {
           <input [(ngModel)]="url" type="url" placeholder="https://..."

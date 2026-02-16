@@ -9,6 +9,16 @@ import { LogoComponent } from '../ui/logo/logo.component';
 
 const PAGE_SIZE = 20;
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+const DEFAULT_RESOURCE_CATEGORIES = [
+  'DSA',
+  'Resume',
+  'System Design',
+  'Interview Prep',
+  'Job Boards',
+  'Roadmaps',
+  'Mock Interviews',
+  'Portfolio'
+];
 
 type ResourceTypeFilter = 'all' | 'LINK' | 'FILE';
 
@@ -49,6 +59,9 @@ export class ResourcesComponent {
 
   readonly categoryOptions = computed(() => {
     const categories = new Set<string>();
+    for (const category of DEFAULT_RESOURCE_CATEGORIES) {
+      categories.add(category);
+    }
     for (const resource of this.resources()) {
       categories.add(resource.category?.trim() || 'General');
     }
@@ -69,7 +82,9 @@ export class ResourcesComponent {
         resource.submittedByName.toLowerCase().includes(normalizedQuery);
 
       const resourceCategory = resource.category?.trim() || 'General';
-      const matchesCategory = categoryFilter === 'all' || resourceCategory === categoryFilter;
+      const matchesCategory =
+        categoryFilter === 'all' ||
+        resourceCategory.toLowerCase().includes(categoryFilter.toLowerCase());
       const matchesType = typeFilter === 'all' || resource.resourceType === typeFilter;
 
       return matchesQuery && matchesCategory && matchesType;
@@ -81,7 +96,8 @@ export class ResourcesComponent {
   }
 
   onCategoryFilterChange(value: string) {
-    this.selectedCategoryFilter.set(value);
+    const normalized = value.trim();
+    this.selectedCategoryFilter.set(normalized ? normalized : 'all');
   }
 
   onTypeFilterChange(value: ResourceTypeFilter) {
