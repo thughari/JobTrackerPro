@@ -1,0 +1,101 @@
+<div class="min-h-screen bg-[#0B0E14] text-gray-300 font-sans selection:bg-indigo-500/30">
+  <nav class="sticky top-0 z-50 bg-[#0B0E14]/80 backdrop-blur-md border-b border-gray-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-20">
+        <a routerLink="/" class="cursor-pointer hover:opacity-80 transition-opacity">
+          <app-logo size="md"></app-logo>
+        </a>
+
+        <div class="flex items-center gap-4">
+          @if (authService.isAuthenticated()) {
+            <a routerLink="/app/dashboard"
+              class="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors shadow-lg shadow-indigo-500/20 flex items-center gap-2">
+              <i class="ph ph-squares-four text-lg"></i>
+              Dashboard
+            </a>
+          } @else {
+            <a routerLink="/login" class="text-sm font-medium text-gray-400 hover:text-white transition-colors whitespace-nowrap">Log in</a>
+            <a routerLink="/signup"
+              class="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm font-medium transition-all shadow-lg shadow-indigo-500/25 whitespace-nowrap">
+              Sign up
+            </a>
+          }
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 space-y-10">
+    <header class="text-center max-w-3xl mx-auto space-y-4">
+      <p class="text-indigo-400 font-semibold tracking-wide uppercase text-sm">Community Career Resource Mine</p>
+      <h1 class="text-3xl md:text-5xl font-bold text-white tracking-tight">Backend-powered resources for everyone</h1>
+      <p class="text-gray-400 text-base md:text-lg">Resources are now served from Postgres through the API, and logged-in users can contribute links to make this page community friendly.</p>
+    </header>
+
+    @if (authService.isAuthenticated()) {
+      <section class="rounded-2xl border border-indigo-500/30 bg-[#151A23] p-6 md:p-8 space-y-4">
+        <h2 class="text-xl font-bold text-white">Share a resource</h2>
+        <p class="text-sm text-gray-400">Contribute helpful links so the whole community benefits.</p>
+
+        <div class="grid md:grid-cols-2 gap-4">
+          <input [(ngModel)]="title" type="text" placeholder="Resource title"
+            class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
+          <input [(ngModel)]="category" type="text" placeholder="Category (e.g., DSA, Resume, Sheets)"
+            class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
+        </div>
+
+        <input [(ngModel)]="url" type="url" placeholder="https://..."
+          class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
+
+        <textarea [(ngModel)]="description" rows="3" placeholder="What is this resource about?"
+          class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500"></textarea>
+
+        <div class="flex items-center gap-3">
+          <button (click)="addResource()" [disabled]="isSaving()"
+            class="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-sm font-semibold transition-colors">
+            {{ isSaving() ? 'Adding...' : 'Add Resource' }}
+          </button>
+          @if (saveMessage()) {
+            <p class="text-sm text-gray-300">{{ saveMessage() }}</p>
+          }
+        </div>
+      </section>
+    } @else {
+      <section class="rounded-2xl border border-gray-800 bg-[#151A23] p-5 text-sm text-gray-400">
+        Want to contribute? <a routerLink="/login" class="text-indigo-400 hover:text-indigo-300">Log in</a> and add your own career resources.
+      </section>
+    }
+
+    @if (errorMessage()) {
+      <p class="text-red-400">{{ errorMessage() }}</p>
+    }
+
+    @if (isLoading()) {
+      <p class="text-gray-400">Loading resources...</p>
+    } @else {
+      <section class="grid md:grid-cols-2 gap-6 md:gap-8">
+        @for (section of groupedResources(); track section.category) {
+          <article class="rounded-2xl border border-gray-800 bg-[#151A23] p-6 md:p-7 shadow-sm">
+            <h2 class="text-xl font-bold text-white mb-1">{{ section.category }}</h2>
+            <p class="text-xs uppercase tracking-wide text-gray-500 mb-4">{{ section.links.length }} resources</p>
+
+            <ul class="space-y-2">
+              @for (link of section.links; track link.id) {
+                <li>
+                  <a [href]="link.url" target="_blank" rel="noopener noreferrer"
+                    class="group flex items-center justify-between rounded-lg border border-gray-800 bg-[#0B0E14] px-3 py-2.5 text-sm text-gray-300 hover:text-white hover:border-indigo-500/40 transition-colors">
+                    <div>
+                      <p>{{ link.title }}</p>
+                      <p class="text-xs text-gray-500">Shared by {{ link.submittedByName }}</p>
+                    </div>
+                    <i class="ph ph-arrow-up-right text-base text-gray-500 group-hover:text-indigo-400"></i>
+                  </a>
+                </li>
+              }
+            </ul>
+          </article>
+        }
+      </section>
+    }
+  </div>
+</div>
