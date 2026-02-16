@@ -41,9 +41,14 @@ export class ResourcesComponent {
   readonly currentPage = signal(0);
   readonly errorMessage = signal('');
   readonly saveMessage = signal('');
+  readonly editMessage = signal('');
   readonly isSaving = signal(false);
+  readonly isUpdating = signal(false);
   readonly isInAppRoute = signal(false);
   readonly showAddResourceModal = signal(false);
+  readonly isLoadingMyResources = signal(false);
+  readonly myResources = signal<CareerResource[]>([]);
+  readonly editingResource = signal<CareerResource | null>(null);
   private searchDebounceRef: ReturnType<typeof setTimeout> | null = null;
   private scrollLoadDebounceRef: ReturnType<typeof setTimeout> | null = null;
 
@@ -58,6 +63,11 @@ export class ResourcesComponent {
   contributionMode: 'link' | 'file' = 'link';
   selectedFile: File | null = null;
   selectedFileError = '';
+
+  editTitle = '';
+  editUrl = '';
+  editCategory = '';
+  editDescription = '';
 
   readonly categoryOptions = computed(() => {
     const categories = new Set<string>();
@@ -109,6 +119,9 @@ export class ResourcesComponent {
       .subscribe(() => this.syncRouteContext());
 
     this.loadResources(true);
+    if (this.authService.isAuthenticated()) {
+      this.loadMyResources();
+    }
   }
 
   private syncRouteContext() {
@@ -124,6 +137,24 @@ export class ResourcesComponent {
     this.showAddResourceModal.set(false);
     this.selectedFile = null;
     this.selectedFileError = '';
+  }
+
+  async loadMyResources() {
+    if (!this.authService.isAuthenticated()) {
+      this.myResources.set([]);
+      return;
+    }
+
+    this.isLoadingMyResources.set(true);
+    this.editMessage.set('');
+    try {
+      const mine = await this.resourceService.getMyResources();
+      this.myResources.set(mine);
+    } catch {
+      this.editMessage.set('Could not load your shared resources right now.');
+    } finally {
+      this.isLoadingMyResources.set(false);
+    }
   }
 
   async loadResources(reset = false) {
@@ -289,6 +320,9 @@ export class ResourcesComponent {
       this.selectedFile = null;
       this.saveMessage.set('Resource added. Thanks for contributing!');
       this.showAddResourceModal.set(false);
+      if (created.ownedByCurrentUser) {
+        this.myResources.set([created, ...this.myResources()]);
+      }
     } catch {
       this.saveMessage.set('Could not add the resource. Please verify your details and try again.');
     } finally {
@@ -298,12 +332,66 @@ export class ResourcesComponent {
 
   async deleteResource(resource: CareerResource) {
     this.saveMessage.set('');
+    this.editMessage.set('');
     try {
       await this.resourceService.deleteResource(resource.id);
       this.resources.set(this.resources().filter(item => item.id !== resource.id));
+      this.myResources.set(this.myResources().filter(item => item.id !== resource.id));
       this.saveMessage.set('Resource removed successfully.');
     } catch {
       this.saveMessage.set('Could not remove this resource right now.');
+    }
+  }
+
+  startEditResource(resource: CareerResource) {
+    this.editingResource.set(resource);
+    this.editTitle = resource.title;
+    this.editUrl = resource.resourceType === 'LINK' ? resource.url : '';
+    this.editCategory = resource.category;
+    this.editDescription = resource.description ?? '';
+    this.editMessage.set('');
+  }
+
+  cancelEditResource() {
+    this.editingResource.set(null);
+    this.editMessage.set('');
+  }
+
+  async saveResourceEdit() {
+    const target = this.editingResource();
+    if (!target) {
+      return;
+    }
+
+    if (!this.editTitle.trim() || !this.editCategory.trim()) {
+      this.editMessage.set('Title and category are required.');
+      return;
+    }
+
+    if (target.resourceType === 'LINK' && !this.editUrl.trim()) {
+      this.editMessage.set('URL is required for link resources.');
+      return;
+    }
+
+    this.isUpdating.set(true);
+    this.editMessage.set('');
+
+    try {
+      const updated = await this.resourceService.updateResource(target.id, {
+        title: this.editTitle,
+        url: target.resourceType === 'LINK' ? this.editUrl : undefined,
+        category: this.editCategory,
+        description: this.editDescription
+      });
+
+      this.myResources.set(this.myResources().map(item => item.id === updated.id ? updated : item));
+      this.resources.set(this.resources().map(item => item.id === updated.id ? updated : item));
+      this.editingResource.set(null);
+      this.saveMessage.set('Resource updated successfully.');
+    } catch {
+      this.editMessage.set('Could not update this resource right now.');
+    } finally {
+      this.isUpdating.set(false);
     }
   }
 

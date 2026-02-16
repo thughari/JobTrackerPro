@@ -3,6 +3,7 @@ package com.thughari.jobtrackerpro.service;
 import com.thughari.jobtrackerpro.dto.CareerResourceDTO;
 import com.thughari.jobtrackerpro.dto.CareerResourcePageResponse;
 import com.thughari.jobtrackerpro.dto.CreateCareerResourceRequest;
+import com.thughari.jobtrackerpro.dto.UpdateCareerResourceRequest;
 import com.thughari.jobtrackerpro.entity.CareerResource;
 import com.thughari.jobtrackerpro.entity.User;
 import com.thughari.jobtrackerpro.interfaces.StorageService;
@@ -189,6 +190,40 @@ public class CareerResourceService {
         }
 
         resourceRepository.delete(resource);
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.List<CareerResourceDTO> getMyResources(String email) {
+        return resourceRepository.findAllBySubmittedByEmailOrderByCreatedAtDesc(email)
+                .stream()
+                .map(resource -> toDTO(resource, email))
+                .toList();
+    }
+
+    @CacheEvict(value = "resourcePages", allEntries = true)
+    public CareerResourceDTO updateResource(String email, java.util.UUID resourceId, UpdateCareerResourceRequest request) {
+        CareerResource resource = resourceRepository.findById(resourceId)
+                .orElseThrow(() -> new IllegalArgumentException("Resource not found"));
+
+        if (!resource.getSubmittedByEmail().equalsIgnoreCase(email)) {
+            throw new IllegalArgumentException("You can only edit resources you added");
+        }
+
+        validateCommonFields(request.getTitle(), request.getCategory());
+
+        resource.setTitle(request.getTitle().trim());
+        resource.setCategory(request.getCategory().trim());
+        resource.setDescription(request.getDescription() == null ? null : request.getDescription().trim());
+
+        if ("LINK".equalsIgnoreCase(resource.getResourceType())) {
+            String normalizedUrl = normalizeUrl(request.getUrl());
+            if (normalizedUrl == null || normalizedUrl.isBlank()) {
+                throw new IllegalArgumentException("Valid URL is required for link resources");
+            }
+            resource.setUrl(normalizedUrl);
+        }
+
+        return toDTO(resourceRepository.save(resource), email);
     }
 
     @PostConstruct

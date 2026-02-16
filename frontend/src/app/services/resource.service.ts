@@ -34,6 +34,13 @@ export interface CreateResourcePayload {
   description?: string;
 }
 
+export interface UpdateResourcePayload {
+  title: string;
+  url?: string;
+  category: string;
+  description?: string;
+}
+
 export interface ResourceQueryFilters {
   query?: string;
   category?: string;
@@ -110,5 +117,18 @@ export class ResourceService {
   async deleteResource(resourceId: string) {
     await firstValueFrom(this.http.delete<void>(`${this.apiUrl}/${resourceId}`));
     this.invalidateCache();
+  }
+
+  async getMyResources() {
+    return await firstValueFrom(this.http.get<CareerResource[]>(`${this.apiUrl}/mine`));
+  }
+
+  async updateResource(resourceId: string, payload: UpdateResourcePayload) {
+    const updated = await firstValueFrom(
+      this.http.put<CareerResource>(`${this.apiUrl}/${resourceId}`, payload)
+    );
+
+    this.invalidateCache();
+    return updated;
   }
 }

@@ -14,5 +14,7 @@ public interface CareerResourceRepository extends JpaRepository<CareerResource, 
 
     Page<CareerResource> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
+    List<CareerResource> findAllBySubmittedByEmailOrderByCreatedAtDesc(String email);
+
     boolean existsByUrl(String url);
 }
