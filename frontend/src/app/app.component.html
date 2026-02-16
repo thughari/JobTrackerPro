@@ -15,6 +15,7 @@
           <div class="hidden md:flex gap-1 mr-2">
             <a routerLink="/app/dashboard" routerLinkActive="bg-gray-100 dark:bg-gray-800 text-indigo-600 dark:text-white" class="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">Dashboard</a>
             <a routerLink="/app/applications" routerLinkActive="bg-gray-100 dark:bg-gray-800 text-indigo-600 dark:text-white" class="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">Applications</a>
+            <a routerLink="/app/resources" routerLinkActive="bg-gray-100 dark:bg-gray-800 text-indigo-600 dark:text-white" class="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">Resources</a>
           </div>
 
           <button (click)="exportCsv()" class="hidden md:flex items-center gap-2 p-2 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors" title="Export CSV">
@@ -50,6 +51,9 @@
                 <a routerLink="/app/profile" (click)="closeMenu()" class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2 cursor-pointer">
                   <i class="ph ph-user"></i> My Profile
                 </a>
+                <a routerLink="/app/resources" (click)="closeMenu()" class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2 cursor-pointer">
+                  <i class="ph ph-books"></i> Resources
+                </a>
                 <a routerLink="/about" (click)="closeMenu()" class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2 cursor-pointer">
                   <i class="ph ph-info"></i> About
                 </a>
@@ -83,6 +87,9 @@
       </a>
       <a routerLink="/app/applications" routerLinkActive="bg-indigo-600 text-white border-transparent" class="flex-1 flex justify-center items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#151A23] text-gray-500 dark:text-gray-400">
         <i class="ph ph-list-dashes"></i> List
+      </a>
+      <a routerLink="/app/resources" routerLinkActive="bg-indigo-600 text-white border-transparent" class="flex-1 flex justify-center items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#151A23] text-gray-500 dark:text-gray-400">
+        <i class="ph ph-books"></i> Resources
       </a>
     </div>
 
