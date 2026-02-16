@@ -64,13 +64,22 @@
           <span class="sr-only">Filter by category</span>
           <div class="relative">
             <i class="ph ph-funnel absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
-            <select [ngModel]="selectedCategoryFilter()" (ngModelChange)="onCategoryFilterChange($event)"
-              class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#0B0E14] pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
-              @for (categoryOption of categoryOptions(); track categoryOption) {
-                <option [value]="categoryOption">{{ categoryOption === 'all' ? 'All categories' : categoryOption }}</option>
-              }
-            </select>
+            <input [ngModel]="selectedCategoryFilter()" (ngModelChange)="onCategoryFilterChange($event)" list="resource-category-filter-options"
+              placeholder="All categories"
+              class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#0B0E14] pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
+            @if (selectedCategoryFilter()) {
+              <button type="button" (click)="clearCategoryFilter()"
+                class="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center rounded-md p-1.5 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
+                title="Clear category filter">
+                <i class="ph ph-x text-sm"></i>
+              </button>
+            }
           </div>
+          <datalist id="resource-category-filter-options">
+            @for (categoryOption of categoryOptions(); track categoryOption) {
+              <option [value]="categoryOption"></option>
+            }
+          </datalist>
         </label>
 
         <label>

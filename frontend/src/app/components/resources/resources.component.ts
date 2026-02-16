@@ -42,7 +42,7 @@ export class ResourcesComponent {
   private scrollLoadDebounceRef: ReturnType<typeof setTimeout> | null = null;
 
   readonly searchQuery = signal('');
-  readonly selectedCategoryFilter = signal('all');
+  readonly selectedCategoryFilter = signal('');
   readonly selectedTypeFilter = signal<ResourceTypeFilter>('all');
   readonly backendCategories = signal<string[]>([]);
 
@@ -59,7 +59,7 @@ export class ResourcesComponent {
   editCategory = '';
   editDescription = '';
 
-  readonly categoryOptions = computed(() => ['all', ...this.backendCategories()]);
+  readonly categoryOptions = computed(() => this.backendCategories());
 
   onSearchQueryChange(value: string) {
     this.searchQuery.set(value);
@@ -68,7 +68,14 @@ export class ResourcesComponent {
 
   onCategoryFilterChange(value: string) {
     const normalized = value.trim();
-    this.selectedCategoryFilter.set(normalized ? normalized : 'all');
+    const lowered = normalized.toLowerCase();
+    const shouldClear = !normalized || lowered === 'all' || lowered === 'all categories';
+    this.selectedCategoryFilter.set(shouldClear ? '' : normalized);
+    this.loadResources(true);
+  }
+
+  clearCategoryFilter() {
+    this.selectedCategoryFilter.set('');
     this.loadResources(true);
   }
 
