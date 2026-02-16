@@ -3,6 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ResourcesComponent } from './resources.component';
 import { ResourceService } from '../../services/resource.service';
 import { AuthService } from '../../services/auth.service';
+import { provideRouter } from '@angular/router';
 
 describe('ResourcesComponent', () => {
   let component: ResourcesComponent;
@@ -12,6 +13,7 @@ describe('ResourcesComponent', () => {
     await TestBed.configureTestingModule({
       imports: [ResourcesComponent],
       providers: [
+        provideRouter([]),
         {
           provide: ResourceService,
           useValue: {

@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { AuthService } from './auth.service';
 
 export interface CareerResource {
   id: string;
@@ -37,11 +38,13 @@ export interface CreateResourcePayload {
 export class ResourceService {
   private readonly API = environment.apiBaseUrl;
   private http = inject(HttpClient);
+  private authService = inject(AuthService);
   private apiUrl = `${this.API}/api/resources`;
   private pageCache = new Map<string, CareerResourcePage>();
 
   async getResources(page: number, size: number, forceRefresh = false) {
-    const key = `${page}:${size}`;
+    const cacheScope = this.authService.currentUser()?.email ?? 'anonymous';
+    const key = `${cacheScope}:${page}:${size}`;
 
     if (!forceRefresh && this.pageCache.has(key)) {
       return this.pageCache.get(key)!;
