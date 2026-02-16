@@ -28,6 +28,7 @@ import java.util.Locale;
 public class CareerResourceService {
 
     private static final int MAX_PAGE_SIZE = 50;
+    private static final int DEMO_MIN_RESOURCE_COUNT = 60;
 
     private final CareerResourceRepository resourceRepository;
     private final UserRepository userRepository;
@@ -192,15 +193,43 @@ public class CareerResourceService {
 
     @PostConstruct
     public void seedStarterResources() {
-        if (resourceRepository.count() > 0) {
-            return;
-        }
-
         addSeedResource("Career Preparation Notes", "https://docs.google.com/document/d/1-25JrPUai6P7pjKk1g7mELpI0YUINS_NpjUk7lsMfyg/edit?tab=t.0#heading=h.kf8l3f8jftc2", "Guides & Study Docs");
         addSeedResource("Main Career Resources Folder", "https://drive.google.com/drive/folders/1ISp9GBv7ih1blEQOPYplD_idG1j0ibGq?usp=sharing", "Drive Folders & File Packs");
         addSeedResource("DSA Folder", "https://drive.google.com/drive/folders/1ei52Zc_cQe0rJK404M56BmEisUjnF6kN?usp=drive_link", "Drive Folders & File Packs");
         addSeedResource("21 Days React Study Plan", "https://thecodedose.notion.site/21-Days-React-Study-Plan-1988ff023cae48459bae8cb20cb75a67", "Structured Learning");
         addSeedResource("Opportunity Tracker Sheet", "https://docs.google.com/spreadsheets/d/1KBFiqJTaFY1164XtglKvn2vAofScCfGlkY-n54D2d14/edit?gid=584790886#gid=584790886", "Trackers & Opportunity Sheets");
+
+        seedDemoVolumeResources();
+    }
+
+    private void seedDemoVolumeResources() {
+        long currentCount = resourceRepository.count();
+        if (currentCount >= DEMO_MIN_RESOURCE_COUNT) {
+            return;
+        }
+
+        String[][] templates = {
+                {"React Interview Drill", "https://example.com/resources/react-interview-drill", "Interview Prep"},
+                {"DSA Patterns Workbook", "https://example.com/resources/dsa-patterns-workbook", "DSA"},
+                {"System Design Primer", "https://example.com/resources/system-design-primer", "System Design"},
+                {"Resume Bullet Bank", "https://example.com/resources/resume-bullet-bank", "Resume"},
+                {"Backend Fundamentals Roadmap", "https://example.com/resources/backend-fundamentals-roadmap", "Roadmaps"},
+                {"Frontend Fundamentals Roadmap", "https://example.com/resources/frontend-fundamentals-roadmap", "Roadmaps"},
+                {"Mock Interview Checklist", "https://example.com/resources/mock-interview-checklist", "Mock Interviews"},
+                {"Job Board Tracker", "https://example.com/resources/job-board-tracker", "Job Boards"},
+                {"Behavioral Question Matrix", "https://example.com/resources/behavioral-question-matrix", "Interview Prep"},
+                {"Portfolio Project Ideas", "https://example.com/resources/portfolio-project-ideas", "Portfolio"}
+        };
+
+        long resourcesToAdd = DEMO_MIN_RESOURCE_COUNT - currentCount;
+        for (int i = 0; i < resourcesToAdd; i++) {
+            String[] template = templates[i % templates.length];
+            String title = template[0] + " #" + (i + 1);
+            String url = template[1] + "?v=" + (i + 1);
+            String category = template[2];
+
+            addSeedResource(title, url, category);
+        }
     }
 
     private void addSeedResource(String title, String url, String category) {
