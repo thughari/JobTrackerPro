@@ -234,16 +234,9 @@
         <div class="grid gap-3 sm:gap-4 md:grid-cols-2">
           <input [(ngModel)]="title" type="text" placeholder="Resource title"
             class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
-          <input [(ngModel)]="category" type="text" list="resource-category-add-list" placeholder="Choose category"
+          <input [(ngModel)]="category" type="text" list="resource-category-options" placeholder="Choose category"
             class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
         </div>
-        <datalist id="resource-category-add-list">
-          @for (categoryOption of categoryOptions(); track categoryOption) {
-            @if (categoryOption !== 'all') {
-              <option [value]="categoryOption"></option>
-            }
-          }
-        </datalist>
 
         @if (contributionMode === 'link') {
           <input [(ngModel)]="url" type="url" placeholder="https://..."
@@ -297,7 +290,7 @@
         <div class="grid gap-3 sm:gap-4 md:grid-cols-2">
           <input [(ngModel)]="editTitle" type="text" placeholder="Resource title"
             class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
-          <input [(ngModel)]="editCategory" type="text" list="resource-category-add-list" placeholder="Choose category"
+          <input [(ngModel)]="editCategory" type="text" list="resource-category-options" placeholder="Choose category"
             class="w-full rounded-lg border border-gray-700 bg-[#0B0E14] px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500" />
         </div>
 
@@ -324,4 +317,12 @@
       </div>
     </div>
   }
+  <datalist id="resource-category-options">
+    @for (categoryOption of categoryOptions(); track categoryOption) {
+      @if (categoryOption !== 'all') {
+        <option [value]="categoryOption"></option>
+      }
+    }
+  </datalist>
+
 </div>
