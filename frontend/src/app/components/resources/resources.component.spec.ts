@@ -15,8 +15,17 @@ describe('ResourcesComponent', () => {
         {
           provide: ResourceService,
           useValue: {
-            getResources: () => Promise.resolve([]),
+            getResources: () => Promise.resolve({
+              content: [],
+              page: 0,
+              size: 20,
+              totalElements: 0,
+              totalPages: 0,
+              hasNext: false,
+            }),
             createResource: () => Promise.resolve({}),
+            uploadResourceFile: () => Promise.resolve({}),
+            deleteResource: () => Promise.resolve(),
           },
         },
         {

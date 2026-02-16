@@ -12,6 +12,10 @@ public class CareerResourceDTO {
     private String url;
     private String category;
     private String description;
+    private String resourceType;
+    private String originalFileName;
+    private Long fileSizeBytes;
+    private boolean ownedByCurrentUser;
     private String submittedByName;
     private LocalDateTime createdAt;
 }
