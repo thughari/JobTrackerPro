@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { CareerResource, ResourceService } from '../../services/resource.service';
 import { LogoComponent } from '../ui/logo/logo.component';
@@ -16,6 +16,7 @@ import { LogoComponent } from '../ui/logo/logo.component';
 export class ResourcesComponent {
   authService = inject(AuthService);
   private resourceService = inject(ResourceService);
+  private router = inject(Router);
 
   readonly resources = signal<CareerResource[]>([]);
   readonly isLoading = signal(true);
@@ -48,6 +49,11 @@ export class ResourcesComponent {
 
   constructor() {
     this.loadResources();
+  }
+
+
+  showStandaloneNav() {
+    return !this.router.url.startsWith('/app');
   }
 
   isOwner(resource: CareerResource) {
