@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { filter } from 'rxjs';
@@ -45,6 +45,7 @@ export class ResourcesComponent {
   readonly isInAppRoute = signal(false);
   readonly showAddResourceModal = signal(false);
   private searchDebounceRef: ReturnType<typeof setTimeout> | null = null;
+  private scrollLoadDebounceRef: ReturnType<typeof setTimeout> | null = null;
 
   readonly searchQuery = signal('');
   readonly selectedCategoryFilter = signal('all');
@@ -149,6 +150,32 @@ export class ResourcesComponent {
       this.isLoading.set(false);
       this.isLoadingMore.set(false);
     }
+  }
+
+  @HostListener('window:scroll')
+  onWindowScroll() {
+    if (!this.hasNext() || this.isLoading() || this.isLoadingMore() || this.showAddResourceModal()) {
+      return;
+    }
+
+    const scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+    const fullHeight = document.documentElement.scrollHeight || document.body.scrollHeight || 0;
+    const remaining = fullHeight - (scrollTop + viewportHeight);
+
+    if (remaining > 220) {
+      return;
+    }
+
+    if (this.scrollLoadDebounceRef) {
+      return;
+    }
+
+    this.scrollLoadDebounceRef = setTimeout(() => {
+      this.scrollLoadDebounceRef = null;
+    }, 300);
+
+    this.loadResources();
   }
 
   private scheduleFilterReload() {
