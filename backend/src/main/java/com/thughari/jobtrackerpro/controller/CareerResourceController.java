@@ -28,81 +28,81 @@ import java.util.List;
 @RequestMapping("/api/resources")
 public class CareerResourceController {
 
-    private final CareerResourceService careerResourceService;
+	private final CareerResourceService careerResourceService;
 
-    public CareerResourceController(CareerResourceService careerResourceService) {
-        this.careerResourceService = careerResourceService;
-    }
+	public CareerResourceController(CareerResourceService careerResourceService) {
+		this.careerResourceService = careerResourceService;
+	}
 
-    @GetMapping
-    public ResponseEntity<CareerResourcePageResponse> getResources(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String query,
-            @RequestParam(required = false) String category,
-            @RequestParam(required = false) String type
-    ) {
-        return ResponseEntity.ok(careerResourceService.getResourcePage(page, size, query, category, type, getAuthenticatedEmailOrNull()));
-    }
+	@GetMapping
+	public ResponseEntity<CareerResourcePageResponse> getResources(
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "20") int size,
+			@RequestParam(required = false) String query,
+			@RequestParam(required = false) String category,
+			@RequestParam(required = false) String type
+			) {
+		return ResponseEntity.ok(careerResourceService.getResourcePage(page, size, query, category, type, getAuthenticatedEmailOrNull()));
+	}
 
 
-    @GetMapping("/categories")
-    public ResponseEntity<List<String>> getCategories() {
-        return ResponseEntity.ok(careerResourceService.getAllCategories());
-    }
+	@GetMapping("/categories")
+	public ResponseEntity<List<String>> getCategories() {
+		return ResponseEntity.ok(careerResourceService.getAllCategories());
+	}
 
-    @PostMapping
-    public ResponseEntity<CareerResourceDTO> addResource(@RequestBody CreateCareerResourceRequest request) {
-        String email = getAuthenticatedEmail();
-        return ResponseEntity.ok(careerResourceService.createResource(email, request));
-    }
+	@PostMapping
+	public ResponseEntity<CareerResourceDTO> addResource(@RequestBody CreateCareerResourceRequest request) {
+		String email = getAuthenticatedEmail();
+		return ResponseEntity.ok(careerResourceService.createResource(email, request));
+	}
 
-    @GetMapping("/mine")
-    public ResponseEntity<List<CareerResourceDTO>> getMyResources() {
-        String email = getAuthenticatedEmail();
-        return ResponseEntity.ok(careerResourceService.getMyResources(email));
-    }
+	@GetMapping("/mine")
+	public ResponseEntity<List<CareerResourceDTO>> getMyResources() {
+		String email = getAuthenticatedEmail();
+		return ResponseEntity.ok(careerResourceService.getMyResources(email));
+	}
 
-    @PutMapping("/{id}")
-    public ResponseEntity<CareerResourceDTO> updateResource(@PathVariable UUID id,
-                                                            @RequestBody UpdateCareerResourceRequest request) {
-        String email = getAuthenticatedEmail();
-        return ResponseEntity.ok(careerResourceService.updateResource(email, id, request));
-    }
+	@PutMapping("/{id}")
+	public ResponseEntity<CareerResourceDTO> updateResource(@PathVariable UUID id,
+			@RequestBody UpdateCareerResourceRequest request) {
+		String email = getAuthenticatedEmail();
+		return ResponseEntity.ok(careerResourceService.updateResource(email, id, request));
+	}
 
-    @PostMapping(path = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<CareerResourceDTO> uploadResource(
-            @RequestParam String title,
-            @RequestParam String category,
-            @RequestParam(required = false) String description,
-            @RequestParam MultipartFile file
-    ) {
-        String email = getAuthenticatedEmail();
-        return ResponseEntity.ok(careerResourceService.createResourceFromFile(email, title, category, description, file));
-    }
+	@PostMapping(path = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ResponseEntity<CareerResourceDTO> uploadResource(
+			@RequestParam String title,
+			@RequestParam String category,
+			@RequestParam(required = false) String description,
+			@RequestParam MultipartFile file
+			) {
+		String email = getAuthenticatedEmail();
+		return ResponseEntity.ok(careerResourceService.createResourceFromFile(email, title, category, description, file));
+	}
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteResource(@PathVariable UUID id) {
-        String email = getAuthenticatedEmail();
-        careerResourceService.deleteResource(email, id);
-        return ResponseEntity.noContent().build();
-    }
+	@DeleteMapping("/{id}")
+	public ResponseEntity<Void> deleteResource(@PathVariable UUID id) {
+		String email = getAuthenticatedEmail();
+		careerResourceService.deleteResource(email, id);
+		return ResponseEntity.noContent().build();
+	}
 
-    private String getAuthenticatedEmail() {
-        return ((String) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).toLowerCase();
-    }
+	private String getAuthenticatedEmail() {
+		return ((String) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).toLowerCase();
+	}
 
-    private String getAuthenticatedEmailOrNull() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken) {
-            return null;
-        }
+	private String getAuthenticatedEmailOrNull() {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		if (authentication == null || !authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken) {
+			return null;
+		}
 
-        Object principal = authentication.getPrincipal();
-        if (principal instanceof String email && !"anonymousUser".equalsIgnoreCase(email)) {
-            return email.toLowerCase();
-        }
+		Object principal = authentication.getPrincipal();
+		if (principal instanceof String email && !"anonymousUser".equalsIgnoreCase(email)) {
+			return email.toLowerCase();
+		}
 
-        return null;
-    }
+		return null;
+	}
 }

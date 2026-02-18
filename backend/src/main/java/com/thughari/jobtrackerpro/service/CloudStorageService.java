@@ -21,6 +21,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -29,21 +30,32 @@ public class CloudStorageService implements StorageService {
 
     private final S3Client s3Client;
 
-    private static final long MAX_IMAGE_FILE_SIZE = 5 * 1024 * 1024;
-    private static final long MAX_RESOURCE_FILE_SIZE = 10 * 1024 * 1024;
+    private static final long MAX_IMAGE_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+    private static final long MAX_RESOURCE_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
-    @Value("${cloudflare.r2.bucket}")
-    private String bucketName;
+    // Avatar Bucket Config
+    @Value("${cloudflare.r2.bucket.avatars}")
+    private String avatarBucket;
 
-    @Value("${cloudflare.r2.public-url}")
-    private String publicUrl;
+    @Value("${cloudflare.r2.public-url.avatars}")
+    private String avatarPublicUrl;
+
+    // Resource Bucket Config
+    @Value("${cloudflare.r2.bucket.resources}")
+    private String resourceBucket;
+
+    @Value("${cloudflare.r2.public-url.resources}")
+    private String resourcePublicUrl;
 
     public CloudStorageService(S3Client s3Client) {
         this.s3Client = s3Client;
     }
 
+    /**
+     * Upload User Profile Avatar
+     */
+    @Override
     public String uploadFile(MultipartFile file, String userId) {
-
         String contentType = file.getContentType();
         if (!isValidImageContent(contentType)) {
             throw new InvalidImageException("Invalid file type. Only JPG, PNG, GIF, WEBP are allowed.");
@@ -52,25 +64,23 @@ public class CloudStorageService implements StorageService {
         if (file.getSize() > MAX_IMAGE_FILE_SIZE) {
             throw new MaxUploadSizeExceededException(MAX_IMAGE_FILE_SIZE);
         }
+
         try {
-            String extension = getExtensionFromContentType(file.getContentType());
+            String extension = getExtensionFromContentType(contentType);
             String fileName = userId + "-" + System.currentTimeMillis() + extension;
 
-            PutObjectRequest putObj = PutObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(fileName)
-                    .contentType(file.getContentType())
-                    .build();
+            uploadToS3(avatarBucket, fileName, contentType, file);
 
-            s3Client.putObject(putObj, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
-
-            return publicUrl + "/" + fileName;
+            return avatarPublicUrl + "/" + fileName;
         } catch (Exception e) {
-            log.error("Failed to upload to R2: " + e.getLocalizedMessage());
-            throw new RuntimeException("Failed to upload to R2", e);
+            log.error("Failed to upload avatar to R2: {}", e.getMessage());
+            throw new RuntimeException("Failed to upload avatar to cloud storage", e);
         }
     }
 
+    /**
+     * Upload Career Resource (PDF, DOCX, etc.)
+     */
     @Override
     public String uploadResourceFile(MultipartFile file, String userId) {
         String contentType = file.getContentType();
@@ -84,23 +94,22 @@ public class CloudStorageService implements StorageService {
 
         try {
             String extension = getExtensionFromFilename(file.getOriginalFilename());
-            String fileName = "resources/" + userId + "-" + System.currentTimeMillis() + extension;
+            // Using a flat structure since we are in a dedicated resource bucket
+            String fileName = userId + "-" + System.currentTimeMillis() + extension;
 
-            PutObjectRequest putObj = PutObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(fileName)
-                    .contentType(contentType)
-                    .build();
+            uploadToS3(resourceBucket, fileName, contentType, file);
 
-            s3Client.putObject(putObj, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
-
-            return publicUrl + "/" + fileName;
+            return resourcePublicUrl + "/" + fileName;
         } catch (Exception e) {
-            log.error("Failed to upload resource file to R2", e);
+            log.error("Failed to upload resource file to R2: {}", e.getMessage());
             throw new RuntimeException("Failed to upload resource file", e);
         }
     }
 
+    /**
+     * Downloads an image from a social provider URL and stores it in the Avatar Bucket
+     */
+    @Override
     public String uploadFromUrl(String externalUrl, String userId) {
         if (externalUrl == null || !externalUrl.startsWith("http")) {
             throw new InvalidImageException("Invalid URL format");
@@ -116,79 +125,95 @@ public class CloudStorageService implements StorageService {
                     .GET()
                     .build();
 
-            HttpResponse<byte[]> response =
-                    client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
 
             if (response.statusCode() != 200) {
-                log.error("Failed to download image.");
-                throw new ResourceNotFoundException("provided url is not accessible");
+                log.error("Failed to download image from social provider: {}", externalUrl);
+                throw new ResourceNotFoundException("Provided URL is not accessible");
             }
 
-            String contentType = response.headers().firstValue("Content-Type").orElse("");
+            String contentType = response.headers().firstValue("Content-Type").orElse("image/jpeg");
 
             if (!isValidImageContent(contentType)) {
-                throw new InvalidImageException("URL does not point to a valid image (Type: " + contentType + ")");
+                throw new InvalidImageException("URL does not point to a valid image type");
             }
-
-            response.headers().firstValue("Content-Length").ifPresent(len -> {
-                if (Long.parseLong(len) > MAX_IMAGE_FILE_SIZE) {
-                    throw new IllegalArgumentException("Image at URL is too large");
-                }
-            });
 
             String extension = getExtensionFromContentType(contentType);
             String fileName = userId + "-social" + extension;
 
-            PutObjectRequest putObj = PutObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(fileName)
-                    .contentType(contentType)
-                    .build();
-
             s3Client.putObject(
-                    putObj,
+                    PutObjectRequest.builder()
+                            .bucket(avatarBucket)
+                            .key(fileName)
+                            .contentType(contentType)
+                            .build(),
                     RequestBody.fromBytes(response.body())
             );
 
-            return publicUrl + "/" + fileName;
+            return avatarPublicUrl + "/" + fileName;
 
-        } catch (InvalidImageException | IllegalArgumentException | ResourceNotFoundException e) {
-            throw e;
         } catch (Exception e) {
-            log.error("Failed to upload image From Url to R2", e);
-            throw new InvalidImageException("unable to update image");
+            log.error("Failed to sync social image to R2: {}", e.getMessage());
+            // Fallback: return original URL so the profile still has an image
+            return externalUrl;
         }
     }
 
+    /**
+     * Deletes a file from the appropriate R2 bucket based on its URL
+     */
+    @Override
     public void deleteFile(String fileUrl) {
         if (fileUrl == null || fileUrl.isEmpty()) {
             return;
         }
-        if (!fileUrl.startsWith(publicUrl)) {
+
+        // FIX: Must use AND (&&) here. If we used OR (||), a valid avatar URL would trigger 
+        // the return because it doesn't start with the resource URL.
+        if (!fileUrl.startsWith(avatarPublicUrl) && !fileUrl.startsWith(resourcePublicUrl)) {
             return;
         }
 
-        try {
-            String key = fileUrl.substring(publicUrl.length() + 1);
+        String targetBucket = null;
+        String targetKey = null;
 
-            s3Client.deleteObject(DeleteObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(key)
-                    .build());
-
-            log.info("Deleted old image from R2: {}", key);
-
-        } catch (Exception e) {
-            log.error("Failed to delete file from R2: {}", fileUrl, e);
+        if (fileUrl.startsWith(avatarPublicUrl)) {
+            targetBucket = avatarBucket;
+            targetKey = fileUrl.substring(avatarPublicUrl.length() + 1);
+        } else if (fileUrl.startsWith(resourcePublicUrl)) {
+            targetBucket = resourceBucket;
+            targetKey = fileUrl.substring(resourcePublicUrl.length() + 1);
         }
+
+        if (targetBucket != null && targetKey != null) {
+            try {
+                s3Client.deleteObject(DeleteObjectRequest.builder()
+                        .bucket(targetBucket)
+                        .key(targetKey)
+                        .build());
+                log.info("Deleted object from bucket {}: {}", targetBucket, targetKey);
+            } catch (Exception e) {
+                log.error("Failed to delete from R2: {}. Error: {}", fileUrl, e.getMessage());
+            }
+        }
+    }
+
+    // --- Private Helpers ---
+
+    private void uploadToS3(String bucket, String key, String contentType, MultipartFile file) throws Exception {
+        PutObjectRequest putObj = PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .contentType(contentType)
+                .build();
+
+        s3Client.putObject(putObj, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
     }
 
     private String getExtensionFromContentType(String contentType) {
         if (contentType == null) return ".jpg";
-
         return switch (contentType.toLowerCase()) {
             case "image/png" -> ".png";
-            case "image/jpeg", "image/jpg" -> ".jpg";
             case "image/gif" -> ".gif";
             case "image/webp" -> ".webp";
             default -> ".jpg";
@@ -204,28 +229,23 @@ public class CloudStorageService implements StorageService {
 
     private boolean isValidImageContent(String contentType) {
         if (contentType == null) return false;
-        return contentType.equals("image/jpeg") ||
-                contentType.equals("image/png") ||
-                contentType.equals("image/gif") ||
-                contentType.equals("image/webp");
+        String type = contentType.toLowerCase();
+        return type.equals("image/jpeg") || type.equals("image/jpg") || 
+               type.equals("image/png") || type.equals("image/gif") || type.equals("image/webp");
     }
 
     private boolean isValidResourceFileType(String contentType, String filename) {
         String ext = getExtensionFromFilename(filename);
         boolean extAllowed = ext.equals(".pdf") || ext.equals(".doc") || ext.equals(".docx") || ext.equals(".txt");
+        if (!extAllowed) return false;
 
-        if (!extAllowed) {
-            return false;
-        }
-
-        if (contentType == null || contentType.isBlank()) {
-            return true;
-        }
-
-        return contentType.equals("application/pdf") ||
-                contentType.equals("application/msword") ||
-                contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document") ||
-                contentType.equals("text/plain") ||
-                contentType.equals("application/octet-stream");
+        if (contentType == null || contentType.isBlank()) return true;
+        
+        String type = contentType.toLowerCase();
+        return type.equals("application/pdf") ||
+                type.equals("application/msword") ||
+                type.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document") ||
+                type.equals("text/plain") ||
+                type.equals("application/octet-stream");
     }
 }
