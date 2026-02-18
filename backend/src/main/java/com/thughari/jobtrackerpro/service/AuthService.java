@@ -34,9 +34,9 @@ public class AuthService {
     
     @Value("${app.base-url}")
     private String baseUrl;
-    
-    @Value("${CLOUDFLARE_PUBLIC_URL}")
-    private String cloudFlarePublicUrl;
+
+    @Value("${cloudflare.r2.public-url.avatars}")
+    private String avatarPublicUrl;
     
     private final PasswordResetTokenRepository tokenRepository;
     private final EmailService emailService;
@@ -177,7 +177,7 @@ public class AuthService {
         }
         else if (imageUrl != null && !imageUrl.isEmpty()) {
         	
-        	if (imageUrl.startsWith(cloudFlarePublicUrl) || imageUrl.contains(baseUrl)) {
+        	if (imageUrl.startsWith(avatarPublicUrl) || imageUrl.contains(baseUrl)) {
         		newR2Url = imageUrl;
            } else {
         	   newR2Url = storageService.uploadFromUrl(imageUrl, user.getId().toString());
