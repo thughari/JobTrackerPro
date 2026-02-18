@@ -86,15 +86,25 @@ spec:
             secretKeyRef:
               name: cloudflare-endpoint
               key: latest
-        - name: CLOUDFLARE_BUCKET
+        - name: CLOUDFLARE_AVATAR_BUCKET
           valueFrom:
             secretKeyRef:
-              name: cloudflare-bucket
+              name: cloudflare-avatar-bucket
               key: latest
-        - name: CLOUDFLARE_PUBLIC_URL
+        - name: CLOUDFLARE_AVATAR_URL
           valueFrom:
             secretKeyRef:
-              name: cloudflare-public-url
+              name: cloudflare-avatar-url
+              key: latest
+        - name: CLOUDFLARE_RESOURCE_BUCKET
+          valueFrom:
+            secretKeyRef:
+              name: cloudflare-resource-bucket
+              key: latest
+        - name: CLOUDFLARE_RESOURCE_URL
+          valueFrom:
+            secretKeyRef:
+              name: cloudflare-resource-url
               key: latest
         - name: EMAIL_HOST
           valueFrom:

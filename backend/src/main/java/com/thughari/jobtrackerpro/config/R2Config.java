@@ -15,23 +15,23 @@ import java.net.URI;
 @ConditionalOnProperty(name = "app.storage.type", havingValue = "r2")
 public class R2Config {
 
-    @Value("${cloudflare.r2.access-key}")
-    private String accessKey;
+	@Value("${cloudflare.r2.access-key}")
+	private String accessKey;
 
-    @Value("${cloudflare.r2.secret-key}")
-    private String secretKey;
+	@Value("${cloudflare.r2.secret-key}")
+	private String secretKey;
 
-    @Value("${cloudflare.r2.endpoint}")
-    private String endpoint;
+	@Value("${cloudflare.r2.endpoint}")
+	private String endpoint;
 
-    @Bean
-    public S3Client s3Client() {
-        return S3Client.builder()
-                .endpointOverride(URI.create(endpoint))
-                .region(Region.US_EAST_1)
-                .forcePathStyle(true)
-                .credentialsProvider(StaticCredentialsProvider.create(
-                        AwsBasicCredentials.create(accessKey, secretKey)))
-                .build();
-    }
+	@Bean
+	public S3Client s3Client() {
+		return S3Client.builder()
+				.endpointOverride(URI.create(endpoint))
+				.region(Region.US_EAST_1)
+				.forcePathStyle(true)
+				.credentialsProvider(StaticCredentialsProvider.create(
+						AwsBasicCredentials.create(accessKey, secretKey)))
+				.build();
+	}
 }

@@ -10,14 +10,14 @@ import java.util.concurrent.Executor;
 @EnableAsync
 public class AsyncConfig {
 
-    @Bean(name = "dashboardExecutor")
-    public Executor dashboardExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(4); 
-        executor.setMaxPoolSize(10);
-        executor.setQueueCapacity(100);
-        executor.setThreadNamePrefix("DashThread-");
-        executor.initialize();
-        return executor;
-    }
+	@Bean(name = "dashboardExecutor")
+	public Executor dashboardExecutor() {
+		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+		executor.setCorePoolSize(4); 
+		executor.setMaxPoolSize(10);
+		executor.setQueueCapacity(100);
+		executor.setThreadNamePrefix("DashThread-");
+		executor.initialize();
+		return executor;
+	}
 }

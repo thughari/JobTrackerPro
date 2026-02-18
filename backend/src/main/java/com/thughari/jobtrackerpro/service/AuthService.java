@@ -53,6 +53,7 @@ public class AuthService {
     }
 
     public AuthTokens registerUser(AuthRequest request) {
+    	validateUsername(request.getName());
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
         	throw new UserAlreadyExistsException("Email already in use");
         }
@@ -162,6 +163,7 @@ public class AuthService {
     
     @CacheEvict(value = "users", key = "#email")
     public UserProfileResponse updateProfileAtomic(String email, String name, String imageUrl, MultipartFile file) {
+    	validateUsername(name);
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
@@ -207,5 +209,13 @@ public class AuthService {
         String accessToken = jwtUtils.generateAccessToken(email);
         String refreshToken = jwtUtils.generateRefreshToken(email);
         return new AuthTokens(accessToken, refreshToken);
+    }
+    
+    private void validateUsername(String name) {
+        if (name == null) return;
+        String normalized = name.toLowerCase().replaceAll("\\s+", "");
+        if (normalized.contains("jobtrackerpro") || normalized.equals("admin") || normalized.equals("system")) {
+            throw new IllegalArgumentException("This name is reserved and cannot be used.");
+        }
     }
 }
