@@ -6,6 +6,8 @@ import com.thughari.jobtrackerpro.exception.ResourceNotFoundException;
 import com.thughari.jobtrackerpro.repo.JobRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -27,9 +30,12 @@ import java.util.stream.Collectors;
 public class JobService {
 
     private final JobRepository jobRepository;
+    
+    private final CacheManager cacheManager;
 
-    public JobService(JobRepository jobRepository) {
+    public JobService(JobRepository jobRepository, CacheManager cacheManager) {
         this.jobRepository = jobRepository;
+        this.cacheManager = cacheManager;
     }
 
     private final DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm 'UTC'");
@@ -156,6 +162,35 @@ public class JobService {
         }
     }
     
+
+    public void cleanupStaleApplications() {
+    	LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+    	LocalDateTime threeMonthsAgo = now.minusMonths(3);
+
+    	List<String> affectedEmails = jobRepository.findUserEmailsWithStaleJobs(threeMonthsAgo);
+
+    	if (affectedEmails.isEmpty()) {
+    		log.info("System Cleanup: No stale applications found.");
+    		return;
+    	}
+
+    	String autoNote = "\n[" + now.format(fmt) + "] Status auto-set to Rejected (3 months inactivity).";
+    	jobRepository.markStaleJobsAsRejected(threeMonthsAgo, now, autoNote);
+
+    	Cache jobList = cacheManager.getCache("jobList");
+    	Cache jobDashboard = cacheManager.getCache("jobDashboard");
+    	Cache jobPages = cacheManager.getCache("jobPages");
+
+    	for (String email : affectedEmails) {
+    		if (jobList != null) jobList.evict(email);
+    		if (jobDashboard != null) jobDashboard.evict(email);
+    	}
+
+        // Clear all paged results once
+        if (jobPages != null) jobPages.clear(); 
+
+        log.info("System Cleanup: Successfully rejected stale jobs for {} users.", affectedEmails.size());
+    }
 
     private Job findBestMatch(List<Job> existingJobs, JobDTO incoming) {
         if (incoming.getCompany() == null) return null;
