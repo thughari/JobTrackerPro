@@ -240,19 +240,23 @@ export class ResourcesComponent implements OnDestroy {
   onModeChange(mode: 'link' | 'file') { this.contributionMode = mode; }
   formatFileSize(s?: number) { return s ? (s < 1048576 ? `${Math.ceil(s/1024)}KB` : `${(s/1048576).toFixed(1)}MB`) : ''; }
 
-  @HostListener('window:scroll')
+  @HostListener('window:scroll', [])
   onWindowScroll() {
-    if (this.viewMode() === 'mine' || this.showAddResourceModal() || this.showDeleteConfirm()) return;
+    if (this.viewMode() !== 'community') return;
+    if (this.showAddResourceModal() || this.showDeleteConfirm()) return;
     if (!this.hasNext() || this.isLoading() || this.isLoadingMore()) return;
 
-    const pos = (document.documentElement.scrollTop || document.body.scrollTop) + document.documentElement.offsetHeight;
-    const max = document.documentElement.scrollHeight;
-    if (max - pos < 300) {
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    const viewportHeight = window.innerHeight;
+    const fullHeight = document.documentElement.scrollHeight;
+
+    const distanceFromBottom = fullHeight - (scrollTop + viewportHeight);
+    if (distanceFromBottom <= 120) {
       if (this.scrollLoadDebounceRef) return;
       this.scrollLoadDebounceRef = setTimeout(() => {
         this.scrollLoadDebounceRef = null;
         this.loadResources();
-      }, 400);
+      }, 300);
     }
   }
 }
