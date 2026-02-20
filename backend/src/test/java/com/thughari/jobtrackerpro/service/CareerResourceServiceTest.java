@@ -9,7 +9,6 @@ import com.thughari.jobtrackerpro.repo.CareerResourceRepository;
 import com.thughari.jobtrackerpro.repo.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -39,7 +38,10 @@ class CareerResourceServiceTest {
     @Test
     void getResourcePageSanitizesInput() {
         when(resourceRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of()));
+                .thenAnswer(invocation -> {
+                    Pageable pageable = invocation.getArgument(1);
+                    return new PageImpl<>(List.of(), pageable, 0);
+                });
 
         var response = service.getResourcePage(-1, 1000, " all ", " all ", "bad", null);
 
