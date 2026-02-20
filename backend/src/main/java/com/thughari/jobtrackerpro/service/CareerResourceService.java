@@ -54,7 +54,7 @@ public class CareerResourceService {
         String normalizedCategory = normalizeFilter(category);
         String normalizedType = normalizeType(type);
 
-        var pageable = PageRequest.of(sanitizedPage, sanitizedSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+        var pageable = PageRequest.of(sanitizedPage, sanitizedSize, Sort.by(Sort.Order.asc("category"), Sort.Order.asc("title")));
         var resourcePage = resourceRepository.findAll(buildResourceFilter(normalizedQuery, normalizedCategory, normalizedType), pageable);
 
         var content = resourcePage.getContent().stream()
