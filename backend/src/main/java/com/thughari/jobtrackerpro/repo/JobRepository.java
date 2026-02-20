@@ -3,12 +3,14 @@ package com.thughari.jobtrackerpro.repo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.thughari.jobtrackerpro.dto.DashboardStatsDTO;
 import com.thughari.jobtrackerpro.entity.Job;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,5 +42,24 @@ public interface JobRepository extends JpaRepository<Job, UUID> {
 			   WHERE j.userEmail = :email
 			""")
 	DashboardStatsDTO getStatsByEmail(@Param("email") String email);
+	
+	@Query("SELECT DISTINCT j.userEmail FROM Job j WHERE j.updatedAt < :cutoff AND j.status NOT IN ('Rejected', 'Offer Received')")
+	List<String> findUserEmailsWithStaleJobs(@Param("cutoff") LocalDateTime cutoff);
+
+	@Modifying(clearAutomatically = true, flushAutomatically = true)
+	@Query("""
+			    UPDATE Job j 
+			    SET j.status = 'Rejected', 
+			        j.stageStatus = 'failed', 
+			        j.updatedAt = :now, 
+			        j.notes = CONCAT(COALESCE(j.notes, ''), :note) 
+			    WHERE j.updatedAt < :cutoff 
+			      AND j.status NOT IN ('Rejected', 'Offer Received')
+			""")
+	void markStaleJobsAsRejected(
+			@Param("cutoff") LocalDateTime cutoff, 
+			@Param("now") LocalDateTime now, 
+			@Param("note") String note
+			);
 
 }
