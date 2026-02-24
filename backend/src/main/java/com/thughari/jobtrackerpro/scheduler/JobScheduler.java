@@ -1,41 +1,72 @@
 package com.thughari.jobtrackerpro.scheduler;
 
+import com.thughari.jobtrackerpro.entity.User;
+import com.thughari.jobtrackerpro.repo.UserRepository;
+import com.thughari.jobtrackerpro.service.GmailIntegrationService;
 import com.thughari.jobtrackerpro.service.JobService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/**
- * This scheduler runs a maintenance task every day at midnight to process stale 
- * job applications that haven't been updated in over 90 days.
- * 
- * Instead of physical deletion, the task updates these applications to a 'Rejected' 
- * status and adds a system note, helping keep the user dashboard relevant while 
- * preserving historical data.
- */
+import java.util.List;
 
 @Component
 @Slf4j
 public class JobScheduler {
 
     private final JobService jobService;
+    private final UserRepository userRepository;
+    private final GmailIntegrationService gmailIntegrationService;
 
-    public JobScheduler(JobService jobService) {
+    // Clean Coding: Single constructor injection
+    public JobScheduler(JobService jobService, 
+                        UserRepository userRepository, 
+                        GmailIntegrationService gmailIntegrationService) {
         this.jobService = jobService;
+        this.userRepository = userRepository;
+        this.gmailIntegrationService = gmailIntegrationService;
     }
 
     /**
-     * Runs every day at midnight UTC (5:30 AM IST).
-     * Format: second, minute, hour, day of month, month, day(s) of week
+     * Daily Maintenance: Rejects stale applications (>60 days).
+     * Runs at Midnight UTC.
      */
     @Scheduled(cron = "0 0 0 * * *")
     public void runStaleJobCleanup() {
-        log.info("Starting scheduled cleanup of stale applications...");
+        log.info("Maintenance: Starting stale job cleanup...");
         try {
             jobService.cleanupStaleApplications();
-            log.info("Scheduled cleanup completed successfully.");
+            log.info("Maintenance: Stale job cleanup completed.");
         } catch (Exception e) {
-            log.error("Error during scheduled cleanup: {}", e.getMessage());
+            log.error("Maintenance Error: Stale job cleanup failed: {}", e.getMessage());
         }
+    }
+
+    /**
+     * Gmail Security: Renews the 7-day watch lease every 5 days.
+     * High Performance: Processes users in parallel threads.
+     */
+    @Scheduled(cron = "0 0 0 */5 * *") 
+    public void renewGmailWatches() {
+        log.info("Gmail Sync: Starting bulk watch renewal...");
+        
+        List<User> users = userRepository.findByGmailConnectedTrue();
+        
+        if (users.isEmpty()) {
+            log.info("Gmail Sync: No connected users found for renewal.");
+            return;
+        }
+
+        // High Performance: Use parallelStream to renew multiple users concurrently
+        // This prevents a single slow Google API response from blocking the entire task.
+        users.parallelStream().forEach(user -> {
+            try {
+                gmailIntegrationService.renewWatch(user);
+            } catch (Exception e) {
+                log.error("Gmail Sync Error: Renewal failed for {}: {}", user.getEmail(), e.getMessage());
+            }
+        });
+
+        log.info("Gmail Sync: Finished bulk watch renewal for {} users.", users.size());
     }
 }

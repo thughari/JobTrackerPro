@@ -1,8 +1,10 @@
 package com.thughari.jobtrackerpro.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.thughari.jobtrackerpro.dto.EmailBatchItem;
 import com.thughari.jobtrackerpro.dto.JobDTO;
 import com.thughari.jobtrackerpro.interfaces.GeminiService;
 
@@ -63,6 +65,150 @@ public class GeminiExtractionService implements GeminiService {
         } catch (Exception e) {
             log.error("AI Extraction failed or timed out", e);
             return null; 
+        }
+    }
+    
+    @Override
+    public List<JobDTO> extractJobsFromBatch(List<EmailBatchItem> items) {
+        if (items == null || items.isEmpty()) return List.of();
+
+        String prompt = buildBatchPrompt(items);
+
+        try {
+            Map<String, Object> requestBody = Map.of(
+                "contents", List.of(
+                    Map.of("role", "user", "parts", List.of(Map.of("text", prompt)))
+                )
+            );
+
+            String response = restClient.post()
+                    .uri(apiUrl + "?key=" + apiKey)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(requestBody)
+                    .retrieve()
+                    .body(String.class);
+
+            return parseBulkGeminiResponse(response);
+
+        } catch (Exception e) {
+            log.error("Bulk AI Extraction failed", e);
+            return List.of();
+        }
+    }
+    
+    private String buildBatchPrompt(List<EmailBatchItem> items) {
+        StringBuilder emailListBuilder = new StringBuilder();
+        for (int i = 0; i < items.size(); i++) {
+            EmailBatchItem item = items.get(i);
+            String safeBody = (item.body() != null) ? (item.body().length() > 6000 ? item.body().substring(0, 6000) : item.body()) : "";
+            
+            emailListBuilder.append("""
+                --- EMAIL INDEX: %d ---
+                FROM: %s
+                SUBJECT: %s
+                BODY: %s
+                -----------------------
+                """.formatted(i, item.from(), item.subject(), safeBody));
+        }
+
+        return """
+            Act as a strict Global Data Extraction System for a Job Application Tracker.
+
+            ### TASK
+            Analyze the list of emails provided below. Determine whether each email is related to a job opportunity, hiring process, or recruiter communication.
+            If the email mentions a company and a job role in a hiring context, it MUST be treated as job-related.
+            Only exclude an email from the output array if it is clearly commercial spam, a receipt, or completely unrelated to jobs/careers.
+
+            **CRITICAL RULE:** Exclude strictly commercial spam, receipts, or unrelated content.
+            
+            ### LIST OF EMAILS TO ANALYZE
+            %s
+
+            ### EXTRACTION RULES (Apply to each email index)
+            1. **COMPANY**: Identify the hiring company. 
+                - If multiple companies are mentioned, select the one most directly related to the hiring context.
+                - Fallback: Extraction from the sender's email domain (e.g. careers@stripe.com -> Stripe).
+                - Ignore generic providers (gmail, yahoo, etc.).
+                - Default: "Unknown Company".
+
+            2. **ROLE**: Extract specific job title. Default to "Software Engineer" if no role is clear.
+            3. **STATUS**: Map to: "Applied", "Shortlisted", "Interview Scheduled", "Offer Received", or "Rejected".
+            4. **NOTES**: A 1-sentence summary.
+            5. **LOCATION**: Extract City/Country if found, otherwise default to "Remote".
+
+            6. **URL**: Hunt for the link using this strict priority:
+                - Priority 1: Direct Job View link (look for long URLs containing "/jobs/view/" or "/comm/jobs/").
+                - Priority 2: Primary call-to-action (Apply, View Job, Check status) or links containing "lever.co", "greenhouse.io", "myworkday".
+                - Priority 3: Company Careers page URL.
+                - Priority 4: Main company website URL.
+                - Extraction: Return the full raw URL string (if between <> brackets, remove the brackets).
+
+            7. **SALARY**: Extract salary numbers if present, otherwise 0.0.
+
+            ### MULTILINGUAL RULE
+            Translate all extracted values into English.
+
+            ### OUTPUT FORMAT
+            Return ONLY a raw JSON array of objects (no markdown, no explanations). 
+            Return an empty array [] if no job-related emails are found.
+            
+            Example Output:
+            [
+              {
+                "company": "String",
+                "role": "String",
+                "location": "String",
+                "status": "String",
+                "url": "String",
+                "salaryMin": 0.0,
+                "salaryMax": 0.0,
+                "notes": "String"
+              }
+            ]
+            """.formatted(emailListBuilder.toString());
+    }
+
+    private List<JobDTO> parseBulkGeminiResponse(String rawResponse) {
+        try {
+            JsonNode root = objectMapper.readTree(rawResponse);
+            JsonNode candidates = root.path("candidates");
+            
+            if (candidates.isMissingNode() || candidates.isEmpty()) return List.of();
+
+            String contentText = candidates.get(0)
+                    .path("content").path("parts").get(0)
+                    .path("text").asText();
+
+            // Clean up any potential markdown garbage if the AI ignores the prompt instructions
+            contentText = contentText.replaceAll("```json", "").replaceAll("```", "").trim();
+
+            if (contentText.equals("[]") || contentText.equalsIgnoreCase("null")) {
+                return List.of();
+            }
+
+            // Map the JSON array directly to a List of DTOs
+            List<JobDTO> jobs = objectMapper.readValue(contentText, new TypeReference<List<JobDTO>>() {});
+            
+            LocalDateTime now = LocalDateTime.now();
+            jobs.forEach(job -> {
+                job.setAppliedDate(now); 
+                job.setUpdatedAt(now);
+                job.setStage(mapStatusToStage(job.getStatus()));
+                
+                if ("Rejected".equalsIgnoreCase(job.getStatus())) {
+                    job.setStageStatus("failed");
+                } else if ("Offer Received".equalsIgnoreCase(job.getStatus())) {
+                    job.setStageStatus("passed");
+                } else {
+                    job.setStageStatus("active");
+                }
+            });
+            
+            return jobs;
+
+        } catch (Exception e) {
+            log.error("Failed to parse Bulk AI response: {}", rawResponse);
+            return List.of();
         }
     }
 

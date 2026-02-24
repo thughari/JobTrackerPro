@@ -32,4 +32,22 @@ public class User {
 
 	@Enumerated(EnumType.STRING)
 	private AuthProvider provider;
+	
+	@Column(name = "gmail_refresh_token")
+	private String gmailRefreshToken;
+	
+	@Column(name = "gmail_history_id")
+	private String gmailHistoryId;
+
+	@Column(name = "gmail_watch_expiration")
+	private Long gmailWatchExpiration;
+
+	@Column(name = "gmail_sync_in_progress")
+	private Boolean gmailSyncInProgress = false;
+
+	@Column(name = "gmail_connected")
+	private Boolean gmailConnected = false;
+	
+	@Column(name = "gmail_label_id")
+	private String gmailLabelId;
 }

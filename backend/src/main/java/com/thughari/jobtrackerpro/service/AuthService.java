@@ -12,17 +12,23 @@ import com.thughari.jobtrackerpro.repo.PasswordResetTokenRepository;
 import com.thughari.jobtrackerpro.repo.UserRepository;
 import com.thughari.jobtrackerpro.security.JwtUtils;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @Service
 @Transactional
 public class AuthService {
@@ -31,6 +37,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final StorageService storageService;
+    private final CacheManager cacheManager;
     
     @Value("${app.base-url}")
     private String baseUrl;
@@ -43,13 +50,14 @@ public class AuthService {
 
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, 
     		JwtUtils jwtUtils, StorageService storageService, 
-    		PasswordResetTokenRepository tokenRepository, EmailService emailService) {
+    		PasswordResetTokenRepository tokenRepository, EmailService emailService, CacheManager cacheManager) {
     	this.userRepository = userRepository;
     	this.passwordEncoder = passwordEncoder;
     	this.jwtUtils = jwtUtils;
     	this.storageService = storageService;
-    	this.tokenRepository=tokenRepository;
-    	this.emailService=emailService;
+    	this.tokenRepository = tokenRepository;
+    	this.emailService = emailService;
+    	this.cacheManager = cacheManager;
     }
 
     public AuthTokens registerUser(AuthRequest request) {
@@ -108,7 +116,6 @@ public class AuthService {
         emailService.sendResetEmail(user.getEmail(), tokenEntity.getToken());
     }
 
-    @CacheEvict(value = "users", key = "#result", condition = "#result != null")
     public void resetPassword(String token, String newPassword) {
     	if (newPassword == null || newPassword.trim().isEmpty()) {
     		throw new IllegalArgumentException("Password cannot be empty");
@@ -128,6 +135,8 @@ public class AuthService {
     	User user = resetToken.getUser();
     	user.setPassword(passwordEncoder.encode(newPassword));
     	userRepository.save(user);
+    	
+    	evictAllUserCaches(user.getEmail());
 
     	tokenRepository.delete(resetToken);
     }
@@ -140,7 +149,10 @@ public class AuthService {
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
     }
 
-    @CacheEvict(value = "users", key = "#email")
+    @Caching(evict = {
+            @CacheEvict(value = "users", key = "#email"),
+            @CacheEvict(value = "userEntities", key = "#email")
+        })
     public void changePassword(String email, ChangePasswordRequest request) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -193,6 +205,63 @@ public class AuthService {
         userRepository.save(user);
         return mapToProfileResponse(user);
     }
+    
+
+    /**
+     * High Performance OAuth User Sync
+     * Consolidates find, create, and profile update into one DB trip.
+     */
+    @Caching(evict = {
+            @CacheEvict(value = "users", key = "#email"),
+            @CacheEvict(value = "userEntities", key = "#email")
+        })
+    public User processOAuthUser(String email, String name, String imageUrl, String provider) {
+        User user = userRepository.findByEmail(email.toLowerCase())
+                .orElseGet(() -> {
+                    User newUser = new User();
+                    newUser.setEmail(email.toLowerCase());
+                    newUser.setProvider(AuthProvider.valueOf(provider.toUpperCase()));
+                    newUser.setGmailConnected(false);
+                    return newUser;
+                });
+
+        boolean needsUpdate = false;
+
+        // Only update if data actually changed to avoid redundant SQL UPDATE statements
+        if (user.getName() == null || !user.getName().equals(name)) {
+            user.setName(name);
+            needsUpdate = true;
+        }
+
+        // High Performance: We check if the image is already a JobTrackerPro/R2 URL 
+        // to avoid re-uploading social images every single login.
+        if (user.getImageUrl() == null || (!user.getImageUrl().contains("r2") && !user.getImageUrl().equals(imageUrl))) {
+            if (imageUrl != null && !imageUrl.isBlank()) {
+                try {
+                    // Offload image sync to storage service
+                    String synchronizedUrl = storageService.uploadFromUrl(imageUrl, 
+                        user.getId() != null ? user.getId().toString() : UUID.randomUUID().toString());
+                    user.setImageUrl(synchronizedUrl);
+                    needsUpdate = true;
+                } catch (Exception e) {
+                    log.error("Social image sync failed: {}", e.getMessage());
+                }
+            }
+        }
+
+        if (user.getId() == null || needsUpdate) {
+            return userRepository.saveAndFlush(user);
+        }
+        
+        return user;
+    }
+    
+    private void evictAllUserCaches(String email) {
+        Cache userCache = cacheManager.getCache("users");
+        Cache entityCache = cacheManager.getCache("userEntities");
+        if (userCache != null) userCache.evict(email);
+        if (entityCache != null) entityCache.evict(email);
+    }
 
     private UserProfileResponse mapToProfileResponse(User user) {
         UserProfileResponse response = new UserProfileResponse();
@@ -202,6 +271,8 @@ public class AuthService {
         response.setImageUrl(user.getImageUrl());
         response.setProvider(user.getProvider().toString());
         response.setHasPassword(user.getPassword() != null && !user.getPassword().isEmpty());
+        response.setGmailConnected(Boolean.TRUE.equals(user.getGmailConnected()));
+        response.setGmailSyncInProgress(Boolean.TRUE.equals(user.getGmailSyncInProgress()));
         return response;
     }
 
