@@ -260,6 +260,46 @@
         </div>
     </div>
 
+    <div class="bg-white dark:bg-[#151A23] border border-gray-200 dark:border-gray-800 rounded-[2rem] p-6 space-y-6">
+  <div class="flex items-center justify-between">
+    <div class="space-y-1">
+      <h3 class="text-lg font-bold text-gray-900 dark:text-white">Gmail Integration</h3>
+      <p class="text-xs text-gray-500">Connect your inbox for 100% automated tracking.</p>
+    </div>
+    
+    <!-- Status Indicator -->
+    @if (authService.userProfile()?.gmailConnected) {
+      <span class="flex items-center gap-1.5 text-xs font-bold text-green-500 bg-green-500/10 px-3 py-1 rounded-full">
+        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+        CONNECTED
+      </span>
+    }
+  </div>
+
+  @if (!authService.userProfile()?.gmailConnected) {
+    <div class="p-4 bg-indigo-500/5 border border-indigo-500/20 rounded-2xl">
+      <p class="text-xs text-gray-400 leading-relaxed mb-4">
+        JobTrackerPro will automatically scan your Gmail for application confirmations and interview invites. No more manual entry.
+      </p>
+      <button (click)="connectGmail()" [disabled]="isConnectingGmail()"
+        class="w-full py-3 bg-white text-gray-900 hover:bg-gray-100 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 active:scale-95 shadow-lg">
+        <img src="google-logo.svg" class="w-4 h-4">
+        {{ isConnectingGmail() ? 'Connecting...' : 'Authorize Gmail Access' }}
+      </button>
+    </div>
+  } @else {
+    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#0B0E14] rounded-2xl border dark:border-gray-800">
+      <div class="flex items-center gap-3">
+        <img src="google-logo.svg" class="w-8 h-8 p-1.5 bg-white rounded-full shadow-sm">
+        <div class="text-[11px] text-gray-500">
+          Tracking: <span class="text-gray-900 dark:text-white font-bold">{{ authService.userProfile()?.email }}</span>
+        </div>
+      </div>
+      <button class="text-[10px] font-black text-red-500 hover:underline">DISCONNECT</button>
+    </div>
+  }
+</div>
+
 </div>
 
 @if (showImageModal()) {

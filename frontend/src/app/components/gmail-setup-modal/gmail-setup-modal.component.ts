@@ -43,6 +43,11 @@ export class GmailSetupModalComponent {
     window.open(`https://mail.google.com/mail/u/0/#search/${encodedQuery}`, '_blank');
   }
 
+  connectGmail() {
+  // Redirect to your backend which then redirects to Google
+  window.location.href = `${environment.apiBaseUrl}/api/auth/connect/gmail`;
+}
+
   close() {
     this.onClose.emit();
     setTimeout(() => this.activeStep.set(1), 300);

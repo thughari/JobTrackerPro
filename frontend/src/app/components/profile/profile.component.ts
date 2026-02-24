@@ -5,6 +5,8 @@ import { FormsModule } from '@angular/forms';
 import { environment } from '../../../environments/environment';
 import { GmailSetupModalComponent } from '../gmail-setup-modal/gmail-setup-modal.component';
 
+declare var google: any; // Declare google for TypeScript
+
 @Component({
   selector: 'app-profile',
   standalone: true,
@@ -14,6 +16,7 @@ import { GmailSetupModalComponent } from '../gmail-setup-modal/gmail-setup-modal
 })
 export class ProfileComponent {
   private readonly API = environment.apiBaseUrl;
+  isConnectingGmail = signal(false);
 
   authService = inject(AuthService);
 
@@ -266,5 +269,31 @@ export class ProfileComponent {
   copyEmail() {
     navigator.clipboard.writeText(this.inboundEmailAddress);
     this.showMessage('success', 'Forwarding address copied to clipboard!');
+  }
+
+  connectGmail() {
+    this.isConnectingGmail.set(true);
+
+    const client = google.accounts.oauth2.initCodeClient({
+      client_id: '963261513098-j8u29ce8g5v0r9p3q3a1nqnpcg669a46.apps.googleusercontent.com',
+scope: 'openid email profile https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.labels https://www.googleapis.com/auth/gmail.settings.basic',
+      ux_mode: 'popup',
+      callback: (response: any) => {
+        if (response.code) {
+          this.authService.connectGmail(response.code).subscribe({
+            next: () => {
+              this.authService.fetchUserProfile(); // Refresh to show 'Connected' status
+              this.showMessage('success', 'Gmail Auto-Tracking Enabled!');
+              this.isConnectingGmail.set(false);
+            },
+            error: () => {
+              this.showMessage('error', 'Failed to link Gmail.');
+              this.isConnectingGmail.set(false);
+            }
+          });
+        }
+      },
+    });
+    client.requestCode();
   }
 }

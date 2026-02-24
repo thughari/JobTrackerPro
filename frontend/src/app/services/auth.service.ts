@@ -11,6 +11,7 @@ export interface UserProfile {
   imageUrl?: string;
   provider: string;
   hasPassword: boolean;
+  gmailConnected: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -202,5 +203,13 @@ export class AuthService {
     } catch {
       return {};
     }
+  }
+
+  connectGmail(code: string) {
+    // We send the 'code' in the body. The backend swaps it for a Refresh Token.
+    return this.http.post(`${this.API}/api/integrations/gmail/connect`, 
+      { code }, 
+      { responseType: 'text' }
+    );
   }
 }
