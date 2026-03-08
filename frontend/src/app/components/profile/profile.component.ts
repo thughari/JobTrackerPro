@@ -6,7 +6,7 @@ import { environment } from '../../../environments/environment';
 import { GmailSetupModalComponent } from '../gmail-setup-modal/gmail-setup-modal.component';
 import { firstValueFrom } from 'rxjs';
 
-declare var google: any; // Declare google for TypeScript
+declare var google: any;
 
 @Component({
   selector: 'app-profile',
@@ -349,17 +349,15 @@ export class ProfileComponent {
   }
 
   closeDisconnectModal() {
-    if (this.isDeleting()) return; // Prevent closing while API is in flight
+    if (this.isDeleting()) return;
     this.showDisconnectConfirm.set(false);
   }
 
   async confirmDisconnect() {
     this.isDeleting.set(true);
     try {
-      // High Performance: Standard backend call with @Async cleanup
       await firstValueFrom(this.authService.disconnectGmail());
       
-      // Optimistic UI: Update local state immediately
       const current = this.authService.userProfile();
       if (current) {
         this.authService.userProfile.set({

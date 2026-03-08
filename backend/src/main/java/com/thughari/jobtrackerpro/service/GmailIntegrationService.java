@@ -63,6 +63,9 @@ public class GmailIntegrationService {
     @Value("${spring.security.oauth2.client.registration.google.client-secret}")
     private String clientSecret;
 
+    @Value("${app.google.pubsub-topic}")
+    private String pubsubTopic;
+
     public GmailIntegrationService(UserRepository userRepository, GeminiService geminiService, JobService jobService, CacheManager cacheManager) {
         this.userRepository = userRepository;
         this.geminiService = geminiService;
@@ -99,7 +102,7 @@ public class GmailIntegrationService {
         createJobFilter(service, labelId);
 
         WatchRequest watchRequest = new WatchRequest()
-                .setTopicName("projects/job-tracker-pro-480917/topics/gmail-notifications")
+                .setTopicName(pubsubTopic)
                 .setLabelIds(List.of(labelId));
         
         WatchResponse watchResponse = service.users().watch("me", watchRequest).execute();
@@ -162,7 +165,7 @@ public class GmailIntegrationService {
             Gmail service = createGmailClient(accessToken);
 
             WatchRequest watchRequest = new WatchRequest()
-                    .setTopicName("projects/job-tracker-pro-480917/topics/gmail-notifications")
+                    .setTopicName(pubsubTopic)
                     .setLabelIds(List.of(user.getGmailLabelId()));
 
             WatchResponse watchResponse = service.users().watch("me", watchRequest).execute();
@@ -392,9 +395,7 @@ public class GmailIntegrationService {
     	
     	ListFiltersResponse listResponse = service.users().settings().filters().list("me").execute();
         
-        // FIXED: Use getFilter() (singular) as defined in the Google Client Library
         List<Filter> existingFilters = listResponse.getFilter();
-        System.out.println(existingFilters);
 
         if (existingFilters != null) {
             for (Filter existingFilter : existingFilters) {

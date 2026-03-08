@@ -6,7 +6,6 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { AuthService } from '../../../services/auth.service'; // Added AuthService
 
-// Define the interface that was missing
 export interface AuthResponse {
   token: string;
 }
@@ -19,7 +18,6 @@ export interface AuthResponse {
   styleUrl: './verify.component.css'
 })
 export class VerifyComponent implements OnInit {
-  // Inject the missing dependencies
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private http = inject(HttpClient);
@@ -38,22 +36,16 @@ export class VerifyComponent implements OnInit {
     }
 
     try {
-      // 1. Call verify endpoint (Backend returns the JWT token)
       const response = await firstValueFrom(
         this.http.get<AuthResponse>(`${environment.apiBaseUrl}/api/auth/verify-email?token=${token}`)
       );
 
-      // 2. High Performance Login: Save token and sync profile immediately
-      // Standardized to use the 'handleToken' logic already in your service
       this.authService.setAccessToken(response.token);
       
       this.status.set('success');
       
-      // 3. Automated Navigation
-      // Small delay so the user sees the Success animation
       setTimeout(() => {
         this.router.navigate(['/app/dashboard']);
-        // Fetch profile to update all Signals across the app (Sidebar/Header)
         this.authService.fetchUserProfile();
       }, 2000);
 

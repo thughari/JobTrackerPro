@@ -119,7 +119,6 @@ export class AuthService {
   logout() {
     this.http.post(`${this.apiUrl}/logout`, {}, { withCredentials: true }).subscribe({
       error: () => {
-        // no-op: continue client logout even if backend logout fails
       }
     });
 
@@ -128,7 +127,6 @@ export class AuthService {
   }
 
   resendVerificationEmail(email: string) {
-  // High Performance: Use standard HTTP params for simple queries
     return this.http.post(`${this.API}/api/auth/resend-verification`, null, {
       params: { email }
     });

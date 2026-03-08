@@ -24,8 +24,6 @@ public class GoogleOidcVerifier {
         
         this.expectedServiceAccount = serviceAccount;
         
-        // HIGH PERFORMANCE: Builder is initialized once. 
-        // GoogleIdTokenVerifier is thread-safe and handles public key caching internally.
         this.verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
                 .setAudience(Collections.singletonList(expectedAudience))
                 .setIssuer("https://accounts.google.com")
@@ -46,10 +44,8 @@ public class GoogleOidcVerifier {
             if (idToken != null) {
                 Payload payload = idToken.getPayload();
                 
-                // 1. Check if the sender is our specific Service Account
                 boolean isAuthorizedSender = payload.getEmail().equals(expectedServiceAccount);
                 
-                // 2. Check if the email is verified by Google
                 boolean isEmailVerified = payload.getEmailVerified();
 
                 if (isAuthorizedSender && isEmailVerified) {

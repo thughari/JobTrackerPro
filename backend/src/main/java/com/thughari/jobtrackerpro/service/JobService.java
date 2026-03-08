@@ -191,7 +191,6 @@ public class JobService {
             if (jobDashboard != null) jobDashboard.evict(email);
         });
 
-        // Clear all paged results once
     	if (jobPages != null) jobPages.clear(); 
 
         log.info("System Cleanup: Successfully rejected stale jobs for {} users.", affectedEmails.size());
@@ -201,12 +200,10 @@ public class JobService {
         if (incoming == null || incoming.getCompany() == null) return null;
         
         String incomingCompany = incoming.getCompany().toLowerCase().trim();
-        // Defensive check for incoming role
         String incomingRole = (incoming.getRole() != null) ? incoming.getRole().toLowerCase().trim() : "";
 
         List<Job> companyMatches = existingJobs.stream()
                 .filter(job -> {
-                    // Defensive check for database company names
                     if (job.getCompany() == null) return false;
                     String dbCompany = job.getCompany().toLowerCase().trim();
                     return dbCompany.contains(incomingCompany) || incomingCompany.contains(dbCompany);
@@ -215,7 +212,6 @@ public class JobService {
 
         if (companyMatches.isEmpty()) return null;
 
-        // Filter active matches
         List<Job> activeMatches = companyMatches.stream()
                 .filter(j -> j.getStatus() != null && 
                         !j.getStatus().equalsIgnoreCase("Rejected") && 
@@ -226,18 +222,15 @@ public class JobService {
 
         return activeMatches.stream()
                 .max((j1, j2) -> {
-                    // Ensure calculateSimilarity is null-safe
                     double sim1 = calculateSimilarity(j1.getRole(), incomingRole);
                     double sim2 = calculateSimilarity(j2.getRole(), incomingRole);
                     return Double.compare(sim1, sim2);
                 })
-                // If the best match is too weak, ignore it and return the first company match
                 .filter(bestMatch -> calculateSimilarity(bestMatch.getRole(), incomingRole) > 0.2)
                 .orElse(activeMatches.get(0));
     }
     
     private void updateExistingJobFromEmail(Job existingJob, JobDTO incoming) {
-        // 1. NULL-SAFE NORMALIZATION
         String currentStatus = (existingJob.getStatus() != null) ? existingJob.getStatus() : "";
         String incomingStatus = (incoming.getStatus() != null) ? incoming.getStatus() : "";
         
@@ -248,19 +241,12 @@ public class JobService {
 
         String newNotesFromAI = (incoming.getNotes() != null) ? incoming.getNotes().trim() : "";
 
-        // 2. CHANGE DETECTION LOGIC (The "High Performance" Filter)
         boolean statusChanged = !currentStatus.equalsIgnoreCase(incomingStatus);
         boolean stageChanged = incoming.getStage() != null && !incoming.getStage().equals(existingJob.getStage());
         
-        // Check if the AI actually found new info that we don't already have in the notes
-        // This prevents appending "Application received" every time the sync runs.
         boolean isNewInfo = !newNotesFromAI.isEmpty() && 
                             (existingJob.getNotes() == null || !existingJob.getNotes().contains(newNotesFromAI));
 
-        // 3. DECIDE IF UPDATE IS NECESSARY
-        // We only update if: 
-        // a) Status or Stage changed 
-        // b) There is significant new text info AND it's been at least 1 hour (throttling)
         boolean shouldThrottle = existingJob.getUpdatedAt().isAfter(LocalDateTime.now().minusHours(1));
 
         if (statusChanged || stageChanged || (isNewInfo && !shouldThrottle)) {
@@ -268,26 +254,20 @@ public class JobService {
             log.info("Updating job for {}: Status change [{} -> {}], New Info: {}", 
                      existingJob.getCompany(), currentStatus, incomingStatus, isNewInfo);
 
-            // Update core fields
             existingJob.setStatus(incomingStatus);
             if (incoming.getStage() != null) existingJob.setStage(incoming.getStage());
             if (incoming.getStageStatus() != null) existingJob.setStageStatus(incoming.getStageStatus());
 
-            // 4. ATOMIC NOTE CONSTRUCTION
             if (isNewInfo) {
                 String timestamp = LocalDateTime.now().format(fmt);
                 String formattedNote = "\n[" + timestamp + "] Update via Email: " + newNotesFromAI;
                 
-                // Clean coding: Ensure we don't exceed DB limits (safety check)
                 String updatedNotes = (existingJob.getNotes() != null ? existingJob.getNotes() : "") + formattedNote;
                 existingJob.setNotes(updatedNotes);
             }
 
             existingJob.setUpdatedAt(LocalDateTime.now());
 
-            // 5. ATOMIC PERSISTENCE
-            // We use saveAndFlush here because in a multi-threaded batch, 
-            // we want the NEXT email in the batch to see this update immediately.
             jobRepository.saveAndFlush(existingJob);
             
         } else {
@@ -296,7 +276,6 @@ public class JobService {
     }
 
     private double calculateSimilarity(String role1, String role2) {
-        // If either role is null, they are 0% similar
         if (role1 == null || role2 == null) return 0.0;
         
         Set<String> set1 = tokenize(role1);
@@ -314,7 +293,6 @@ public class JobService {
     }
     
     private Set<String> tokenize(String text) {
-        // This was likely the source of the "val is null" error
         if (text == null || text.isBlank()) return Collections.emptySet();
         
         String[] words = text.toLowerCase().replaceAll("[^a-z0-9\\s]", "").split("\\s+");

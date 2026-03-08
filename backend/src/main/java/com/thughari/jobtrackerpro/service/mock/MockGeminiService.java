@@ -38,14 +38,12 @@ public class MockGeminiService implements GeminiService {
         mockJob.setLocation("Remote");
         mockJob.setStatus(determineStatus(subject));
         
-        // --- ADD THESE DEFAULTS TO PREVENT NPE ---
-        mockJob.setStage(1); // Default to stage 1 (Applied)
+        mockJob.setStage(1);
         mockJob.setStageStatus("active");
         mockJob.setSalaryMin(0.0);
         mockJob.setSalaryMax(0.0);
         mockJob.setUrl(""); 
         mockJob.setNotes("Ingested via Smarter Mock Service.");
-        // -----------------------------------------
         
         LocalDateTime now = LocalDateTime.now();
         mockJob.setAppliedDate(now);
@@ -62,7 +60,7 @@ public class MockGeminiService implements GeminiService {
 	            .<JobDTO>map(item -> 
 	                extractJobFromEmail(item.from(), item.subject(), item.body())
 	            )
-	            .filter(Objects::nonNull) // Ensure we don't return nulls in the list
+	            .filter(Objects::nonNull)
 	            .toList();
 	}
 	
@@ -92,7 +90,6 @@ public class MockGeminiService implements GeminiService {
 	private String extractCompanyFromDomain(String from) {
 	    try {
 	        String domain = from.split("@")[1].split("\\.")[0];
-	        // Don't name the company "Greenhouse" or "Workday" if it's just the ATS
 	        List<String> atsProviders = List.of("myworkday", "greenhouse", "lever", "smartrecruiters", "icims");
 	        if (atsProviders.contains(domain.toLowerCase())) return null;
 	        return domain;

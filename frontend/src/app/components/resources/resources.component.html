@@ -1,6 +1,5 @@
 <div class="min-h-screen bg-gray-50 dark:bg-[#0B0E14] text-gray-700 dark:text-gray-300 font-sans selection:bg-indigo-500/30 flex flex-col relative">
 
-  <!-- 1. TOAST SYSTEM -->
   <div class="fixed top-4 left-4 right-4 md:left-auto md:right-6 md:top-6 z-[100] flex flex-col gap-3 pointer-events-none">
     @if (successMessage()) {
       <div class="pointer-events-auto w-full md:max-w-sm bg-white dark:bg-[#151A23] border-l-4 border-green-500 rounded-r-xl shadow-2xl p-4 flex items-start justify-between gap-3 animate-slide-in">
@@ -28,7 +27,6 @@
     }
   </div>
 
-  <!-- 2. NAVBAR (Public Only) -->
   @if (!isInAppRoute()) {
     <nav class="sticky top-0 z-50 bg-white/80 dark:bg-[#0B0E14]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
       <div class="max-w-7xl mx-auto px-4 h-16 sm:h-20 flex items-center justify-between">
@@ -47,10 +45,8 @@
     </nav>
   }
 
-  <!-- 3. MAIN CONTENT -->
   <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 md:py-12 space-y-8">
     
-    <!-- Hero Header -->
     <header class="flex flex-col md:flex-row md:items-end justify-between gap-6">
       <div class="space-y-2">
         <div class="inline-flex items-center gap-2 text-indigo-500 text-[10px] font-black uppercase tracking-[0.2em]">
@@ -60,7 +56,6 @@
         <p class="text-sm text-gray-500 max-w-lg leading-relaxed">Explore and contribute to a wide range of career resources.</p>
       </div>
 
-      <!-- TABS -->
       <div class="flex p-1 bg-gray-200/50 dark:bg-[#151A23] rounded-2xl w-fit border border-gray-200 dark:border-gray-800 shadow-inner">
         <button (click)="setViewMode('community')"
           [class]="viewMode() === 'community' ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-sm' : 'text-gray-500'"
@@ -75,7 +70,6 @@
       </div>
     </header>
 
-    <!-- SEARCH & FILTER BAR -->
     <section class="grid grid-cols-1 lg:grid-cols-12 gap-3 bg-white dark:bg-[#151A23] p-3 md:p-4 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm transition-all">
       <div class="lg:col-span-6 relative group">
         <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors"></i>
@@ -91,14 +85,12 @@
           class="w-full rounded-2xl border-none bg-gray-50 dark:bg-[#0B0E14] pl-12 pr-4 py-4 text-sm focus:ring-2 focus:ring-indigo-500" />
       </div>
 
-      <!-- REFINED BUTTON SIZE FOR DESKTOP -->
       <button (click)="openAddResourceModal()" 
         class="hidden lg:flex lg:col-span-3 bg-indigo-600 hover:bg-indigo-500 text-white font-black py-2.5 px-6 rounded-2xl shadow-xl transition-all items-center justify-center gap-2 active:scale-95 text-xs uppercase tracking-widest">
         <i class="ph-fill ph-plus-circle text-lg"></i> Share
       </button>
     </section>
 
-    <!-- CONTENT DISPLAY -->
     @if (isLoading() && viewMode() === 'community') {
       <div class="flex flex-col items-center py-24 text-gray-500 animate-pulse">
         <i class="ph-fill ph-database text-5xl mb-4 text-indigo-500/20"></i>
@@ -168,7 +160,6 @@
     }
   </div>
 
-  <!-- FLOATING ACTION BUTTON (Mobile Only) -->
   @if (authService.isAuthenticated()) {
     <button (click)="openAddResourceModal()" 
       class="fixed bottom-6 right-6 lg:hidden w-16 h-16 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center z-[40] active:scale-90 animate-bounce-slow">
@@ -177,12 +168,10 @@
   }
 </div>
 
-<!-- Category Datalist -->
 <datalist id="categories">
     @for (cat of categoryOptions(); track cat) { <option [value]="cat"></option> }
 </datalist>
 
-<!-- ADD MODAL -->
 @if (showAddResourceModal()) {
 <div class="fixed inset-0 z-[110] bg-[#0B0E14]/80 backdrop-blur-md p-4 flex items-center justify-center overflow-y-auto">
   <div class="w-full max-w-xl bg-white dark:bg-[#151A23] rounded-3xl border border-gray-200 dark:border-gray-800 shadow-2xl animate-scale-in">
@@ -193,7 +182,6 @@
     </div>
 
     <div class="p-6 space-y-6">
-      <!-- Selector -->
       <div class="flex p-1 bg-gray-100 dark:bg-[#0B0E14] rounded-xl border dark:border-gray-800">
         <button (click)="onModeChange('link')" [class]="contributionMode === 'link' ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-sm' : 'text-gray-500'" class="flex-1 py-2 rounded-lg text-xs font-bold transition-all">LINK</button>
         <button (click)="onModeChange('file')" [class]="contributionMode === 'file' ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-sm' : 'text-gray-500'" class="flex-1 py-2 rounded-lg text-xs font-bold transition-all">FILE UPLOAD</button>
@@ -208,7 +196,6 @@
         @if (contributionMode === 'link') {
           <input [(ngModel)]="url" type="url" placeholder="https://..." class="w-full rounded-xl dark:bg-[#0B0E14] border-none p-4 text-sm focus:ring-2 focus:ring-indigo-500 animate-fade-in" />
         } @else {
-          <!-- MODERN FILE PICKER (DROPZONE) -->
           <label class="block group cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-800 bg-gray-50 dark:bg-[#0B0E14] rounded-2xl p-8 text-center hover:border-indigo-500 transition-all animate-fade-in">
             <input type="file" #fileInput (change)="onFileSelected($event)" class="hidden" accept=".pdf,.doc,.docx,.txt" />
             <div class="space-y-2">
@@ -235,7 +222,6 @@
 </div>
 }
 
-<!-- DELETE CONFIRMATION MODAL -->
 @if (showDeleteConfirm()) {
 <div class="fixed inset-0 z-[130] bg-[#0B0E14]/90 backdrop-blur-sm p-4 flex items-center justify-center">
   <div class="w-full max-w-sm bg-white dark:bg-[#151A23] rounded-[2.5rem] border border-gray-200 dark:border-red-900/20 shadow-2xl animate-scale-in overflow-hidden">

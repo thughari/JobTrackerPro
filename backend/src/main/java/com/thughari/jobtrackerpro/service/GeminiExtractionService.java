@@ -438,14 +438,12 @@ public class GeminiExtractionService implements GeminiService {
                     .path("content").path("parts").get(0)
                     .path("text").asText();
 
-            // Clean up any potential markdown garbage if the AI ignores the prompt instructions
             contentText = contentText.replaceAll("```json", "").replaceAll("```", "").trim();
 
             if (contentText.equals("[]") || contentText.equalsIgnoreCase("null")) {
                 return List.of();
             }
 
-            // Map the JSON array directly to a List of DTOs
             List<JobDTO> jobs = objectMapper.readValue(contentText, new TypeReference<List<JobDTO>>() {});
             
             LocalDateTime now = LocalDateTime.now();

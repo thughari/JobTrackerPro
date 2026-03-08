@@ -117,7 +117,6 @@ public class EmailService {
             helper.setTo(to);
             helper.setSubject("Verify Your Account - JobTrackerPro");
 
-            // The link points to your Angular frontend verification route
             String verifyLink = uiUrl + "/verify-email?token=" + token;
 
             String htmlContent = """

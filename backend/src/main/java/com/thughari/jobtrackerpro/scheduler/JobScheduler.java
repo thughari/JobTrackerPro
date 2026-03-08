@@ -26,7 +26,6 @@ public class JobScheduler {
     private final PasswordResetTokenRepository passwordTokenRepo;
     private final VerificationTokenRepository verificationTokenRepo;
 
-    // Clean Coding: Single constructor injection
     public JobScheduler(JobService jobService, 
                         UserRepository userRepository, 
                         GmailIntegrationService gmailIntegrationService,
@@ -56,7 +55,6 @@ public class JobScheduler {
 
     /**
      * Gmail Security: Renews the 7-day watch lease every 5 days.
-     * High Performance: Processes users in parallel threads.
      */
     @Scheduled(cron = "0 0 0 */5 * *") 
     public void renewGmailWatches() {

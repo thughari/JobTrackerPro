@@ -22,7 +22,7 @@ public class AsyncConfig {
 		return executor;
 	}
 	
-	@Primary // This tells Spring: "Use this one for @Async by default"
+	@Primary
     @Bean(name = "taskExecutor")
     public Executor taskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();

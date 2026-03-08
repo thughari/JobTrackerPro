@@ -52,7 +52,6 @@ public class GmailWebhookService {
     public void processHistorySync(String userEmail) {
         final String email = userEmail.toLowerCase();
 
-        // 1. ATOMIC LOCK: Prevent parallel threads for the same user
         int updatedRows = userRepository.claimSyncLock(email);
         if (updatedRows == 0) return; 
 
@@ -69,46 +68,36 @@ public class GmailWebhookService {
                     request -> request.getHeaders().setAuthorization("Bearer " + accessToken))
                     .setApplicationName("JobTrackerPro").build();
 
-            // 2. BOOTSTRAP: If historyId is missing
             if (user.getGmailHistoryId() == null || user.getGmailHistoryId().isBlank()) {
                 bootstrapUserHistory(service, user);
                 return;
             }
 
-            // 3. FETCH HISTORY
             ListHistoryResponse historyResponse = service.users().history().list("me")
                     .setStartHistoryId(new BigInteger(user.getGmailHistoryId()))
                     .setLabelId(user.getGmailLabelId()).execute();
 
-            // 4. PRE-CLAIM BOOKMARK: Prevent redundant processing in next webhook push
             if (historyResponse.getHistoryId() != null) {
                 user.setGmailHistoryId(historyResponse.getHistoryId().toString());
                 userRepository.saveAndFlush(user);
             }
 
-            // 5. COLLECT BATCH (High Performance: Full body extraction)
             List<EmailBatchItem> batchItems = collectMessages(service, historyResponse.getHistory());
 
-            // 6. BULK AI INGESTION
             if (!batchItems.isEmpty()) {log.info("Ingesting batch of {} emails via Gemini for {}", batchItems.size(), email);
             
-            // HIGH PERFORMANCE: Pre-extract URLs from the raw bodies for hydration later
             List<List<String>> batchUrlLists = batchItems.stream()
                     .map(item -> UrlParser.extractAndCleanUrls(item.body()))
                     .toList();
 
-            // 6. BULK AI CALL
             List<JobDTO> extractedJobs = geminiService.extractJobsFromBatch(batchItems);
             
-            // 7. HYDRATION & PERSISTENCE
             for (JobDTO job : extractedJobs) {
-                // Use the 'inputIndex' provided by the AI to find the correct URL list
                 Integer idx = job.getInputIndex();
                 
                 if (idx != null && idx >= 0 && idx < batchUrlLists.size()) {
                     List<String> originalUrls = batchUrlLists.get(idx);
 
-                    // If AI picked an index, hydrate the URL
                     if (job.getUrlIndex() != null && job.getUrlIndex() >= 0 && job.getUrlIndex() < originalUrls.size()) {
                         job.setUrl(originalUrls.get(job.getUrlIndex()));
                     } 
@@ -136,11 +125,9 @@ public class GmailWebhookService {
                     }
                 }
                 
-                // Cleanup internal processing fields before saving
                 job.setUrlIndex(null); 
                 job.setInputIndex(null);
 
-                // Atomic save (JobService handles cache eviction)
                 jobService.createOrUpdateJob(job, email);
             }
         }
@@ -183,13 +170,11 @@ public class GmailWebhookService {
     }
 
     private String extractTextFromBody(MessagePart part) {
-        // Priority 1: Check this part's body
         if (part.getBody() != null && part.getBody().getData() != null) {
             String content = new String(Base64.getUrlDecoder().decode(part.getBody().getData()));
             if (part.getMimeType().contains("text/plain")) return content;
             if (part.getMimeType().contains("text/html")) return content.replaceAll("<[^>]*>", " ");
         }
-        // Priority 2: Recurse into children
         if (part.getParts() != null) {
             for (MessagePart subPart : part.getParts()) {
                 String text = extractTextFromBody(subPart);

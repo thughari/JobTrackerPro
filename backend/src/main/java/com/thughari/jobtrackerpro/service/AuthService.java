@@ -193,10 +193,8 @@ public class AuthService {
             throw new IllegalStateException("Account is already verified. Please log in.");
         }
 
-        // 1. ATOMIC CLEANUP: Delete any previous tokens for this user
         verificationTokenRepository.deleteByUser(user);
 
-        // 2. Generate New Token
         String token = UUID.randomUUID().toString();
         VerificationToken vToken = new VerificationToken();
         vToken.setToken(token);
@@ -204,7 +202,6 @@ public class AuthService {
         vToken.setExpiryDate(LocalDateTime.now().plusHours(24));
         verificationTokenRepository.save(vToken);
 
-        // 3. ASYNC DELIVERY: Use the same high-performance thread pool
         emailService.sendVerificationEmail(user.getEmail(), token);
         
         log.info("Verification email resent to: {}", user.getEmail());
@@ -280,7 +277,7 @@ public class AuthService {
     
 
     /**
-     * High Performance OAuth User Sync
+     * OAuth User Sync
      * Consolidates find, create, and profile update into one DB trip.
      */
     @Caching(evict = {
@@ -306,18 +303,14 @@ public class AuthService {
             log.info("User {} auto-verified via {} login.", email, provider);
         }
 
-        // Only update if data actually changed to avoid redundant SQL UPDATE statements
         if (user.getName() == null || !user.getName().equals(name)) {
             user.setName(name);
             needsUpdate = true;
         }
 
-        // High Performance: We check if the image is already a JobTrackerPro/R2 URL 
-        // to avoid re-uploading social images every single login.
         if (user.getImageUrl() == null || (!user.getImageUrl().contains("r2") && !user.getImageUrl().equals(imageUrl))) {
             if (imageUrl != null && !imageUrl.isBlank()) {
                 try {
-                    // Offload image sync to storage service
                     String synchronizedUrl = storageService.uploadFromUrl(imageUrl, 
                         user.getId() != null ? user.getId().toString() : UUID.randomUUID().toString());
                     user.setImageUrl(synchronizedUrl);

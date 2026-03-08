@@ -160,9 +160,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   interviewColors = ['#10b981', '#d1d5db'];
 
   connectGmail() {
-    // Instead of redirecting here, tell the parent to trigger its logic
     this.onConnect.emit();
-    // Usually, we close the modal immediately so the Google Popup is visible
     this.onClose.emit(); 
   }
 }

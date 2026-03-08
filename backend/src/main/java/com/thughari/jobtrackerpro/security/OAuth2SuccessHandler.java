@@ -46,13 +46,11 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 	    String registrationId = authToken.getAuthorizedClientRegistrationId();
 	    UserInfo userInfo = extractUserInfo(registrationId, authToken.getPrincipal().getAttributes());
 
-	    // DELEGATION: Business logic belongs in the Service
 	    User user = authService.processOAuthUser(userInfo.email(), userInfo.name(), userInfo.imageUrl(), registrationId);
 
 	    String token = jwtUtils.generateAccessToken(user.getEmail());
 	    String refreshToken = jwtUtils.generateRefreshToken(user.getEmail());
 	    
-	    // High Performance: Single Header construction
 	    response.addHeader("Set-Cookie", buildRefreshCookie(refreshToken, "/", refreshExpirationMs / 1000).toString());
 	    
 	    getRedirectStrategy().sendRedirect(request, response, uiUrl + "/login-success?token=" + token);

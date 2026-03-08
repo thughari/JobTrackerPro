@@ -31,16 +31,14 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.PAYLOAD_TOO_LARGE, "File size exceeds the limit (5MB).");
     }
 
-    // High Performance: Catch-all for security and unexpected errors
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneralException(Exception ex) {
-        log.error("UNEXPECTED ERROR: ", ex); // Log full stack trace for dev tracking
+        log.error("UNEXPECTED ERROR: ", ex);
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred.");
     }
     
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ErrorResponse> handleUnauthorized(IllegalStateException ex) {
-        // High Performance: Use 401 for verification/state locks
         return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
