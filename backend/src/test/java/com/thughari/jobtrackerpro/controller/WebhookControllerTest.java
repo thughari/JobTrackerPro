@@ -1,11 +1,9 @@
 package com.thughari.jobtrackerpro.controller;
 
-import com.thughari.jobtrackerpro.dto.JobDTO;
 import com.thughari.jobtrackerpro.entity.User;
-import com.thughari.jobtrackerpro.interfaces.GeminiService;
 import com.thughari.jobtrackerpro.repo.UserRepository;
 import com.thughari.jobtrackerpro.service.EmailService;
-import com.thughari.jobtrackerpro.service.JobService;
+import com.thughari.jobtrackerpro.service.IngestionService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -23,27 +21,26 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class WebhookControllerTest {
 
-    @Mock private JobService jobService;
     @Mock private UserRepository userRepository;
-    @Mock private GeminiService geminiService;
     @Mock private EmailService emailService;
+    @Mock private IngestionService ingestionService;
 
     @InjectMocks
     private WebhookController webhookController;
 
     @Test
     void returnsInvalidPayloadWhenHeadersMissing() {
-        var response = webhookController.handleInboundEmail(Map.of("plain", "x"));
-        assertEquals("Invalid Payload", response.getBody());
+        var result = webhookController.handleInboundEmail(Map.of());
+        assertEquals("Invalid", result.getBody());
     }
-
+    
     @Test
     void handlesGoogleForwardingVerification() {
         Map<String, Object> headers = new HashMap<>();
         headers.put("from", "mailer-daemon@google.com");
         headers.put("subject", "Forwarding Confirmation");
 
-        String plain = "user@example.com has requested\nConfirmation code: 123456";
+        String plain = "haribabu@gmail.com has requested\nConfirmation code: 123456";
 
         Map<String, Object> payload = new HashMap<>();
         payload.put("headers", headers);
@@ -51,65 +48,50 @@ class WebhookControllerTest {
 
         var response = webhookController.handleInboundEmail(payload);
 
-        assertEquals("Verification Forwarded", response.getBody());
-        verify(emailService).sendForwardingHelper("user@example.com", "123456", null);
+        assertEquals("Verification Processed", response.getBody());
+        verify(emailService).sendForwardingHelper(eq("haribabu@gmail.com"), eq("123456"), any());
     }
 
     @Test
     void ignoresSystemEmails() {
         Map<String, Object> headers = new HashMap<>();
-        headers.put("from", "foo@bar.com");
-        headers.put("subject", "Please verify your address");
+        headers.put("subject", "Please verify your email address");
 
         Map<String, Object> payload = new HashMap<>();
         payload.put("headers", headers);
-        payload.put("plain", "any body");
 
         var response = webhookController.handleInboundEmail(payload);
 
-        assertEquals("Ignored System Email", response.getBody());
-        verifyNoInteractions(geminiService, jobService);
+        assertEquals("Ignored", response.getBody());
+        verifyNoInteractions(ingestionService);
     }
 
     @Test
-    void processesKnownUserAndCreatesJob() {
+    void processesKnownUserAndHandoffToAsyncIngestion() {
         Map<String, Object> headers = new HashMap<>();
-        headers.put("from", "Recruiter <hr@example.com>");
-        headers.put("subject", "Application update");
+        headers.put("from", "Recruiter <hr@acme.com>");
+        headers.put("to", "haribabu@gmail.com");
+        headers.put("subject", "We liked your profile");
 
         Map<String, Object> payload = new HashMap<>();
         payload.put("headers", headers);
-        payload.put("plain", "hello");
+        payload.put("plain", "Interview invite body");
 
         User user = new User();
-        user.setEmail("Candidate@Example.com");
-        when(userRepository.findByEmail("hr@example.com")).thenReturn(Optional.of(user));
+        user.setEmail("haribabu@gmail.com");
 
-        JobDTO jobDTO = new JobDTO();
-        jobDTO.setCompany("Acme");
-        when(geminiService.extractJobFromEmail(anyString(), anyString(), anyString())).thenReturn(jobDTO);
+        when(userRepository.findByEmail("hr@acme.com")).thenReturn(Optional.empty());
+        when(userRepository.findByEmail("haribabu@gmail.com")).thenReturn(Optional.of(user));
 
         var response = webhookController.handleInboundEmail(payload);
 
-        assertEquals("Processed", response.getBody());
-        verify(jobService).createOrUpdateJob(jobDTO, "candidate@example.com");
-    }
+        assertEquals("Accepted for processing", response.getBody());
 
-    @Test
-    void returnsSkippedWhenGeminiReturnsNull() {
-        Map<String, Object> headers = new HashMap<>();
-        headers.put("from", "hr@example.com");
-        headers.put("subject", "Update");
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("headers", headers);
-        payload.put("plain", "content");
-
-        User user = new User();
-        user.setEmail("u@example.com");
-        when(userRepository.findByEmail("hr@example.com")).thenReturn(Optional.of(user));
-        when(geminiService.extractJobFromEmail(anyString(), anyString(), anyString())).thenReturn(null);
-
-        var response = webhookController.handleInboundEmail(payload);
-        assertEquals("Skipped", response.getBody());
+        verify(ingestionService).handleManualForward(
+            eq("Recruiter <hr@acme.com>"), 
+            eq("We liked your profile"), 
+            anyString(), 
+            eq("haribabu@gmail.com")
+        );
     }
 }
