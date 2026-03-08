@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -26,4 +27,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 	void releaseSyncLock(@Param("email") String email);
 
 	List<User> findByGmailConnectedTrue();
+	
+	@Modifying
+    @Query("DELETE FROM User u WHERE u.enabled = false AND u.provider = 'LOCAL' AND u.createdAt < :cutoff")
+    void deleteUnverifiedUsers(@Param("cutoff") LocalDateTime cutoff);
 }

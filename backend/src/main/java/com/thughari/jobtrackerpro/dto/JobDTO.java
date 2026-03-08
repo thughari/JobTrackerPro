@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Data
 public class JobDTO {
@@ -23,4 +24,10 @@ public class JobDTO {
     private Double salaryMax;
     private String url;
     private String notes;
+    
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private Integer urlIndex; 
+    
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private Integer inputIndex;
 }

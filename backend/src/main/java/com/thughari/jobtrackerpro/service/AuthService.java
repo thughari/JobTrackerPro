@@ -4,12 +4,14 @@ import com.thughari.jobtrackerpro.dto.*;
 import com.thughari.jobtrackerpro.entity.AuthProvider;
 import com.thughari.jobtrackerpro.entity.PasswordResetToken;
 import com.thughari.jobtrackerpro.entity.User;
+import com.thughari.jobtrackerpro.entity.VerificationToken;
 import com.thughari.jobtrackerpro.exception.ResourceNotFoundException;
 import com.thughari.jobtrackerpro.exception.UserAlreadyExistsException;
 import com.thughari.jobtrackerpro.exception.UserNotFoundException;
 import com.thughari.jobtrackerpro.interfaces.StorageService;
 import com.thughari.jobtrackerpro.repo.PasswordResetTokenRepository;
 import com.thughari.jobtrackerpro.repo.UserRepository;
+import com.thughari.jobtrackerpro.repo.VerificationTokenRepository;
 import com.thughari.jobtrackerpro.security.JwtUtils;
 
 import lombok.extern.slf4j.Slf4j;
@@ -45,22 +47,26 @@ public class AuthService {
     @Value("${cloudflare.r2.public-url.avatars}")
     private String avatarPublicUrl;
     
-    private final PasswordResetTokenRepository tokenRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    
+    private final VerificationTokenRepository verificationTokenRepository;
+    
     private final EmailService emailService;
 
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, 
     		JwtUtils jwtUtils, StorageService storageService, 
-    		PasswordResetTokenRepository tokenRepository, EmailService emailService, CacheManager cacheManager) {
+    		PasswordResetTokenRepository passwordResetTokenRepository, EmailService emailService, CacheManager cacheManager, VerificationTokenRepository verificationTokenRepository) {
     	this.userRepository = userRepository;
     	this.passwordEncoder = passwordEncoder;
     	this.jwtUtils = jwtUtils;
     	this.storageService = storageService;
-    	this.tokenRepository = tokenRepository;
+    	this.passwordResetTokenRepository = passwordResetTokenRepository;
     	this.emailService = emailService;
     	this.cacheManager = cacheManager;
+    	this.verificationTokenRepository = verificationTokenRepository;
     }
 
-    public AuthTokens registerUser(AuthRequest request) {
+    public void registerUser(AuthRequest request) {
     	validateUsername(request.getName());
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
         	throw new UserAlreadyExistsException("Email already in use");
@@ -68,17 +74,31 @@ public class AuthService {
 
         User user = new User();
         user.setName(request.getName());
-        user.setEmail(request.getEmail());
+        user.setEmail(request.getEmail().toLowerCase());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setProvider(AuthProvider.LOCAL);
-        userRepository.save(user);
+        user.setEnabled(false);
+        userRepository.saveAndFlush(user);
+        
+        String token = UUID.randomUUID().toString();
+        VerificationToken vToken = new VerificationToken();
+        vToken.setToken(token);
+        vToken.setUser(user);
+        vToken.setExpiryDate(LocalDateTime.now().plusHours(24));
+        verificationTokenRepository.save(vToken);
+        
+        emailService.sendVerificationEmail(user.getEmail(), token);
 
-        return generateAuthTokens(user.getEmail());
+        log.info("User registered. Verification email sent to: {}", user.getEmail());
     }
 
     public AuthTokens loginUser(AuthRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("Login failed! User not found"));
+        
+        if (!user.getEnabled()) {
+            throw new IllegalStateException("Please verify your email before logging in.");
+        }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new IllegalArgumentException("Login failed! Invalid password");
@@ -104,14 +124,14 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        PasswordResetToken tokenEntity = tokenRepository.findByUser(user)
+        PasswordResetToken tokenEntity = passwordResetTokenRepository.findByUser(user)
                 .orElse(new PasswordResetToken());
 
         tokenEntity.setUser(user);
         tokenEntity.setToken(UUID.randomUUID().toString());
         tokenEntity.setExpiryDate(LocalDateTime.now().plusMinutes(15));
 
-        tokenRepository.save(tokenEntity);
+        passwordResetTokenRepository.save(tokenEntity);
 
         emailService.sendResetEmail(user.getEmail(), tokenEntity.getToken());
     }
@@ -124,11 +144,11 @@ public class AuthService {
     		throw new IllegalArgumentException("Password must be at least 6 characters long");
     	}
 
-    	PasswordResetToken resetToken = tokenRepository.findByToken(token)
+    	PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token)
     			.orElseThrow(() -> new IllegalArgumentException("Invalid token"));
 
     	if (resetToken.isExpired()) {
-    		tokenRepository.delete(resetToken);
+    		passwordResetTokenRepository.delete(resetToken);
     		throw new IllegalArgumentException("Token has expired");
     	}
 
@@ -138,7 +158,56 @@ public class AuthService {
     	
     	evictAllUserCaches(user.getEmail());
 
-    	tokenRepository.delete(resetToken);
+    	passwordResetTokenRepository.delete(resetToken);
+    }
+    
+    @Transactional
+    public AuthTokens verifyUser(String token) {
+        VerificationToken vToken = verificationTokenRepository.findByToken(token)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid verification link."));
+
+        if (vToken.isExpired()) {
+        	verificationTokenRepository.delete(vToken);
+            throw new IllegalArgumentException("Verification link expired.");
+        }
+
+        User user = vToken.getUser();
+        user.setEnabled(true);
+        userRepository.saveAndFlush(user);
+        
+        evictAllUserCaches(user.getEmail());
+        
+        AuthTokens tokens = generateAuthTokens(user.getEmail());
+        
+        verificationTokenRepository.delete(vToken);
+        
+        return tokens;
+    }
+    
+    @Transactional
+    public void resendVerificationEmail(String email) {
+        User user = userRepository.findByEmail(email.toLowerCase())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (Boolean.TRUE.equals(user.getEnabled())) {
+            throw new IllegalStateException("Account is already verified. Please log in.");
+        }
+
+        // 1. ATOMIC CLEANUP: Delete any previous tokens for this user
+        verificationTokenRepository.deleteByUser(user);
+
+        // 2. Generate New Token
+        String token = UUID.randomUUID().toString();
+        VerificationToken vToken = new VerificationToken();
+        vToken.setToken(token);
+        vToken.setUser(user);
+        vToken.setExpiryDate(LocalDateTime.now().plusHours(24));
+        verificationTokenRepository.save(vToken);
+
+        // 3. ASYNC DELIVERY: Use the same high-performance thread pool
+        emailService.sendVerificationEmail(user.getEmail(), token);
+        
+        log.info("Verification email resent to: {}", user.getEmail());
     }
 
     @Transactional(readOnly = true)
@@ -173,7 +242,10 @@ public class AuthService {
         userRepository.save(user);
     }
     
-    @CacheEvict(value = "users", key = "#email")
+    @Caching(evict = {
+            @CacheEvict(value = "users", key = "#email"),
+            @CacheEvict(value = "userEntities", key = "#email")
+    })
     public UserProfileResponse updateProfileAtomic(String email, String name, String imageUrl, MultipartFile file) {
     	validateUsername(name);
         User user = userRepository.findByEmail(email)
@@ -222,10 +294,17 @@ public class AuthService {
                     newUser.setEmail(email.toLowerCase());
                     newUser.setProvider(AuthProvider.valueOf(provider.toUpperCase()));
                     newUser.setGmailConnected(false);
+                    newUser.setEnabled(true);
                     return newUser;
                 });
 
         boolean needsUpdate = false;
+        
+        if (!Boolean.TRUE.equals(user.getEnabled())) {
+            user.setEnabled(true);
+            needsUpdate = true;
+            log.info("User {} auto-verified via {} login.", email, provider);
+        }
 
         // Only update if data actually changed to avoid redundant SQL UPDATE statements
         if (user.getName() == null || !user.getName().equals(name)) {
@@ -257,10 +336,14 @@ public class AuthService {
     }
     
     private void evictAllUserCaches(String email) {
-        Cache userCache = cacheManager.getCache("users");
-        Cache entityCache = cacheManager.getCache("userEntities");
-        if (userCache != null) userCache.evict(email);
-        if (entityCache != null) entityCache.evict(email);
+    	if (email == null) return;
+    	String normalizedEmail = email.toLowerCase();
+    	
+    	Cache users = cacheManager.getCache("users");
+        Cache userEntities = cacheManager.getCache("userEntities");
+        
+        if (users != null) users.evict(normalizedEmail);
+        if (userEntities != null) userEntities.evict(normalizedEmail);
     }
 
     private UserProfileResponse mapToProfileResponse(User user) {
@@ -273,6 +356,7 @@ public class AuthService {
         response.setHasPassword(user.getPassword() != null && !user.getPassword().isEmpty());
         response.setGmailConnected(Boolean.TRUE.equals(user.getGmailConnected()));
         response.setGmailSyncInProgress(Boolean.TRUE.equals(user.getGmailSyncInProgress()));
+        response.setEnabled(Boolean.TRUE.equals(user.getEnabled()));
         return response;
     }
 

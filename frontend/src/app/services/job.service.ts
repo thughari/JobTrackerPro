@@ -1,6 +1,6 @@
-import { Injectable, signal, inject } from '@angular/core';
+import { Injectable, signal, inject, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, interval, Subscription } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Router } from '@angular/router';
 
@@ -51,11 +51,13 @@ export interface PagedResponse {
 }
 
 @Injectable({ providedIn: 'root' })
-export class JobService {
+export class JobService implements OnDestroy {
   private readonly API = environment.apiBaseUrl;
   private http = inject(HttpClient);
   private router = inject(Router);
   private apiUrl = `${this.API}/api/jobs`;
+
+  private refreshSubscription: Subscription | null = null;
 
   private jobsSignal = signal<Job[]>([]);
   readonly jobs = this.jobsSignal.asReadonly();
@@ -99,6 +101,43 @@ export class JobService {
       this.loadJobs();
     }
   }
+
+  startAutoRefresh() {
+    if (this.refreshSubscription) return;    
+    this.refreshSubscription = interval(30000).subscribe(() => {
+      if (document.visibilityState === 'visible') {
+        this.performSilentRefresh();
+      }
+    });
+  }
+
+  stopAutoRefresh() {
+    if (this.refreshSubscription) {
+      this.refreshSubscription.unsubscribe();
+      this.refreshSubscription = null;
+    }
+  }
+
+  private async performSilentRefresh() {
+    const currentUrl = this.router.url;
+    
+    try {
+      await this.loadDashboard(true); 
+
+      if (currentUrl.includes('/applications')) {
+        await this.loadJobs(); 
+      }
+      
+      console.log('✨ Data auto-refreshed successfully.');
+    } catch (e) {
+      console.warn('Auto-refresh skipped due to network error.');
+    }
+  }
+
+  ngOnDestroy() {
+    this.stopAutoRefresh();
+  }
+
 
   async loadDashboard(force = false) {
     if (this.dashboardLoaded && !force) return;

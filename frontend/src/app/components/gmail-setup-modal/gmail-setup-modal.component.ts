@@ -1,6 +1,7 @@
-import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import { Component, computed, EventEmitter, inject, Input, Output, signal } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { CommonModule } from '@angular/common';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-gmail-setup-modal',
@@ -10,9 +11,17 @@ import { CommonModule } from '@angular/common';
   styleUrl: './gmail-setup-modal.component.css'
 })
 export class GmailSetupModalComponent {
+
+  public authService = inject(AuthService);
   @Input() isVisible = false;
   @Output() onClose = new EventEmitter<void>();
   @Output() onMessage = new EventEmitter<{type: 'success' | 'error', text: string}>();
+
+  isGmailConnected = computed(() =>
+  this.authService.userProfile()?.gmailConnected
+);
+
+  @Output() onConnect = new EventEmitter<void>();
 
   activeStep = signal(1);
   isMobile = window.innerWidth < 768;
@@ -43,10 +52,17 @@ export class GmailSetupModalComponent {
     window.open(`https://mail.google.com/mail/u/0/#search/${encodedQuery}`, '_blank');
   }
 
+  triggerOAuth() {
+    this.onConnect.emit();
+    this.close(); 
+  }
+
   connectGmail() {
-  // Redirect to your backend which then redirects to Google
-  window.location.href = `${environment.apiBaseUrl}/api/auth/connect/gmail`;
-}
+    // Instead of redirecting here, tell the parent to trigger its logic
+    this.onConnect.emit();
+    // Usually, we close the modal immediately so the Google Popup is visible
+    this.onClose.emit(); 
+  }
 
   close() {
     this.onClose.emit();

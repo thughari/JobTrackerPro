@@ -1,9 +1,10 @@
 import { Injectable, signal, inject, Injector } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Observable } from 'rxjs';
 import { JobService } from './job.service';
 import { environment } from '../../environments/environment';
+import { SignUpUser } from '../components/auth/signup/signup.component';
 
 export interface UserProfile {
   name: string;
@@ -78,11 +79,8 @@ export class AuthService {
     this.handleToken(res.token);
   }
 
-  async signup(data: any) {
-    const res: any = await firstValueFrom(
-      this.http.post(`${this.apiUrl}/signup`, data, { withCredentials: true })
-    );
-    this.handleToken(res.token);
+  signup(user: SignUpUser): Observable<any> {
+    return this.http.post(`${this.API}/api/auth/signup`, user);
   }
 
   async refreshToken(): Promise<boolean> {
@@ -127,6 +125,13 @@ export class AuthService {
 
     this.clearClientSession();
     this.router.navigate(['/']);
+  }
+
+  resendVerificationEmail(email: string) {
+  // High Performance: Use standard HTTP params for simple queries
+    return this.http.post(`${this.API}/api/auth/resend-verification`, null, {
+      params: { email }
+    });
   }
 
   private clearClientSession() {
@@ -181,6 +186,12 @@ export class AuthService {
     );
   }
 
+  syncGmail(): Observable<string> {
+    return this.http.post(`${this.API}/api/integrations/gmail/sync`, {}, { 
+      responseType: 'text' 
+    });
+  }
+
   private decodeToken() {
     const token = localStorage.getItem('token');
     return token ? { email: this.parseJwt(token).sub } : null;
@@ -206,9 +217,15 @@ export class AuthService {
   }
 
   connectGmail(code: string) {
-    // We send the 'code' in the body. The backend swaps it for a Refresh Token.
     return this.http.post(`${this.API}/api/integrations/gmail/connect`, 
       { code }, 
+      { responseType: 'text' }
+    );
+  }
+
+  disconnectGmail() {
+    return this.http.post(`${this.API}/api/integrations/gmail/disconnect`, 
+      {}, 
       { responseType: 'text' }
     );
   }

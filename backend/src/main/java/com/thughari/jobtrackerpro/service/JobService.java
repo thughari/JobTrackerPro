@@ -240,6 +240,12 @@ public class JobService {
         // 1. NULL-SAFE NORMALIZATION
         String currentStatus = (existingJob.getStatus() != null) ? existingJob.getStatus() : "";
         String incomingStatus = (incoming.getStatus() != null) ? incoming.getStatus() : "";
+        
+        if (currentStatus.equalsIgnoreCase(incomingStatus) && 
+        		Objects.equals(existingJob.getStage(), incoming.getStage())) {
+        	return; 
+        }
+
         String newNotesFromAI = (incoming.getNotes() != null) ? incoming.getNotes().trim() : "";
 
         // 2. CHANGE DETECTION LOGIC (The "High Performance" Filter)

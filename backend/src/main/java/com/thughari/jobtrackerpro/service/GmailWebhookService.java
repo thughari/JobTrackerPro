@@ -10,6 +10,8 @@ import com.thughari.jobtrackerpro.dto.JobDTO;
 import com.thughari.jobtrackerpro.entity.User;
 import com.thughari.jobtrackerpro.interfaces.GeminiService;
 import com.thughari.jobtrackerpro.repo.UserRepository;
+import com.thughari.jobtrackerpro.util.UrlParser;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
@@ -88,11 +90,60 @@ public class GmailWebhookService {
             List<EmailBatchItem> batchItems = collectMessages(service, historyResponse.getHistory());
 
             // 6. BULK AI INGESTION
-            if (!batchItems.isEmpty()) {
-                log.info("Ingesting batch of {} emails via Gemini for {}", batchItems.size(), email);
-                List<JobDTO> extractedJobs = geminiService.extractJobsFromBatch(batchItems);
-                extractedJobs.forEach(job -> jobService.createOrUpdateJob(job, email));
+            if (!batchItems.isEmpty()) {log.info("Ingesting batch of {} emails via Gemini for {}", batchItems.size(), email);
+            
+            // HIGH PERFORMANCE: Pre-extract URLs from the raw bodies for hydration later
+            List<List<String>> batchUrlLists = batchItems.stream()
+                    .map(item -> UrlParser.extractAndCleanUrls(item.body()))
+                    .toList();
+
+            // 6. BULK AI CALL
+            List<JobDTO> extractedJobs = geminiService.extractJobsFromBatch(batchItems);
+            
+            // 7. HYDRATION & PERSISTENCE
+            for (JobDTO job : extractedJobs) {
+                // Use the 'inputIndex' provided by the AI to find the correct URL list
+                Integer idx = job.getInputIndex();
+                
+                if (idx != null && idx >= 0 && idx < batchUrlLists.size()) {
+                    List<String> originalUrls = batchUrlLists.get(idx);
+
+                    // If AI picked an index, hydrate the URL
+                    if (job.getUrlIndex() != null && job.getUrlIndex() >= 0 && job.getUrlIndex() < originalUrls.size()) {
+                        job.setUrl(originalUrls.get(job.getUrlIndex()));
+                    } 
+                    else if (job.getUrl() == null || job.getUrl().isEmpty()) {
+                        job.setUrl(originalUrls.stream()
+                        		.filter(u -> {
+                        		    String lower = u.toLowerCase();
+                        		    return lower.contains("career") ||
+                        		           lower.contains("job") ||
+                        		           lower.contains("apply") ||
+                        		           lower.contains("/jobs/") ||
+                        		           lower.contains("/careers/");
+                        		})
+                            .findFirst().orElse(""));
+                    }
+                }
+                
+                if (job.getUrl() != null) {
+                    String lower = job.getUrl().toLowerCase();
+                    if (lower.contains("unsubscribe") ||
+                        lower.contains("privacy") ||
+                        lower.contains("help") ||
+                        lower.contains("settings")) {
+                        job.setUrl("");
+                    }
+                }
+                
+                // Cleanup internal processing fields before saving
+                job.setUrlIndex(null); 
+                job.setInputIndex(null);
+
+                // Atomic save (JobService handles cache eviction)
+                jobService.createOrUpdateJob(job, email);
             }
+        }
 
         } catch (Exception e) {
             log.error("High-Performance Sync failed for {}: ", email, e);

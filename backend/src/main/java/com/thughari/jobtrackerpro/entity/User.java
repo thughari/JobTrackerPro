@@ -1,6 +1,8 @@
 package com.thughari.jobtrackerpro.entity;
 
 import lombok.Data;
+
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
@@ -29,6 +31,9 @@ public class User {
 	
 	@Column(length = 1000)
 	private String imageUrl; 
+	
+	@Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
 
 	@Enumerated(EnumType.STRING)
 	private AuthProvider provider;
@@ -50,4 +55,7 @@ public class User {
 	
 	@Column(name = "gmail_label_id")
 	private String gmailLabelId;
+	
+	@Column(nullable = false)
+    private Boolean enabled = false;
 }

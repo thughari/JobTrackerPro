@@ -29,7 +29,7 @@ public class EmailService {
 	@Value("${email.sender_name}") 
 	private String fromName; 
 
-	@Async
+	@Async("taskExecutor")
 	public void sendResetEmail(String to, String token) {
 		try {
 			MimeMessage message = mailSender.createMimeMessage();
@@ -106,4 +106,44 @@ public class EmailService {
 			log.error("Failed to send forwarding helper", e);
 		}
 	}
+	
+	@Async("taskExecutor")
+    public void sendVerificationEmail(String to, String token) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(fromEmail, fromName);
+            helper.setTo(to);
+            helper.setSubject("Verify Your Account - JobTrackerPro");
+
+            // The link points to your Angular frontend verification route
+            String verifyLink = uiUrl + "/verify-email?token=" + token;
+
+            String htmlContent = """
+                <div style="background-color: #0B0E14; padding: 40px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #D1D5DB;">
+                    <div style="max-width: 600px; margin: 0 auto; background-color: #151A23; padding: 40px; border-radius: 16px; border: 1px solid #1F2937;">
+                        <h1 style="color: #FFFFFF; font-size: 24px; font-weight: 800; margin-bottom: 16px;">Welcome to JobTrackerPro!</h1>
+                        <p style="font-size: 16px; line-height: 1.6;">You're one step away from automating your job hunt. Please verify your email address to activate your account:</p>
+                        
+                        <div style="text-align: center; margin: 32px 0;">
+                            <a href="%s" style="background-color: #6366F1; color: #FFFFFF; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block;">Verify Email Address</a>
+                        </div>
+                        
+                        <p style="font-size: 14px; color: #9CA3AF;">This link will expire in 24 hours.</p>
+                        <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #1F2937; font-size: 12px; color: #6B7280;">
+                            If you didn't create an account, you can safely ignore this email.
+                        </div>
+                    </div>
+                </div>
+                """.formatted(verifyLink);
+
+            helper.setText(htmlContent, true);
+            mailSender.send(message);
+            log.info("Verification email sent to: {}", to);
+
+        } catch (MessagingException | UnsupportedEncodingException e) {
+            log.error("Failed to send verification email to {}", to, e);
+        }
+    }
 }

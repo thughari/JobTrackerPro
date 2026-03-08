@@ -1,13 +1,18 @@
 package com.thughari.jobtrackerpro.scheduler;
 
 import com.thughari.jobtrackerpro.entity.User;
+import com.thughari.jobtrackerpro.repo.PasswordResetTokenRepository;
 import com.thughari.jobtrackerpro.repo.UserRepository;
+import com.thughari.jobtrackerpro.repo.VerificationTokenRepository;
 import com.thughari.jobtrackerpro.service.GmailIntegrationService;
 import com.thughari.jobtrackerpro.service.JobService;
+
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
@@ -17,14 +22,21 @@ public class JobScheduler {
     private final JobService jobService;
     private final UserRepository userRepository;
     private final GmailIntegrationService gmailIntegrationService;
+    
+    private final PasswordResetTokenRepository passwordTokenRepo;
+    private final VerificationTokenRepository verificationTokenRepo;
 
     // Clean Coding: Single constructor injection
     public JobScheduler(JobService jobService, 
                         UserRepository userRepository, 
-                        GmailIntegrationService gmailIntegrationService) {
+                        GmailIntegrationService gmailIntegrationService,
+                        PasswordResetTokenRepository passwordTokenRepo,
+                        VerificationTokenRepository verificationTokenRepo) {
         this.jobService = jobService;
         this.userRepository = userRepository;
         this.gmailIntegrationService = gmailIntegrationService;
+        this.passwordTokenRepo = passwordTokenRepo;
+        this.verificationTokenRepo = verificationTokenRepo;
     }
 
     /**
@@ -57,8 +69,6 @@ public class JobScheduler {
             return;
         }
 
-        // High Performance: Use parallelStream to renew multiple users concurrently
-        // This prevents a single slow Google API response from blocking the entire task.
         users.parallelStream().forEach(user -> {
             try {
                 gmailIntegrationService.renewWatch(user);
@@ -68,5 +78,20 @@ public class JobScheduler {
         });
 
         log.info("Gmail Sync: Finished bulk watch renewal for {} users.", users.size());
+    }
+    
+    @Scheduled(cron = "0 0 2 * * *")
+    @Transactional
+    public void runSystemCleanup() {
+        log.info("Starting system-wide security cleanup...");
+        LocalDateTime now = LocalDateTime.now();
+        
+        passwordTokenRepo.deleteAllExpired(now);
+        
+        verificationTokenRepo.deleteAllExpired(now);
+
+        userRepository.deleteUnverifiedUsers(now.minusDays(3));
+
+        log.info("System cleanup completed. Database pruned of expired security entries.");
     }
 }

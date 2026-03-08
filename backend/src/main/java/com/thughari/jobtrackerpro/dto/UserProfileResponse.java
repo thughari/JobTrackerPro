@@ -13,4 +13,5 @@ public class UserProfileResponse {
     private boolean hasPassword;
     private boolean gmailConnected;
     private boolean gmailSyncInProgress;
+    private boolean enabled;
 }
