@@ -3,34 +3,25 @@ package com.thughari.jobtrackerpro.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.task.AsyncTaskExecutor;
+import org.springframework.core.task.support.TaskExecutorAdapter;
 import org.springframework.scheduling.annotation.EnableAsync;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import java.util.concurrent.Executor;
+
+import java.util.concurrent.Executors;
 
 @Configuration
 @EnableAsync
 public class AsyncConfig {
 
 	@Bean(name = "dashboardExecutor")
-	public Executor dashboardExecutor() {
-		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-		executor.setCorePoolSize(4); 
-		executor.setMaxPoolSize(10);
-		executor.setQueueCapacity(100);
-		executor.setThreadNamePrefix("DashThread-");
-		executor.initialize();
-		return executor;
+	public AsyncTaskExecutor dashboardExecutor() {
+		return new TaskExecutorAdapter(
+				Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("DashVT-", 0).factory()));
 	}
-	
+
 	@Primary
-    @Bean(name = "taskExecutor")
-    public Executor taskExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(5);
-        executor.setMaxPoolSize(15);
-        executor.setQueueCapacity(100);
-        executor.setThreadNamePrefix("GmailSync-");
-        executor.initialize();
-        return executor;
-    }
+	@Bean(name = "taskExecutor")
+	public AsyncTaskExecutor taskExecutor() {
+		return new TaskExecutorAdapter(Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("GmailSyncVT-", 0).factory()));
+	}
 }
