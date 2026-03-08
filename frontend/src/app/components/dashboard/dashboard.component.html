@@ -18,25 +18,27 @@
 
 <div class="space-y-6">
   
-  <div class="mb-6 md:mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
-    <div>
-      <h2 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-1 md:mb-2 transition-colors">Overview</h2>
-      <p class="text-sm md:text-lg text-gray-500 dark:text-gray-400 transition-colors">Track your job search progress at a glance</p>
-    </div>
-
-    <div class="flex items-center gap-2">
-      <button (click)="openHelpModal()" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors font-medium text-sm">
-        <i class="ph ph-envelope-open text-lg"></i>
-        <span class="hidden sm:inline">Import from Email</span>
-      </button>
-
-      <button (click)="onRefresh()" 
-        class="p-2 rounded-lg bg-white dark:bg-[#151A23] border border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-200 dark:hover:border-indigo-900 transition-all shadow-sm"
-        title="Check for updates">
-        <i class="ph ph-arrows-clockwise text-xl" [class.animate-spin]="isRefreshing()"></i>
-      </button>
-    </div>
+<div class="flex items-center justify-between gap-4 mb-8">
+  <div class="min-w-0">
+    <h2 class="text-2xl md:text-3xl font-black text-gray-900 dark:text-white tracking-tight leading-none mb-1">
+      All Applications
+    </h2>
+    <p class="text-[11px] md:text-sm font-medium text-gray-500 dark:text-gray-400">
+      Tracking <span class="text-indigo-500 font-bold">{{ stats().activePipeline }}</span> active entries
+    </p>
   </div>
+
+  @if (authService.userProfile()?.gmailConnected) {
+    <button 
+      (click)="onGmailSync()" 
+      [disabled]="isSyncing()"
+      class="flex-shrink-0 flex items-center gap-2 px-3 py-2 md:px-5 md:py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[10px] md:text-xs font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 transition-all active:scale-95 disabled:opacity-50">
+      
+      <i class="ph-bold ph-arrows-clockwise text-lg" [class.animate-spin]="isSyncing()"></i>
+      <span class="hidden sm:inline">Sync Gmail</span>
+    </button>
+  }
+</div>
 
   @if (stats().totalApplications === 0) {
     <div class="bg-gradient-to-br from-indigo-600 to-violet-700 rounded-2xl p-8 text-white shadow-xl relative overflow-hidden">
@@ -164,6 +166,7 @@
 
 @if (showHelpModal()) {
     <app-gmail-setup-modal [isVisible]="showHelpModal()" (onClose)="closeHelpModal()"
-        (onMessage)="handleModalMessage($event)">
+        (onMessage)="handleModalMessage($event)"
+        (onConnect)="connectGmail()">
     </app-gmail-setup-modal>
 }

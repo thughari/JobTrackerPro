@@ -1,9 +1,8 @@
 package com.thughari.jobtrackerpro.security;
 
-import com.thughari.jobtrackerpro.entity.AuthProvider;
 import com.thughari.jobtrackerpro.entity.User;
-import com.thughari.jobtrackerpro.interfaces.StorageService;
-import com.thughari.jobtrackerpro.repo.UserRepository;
+import com.thughari.jobtrackerpro.service.AuthService;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +10,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
@@ -22,9 +20,8 @@ import java.util.Map;
 @Slf4j
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
-	private final UserRepository userRepository;
 	private final JwtUtils jwtUtils;
-	private final StorageService storageService;
+	private final AuthService authService;
 
 	@Value("${app.ui.url}")
 	private String uiUrl;
@@ -38,57 +35,25 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 	@Value("${app.jwt.refresh-cookie-same-site:Lax}")
 	private String refreshCookieSameSite;
 
-	public OAuth2SuccessHandler(UserRepository userRepository, JwtUtils jwtUtils, StorageService storageService) {
-		this.userRepository = userRepository;
+	public OAuth2SuccessHandler(JwtUtils jwtUtils, AuthService authService) {
 		this.jwtUtils = jwtUtils;
-		this.storageService = storageService;
+		this.authService = authService;
 	}
 
 	@Override
 	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
-		OAuth2AuthenticationToken authToken = (OAuth2AuthenticationToken) authentication;
-		OAuth2User oAuth2User = authToken.getPrincipal();
+	    OAuth2AuthenticationToken authToken = (OAuth2AuthenticationToken) authentication;
+	    String registrationId = authToken.getAuthorizedClientRegistrationId();
+	    UserInfo userInfo = extractUserInfo(registrationId, authToken.getPrincipal().getAttributes());
 
-		String registrationId = authToken.getAuthorizedClientRegistrationId();
-		UserInfo userInfo = extractUserInfo(registrationId, oAuth2User.getAttributes());
+	    User user = authService.processOAuthUser(userInfo.email(), userInfo.name(), userInfo.imageUrl(), registrationId);
 
-		User user = userRepository.findByEmail(userInfo.email).orElse(new User());
-
-		boolean isNewUser = user.getId() == null;
-		boolean dataChanged = false;
-
-		if (isNewUser) {
-			user.setEmail(userInfo.email());
-			user.setProvider(AuthProvider.valueOf(registrationId.toUpperCase()));
-			user = userRepository.save(user);
-		}
-
-		if (user.getName() == null || !user.getName().equals(userInfo.name())) {
-			user.setName(userInfo.name());
-			dataChanged = true;
-		}
-
-		if (user.getImageUrl() == null || user.getImageUrl().isEmpty()) {
-			if (userInfo.imageUrl() != null && !userInfo.imageUrl().isEmpty()) {
-				try {
-					String r2Url = storageService.uploadFromUrl(userInfo.imageUrl(), user.getId().toString());
-					user.setImageUrl(r2Url);
-					dataChanged = true;
-				} catch (Exception e) {
-					log.error("Failed to sync social image: " + e.getMessage());
-				}
-			}
-		}
-
-		if (dataChanged) {
-			userRepository.save(user);
-		}
-
-		String token = jwtUtils.generateAccessToken(user.getEmail());
-		String refreshToken = jwtUtils.generateRefreshToken(user.getEmail());
-		response.addHeader("Set-Cookie", buildRefreshCookie(refreshToken, "/", refreshExpirationMs / 1000).toString());
-		response.addHeader("Set-Cookie", buildRefreshCookie("", "/api/auth", 0).toString());
-		getRedirectStrategy().sendRedirect(request, response, uiUrl + "/login-success?token=" + token);
+	    String token = jwtUtils.generateAccessToken(user.getEmail());
+	    String refreshToken = jwtUtils.generateRefreshToken(user.getEmail());
+	    
+	    response.addHeader("Set-Cookie", buildRefreshCookie(refreshToken, "/", refreshExpirationMs / 1000).toString());
+	    
+	    getRedirectStrategy().sendRedirect(request, response, uiUrl + "/login-success?token=" + token);
 	}
 
 	private UserInfo extractUserInfo(String provider, Map<String, Object> attributes) {

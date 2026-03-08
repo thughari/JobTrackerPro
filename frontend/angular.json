@@ -70,6 +70,10 @@
               "buildTarget": "jobtrackerpro:build:production"
             },
             "development": {
+              "headers": {
+                "Cross-Origin-Opener-Policy": "unsafe-none",
+                "Cross-Origin-Embedder-Policy": "unsafe-none"
+              },
               "buildTarget": "jobtrackerpro:build:development"
             }
           },

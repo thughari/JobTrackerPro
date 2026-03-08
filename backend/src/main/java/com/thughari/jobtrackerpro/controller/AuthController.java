@@ -8,6 +8,10 @@ import com.thughari.jobtrackerpro.dto.ResetPasswordRequest;
 import com.thughari.jobtrackerpro.dto.UserProfileResponse;
 import com.thughari.jobtrackerpro.service.AuthService;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
@@ -16,6 +20,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -36,43 +41,43 @@ public class AuthController {
 	}
 
 	@PostMapping("/signup")
-	public ResponseEntity<?> registerUser(@RequestBody AuthRequest request, HttpServletResponse response) {
-		try {
-			AuthTokens tokens = authService.registerUser(request);
-			attachRefreshCookie(response, tokens.refreshToken());
-			return ResponseEntity.ok(new AuthResponse(tokens.accessToken()));
-		} catch (IllegalArgumentException e) {
-			return ResponseEntity.badRequest().body(e.getMessage());
-		}
-	}
+    public ResponseEntity<?> registerUser(@RequestBody AuthRequest request) {
+        authService.registerUser(request);
+        return ResponseEntity.ok(Map.of("message", "Registration successful. Please check your email to verify your account."));
+    }
 
-	@PostMapping("/login")
-	public ResponseEntity<?> loginUser(@RequestBody AuthRequest request, HttpServletResponse response) {
-		try {
-			AuthTokens tokens = authService.loginUser(request);
-			attachRefreshCookie(response, tokens.refreshToken());
-			return ResponseEntity.ok(new AuthResponse(tokens.accessToken()));
-		} catch (IllegalArgumentException e) {
-			return ResponseEntity.badRequest().body(e.getMessage());
-		}
-	}
+    @PostMapping("/login")
+    public ResponseEntity<?> loginUser(@RequestBody AuthRequest request, HttpServletResponse response) {
+        AuthTokens tokens = authService.loginUser(request);
+        attachRefreshCookie(response, tokens.refreshToken());
+        return ResponseEntity.ok(new AuthResponse(tokens.accessToken()));
+    }
 
-	@PostMapping("/refresh")
-	public ResponseEntity<?> refreshToken(@CookieValue(name = "refresh_token", required = false) String refreshToken,
-			HttpServletResponse response) {
-		if (refreshToken == null || refreshToken.isBlank()) {
-			return ResponseEntity.status(401).body("Missing refresh token");
-		}
+    @GetMapping("/verify-email")
+    public ResponseEntity<?> verifyEmail(@RequestParam String token, HttpServletResponse response) {
+        AuthTokens tokens = authService.verifyUser(token);
+        attachRefreshCookie(response, tokens.refreshToken());
+        return ResponseEntity.ok(new AuthResponse(tokens.accessToken()));
+    }
 
-		try {
-			AuthTokens tokens = authService.refreshAccessToken(refreshToken);
-			attachRefreshCookie(response, tokens.refreshToken());
-			return ResponseEntity.ok(new AuthResponse(tokens.accessToken()));
-		} catch (IllegalArgumentException e) {
-			clearRefreshCookie(response);
-			return ResponseEntity.status(401).body("Invalid refresh token");
-		}
-	}
+    @PostMapping("/resend-verification")
+    public ResponseEntity<?> resendVerification(@RequestParam String email) {
+        authService.resendVerificationEmail(email);
+        return ResponseEntity.ok(Map.of("message", "A new verification link has been sent."));
+    }
+
+
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refreshToken(@CookieValue(name = "refresh_token", required = false) String refreshToken,
+                                          HttpServletResponse response) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            return ResponseEntity.status(401).body("Missing refresh token");
+        }
+
+        AuthTokens tokens = authService.refreshAccessToken(refreshToken);
+        attachRefreshCookie(response, tokens.refreshToken());
+        return ResponseEntity.ok(new AuthResponse(tokens.accessToken()));
+    }
 
 	@PostMapping("/logout")
 	public ResponseEntity<?> logout(HttpServletResponse response) {
@@ -97,35 +102,22 @@ public class AuthController {
 	}
 
 	@PutMapping("/password")
-	public ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest request) {
-		try {
-			String email = getAuthenticatedEmail();
-			authService.changePassword(email, request);
-			return ResponseEntity.ok().body("Password set successfully.");
-		} catch (IllegalArgumentException e) {
-			return ResponseEntity.badRequest().body(e.getMessage());
-		}
-	}
+    public ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest request) {
+        authService.changePassword(getAuthenticatedEmail(), request);
+        return ResponseEntity.ok().body(Map.of("message", "Password set successfully."));
+    }
 
 	@PostMapping("/forgot-password")
 	public ResponseEntity<?> forgotPassword(@RequestParam String email) {
-		try {
-			authService.forgotPassword(email);
-			return ResponseEntity.ok("If that email exists, a reset link has been sent.");
-		} catch (Exception e) {
-			return ResponseEntity.ok("If that email exists, a reset link has been sent.");
-		}
+		authService.forgotPassword(email);
+		return ResponseEntity.ok("If that email exists, a reset link has been sent.");
 	}
 
 	@PostMapping("/reset-password")
-	public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
-		try {
-			authService.resetPassword(request.getToken(), request.getNewPassword());
-			return ResponseEntity.ok("Password reset successfully. Please login.");
-		} catch (Exception e) {
-			return ResponseEntity.badRequest().body(e.getMessage());
-		}
-	}
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request.getToken(), request.getNewPassword());
+        return ResponseEntity.ok(Map.of("message", "Password reset successfully."));
+    }
 
 	private String getAuthenticatedEmail() {
 		return ((String) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).toLowerCase();
@@ -133,7 +125,6 @@ public class AuthController {
 
 	private void attachRefreshCookie(HttpServletResponse response, String refreshToken) {
 		response.addHeader("Set-Cookie", buildRefreshCookie(refreshToken, "/", refreshExpirationMs / 1000).toString());
-		// Clear legacy cookie written by older builds to prevent duplicate refresh_token cookies.
 		response.addHeader("Set-Cookie", buildRefreshCookie("", "/api/auth", 0).toString());
 	}
 

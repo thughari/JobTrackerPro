@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { environment } from '../../../../environments/environment';
 import { LogoComponent } from '../../ui/logo/logo.component';
+import { firstValueFrom } from 'rxjs';
 
 export interface SignUpUser {
   email: string;
@@ -23,32 +24,30 @@ export class SignupComponent {
   private readonly API = environment.apiBaseUrl;
   authService = inject(AuthService);
 
-  signUpUser: SignUpUser = {
-    email: '',
-    password: '',
-    name: '',
-  };
+  signUpUser: SignUpUser = { email: '', password: '', name: '' };
 
-  errorMessage = signal<string>('');
-  isLoading = signal<boolean>(false);
+  // --- UI SIGNALS ---
+  isLoading = signal(false);
+  signupSuccess = signal(false);
+  isResending = signal(false);
+  resendCooldown = signal(0);
+  
+  errorMessage = signal('');
+  successMessage = signal('');
+  private messageTimeout: any;
 
   showPassword = signal(false);
   passwordStrength = signal(0);
 
+  // --- PASSWORD LOGIC ---
   onPasswordInput() {
     let score = 0;
     const p = this.signUpUser.password;
-
-    if (!p) {
-      this.passwordStrength.set(0);
-      return;
-    }
-
+    if (!p) { this.passwordStrength.set(0); return; }
     if (p.length >= 8) score++;
     if (/[A-Z]/.test(p)) score++;
     if (/[0-9]/.test(p)) score++;
     if (/[^A-Za-z0-9]/.test(p)) score++;
-
     this.passwordStrength.set(score);
   }
 
@@ -70,12 +69,7 @@ export class SignupComponent {
 
   async onSubmit() {
     if (!this.signUpUser.name || !this.signUpUser.email || !this.signUpUser.password) {
-      this.errorMessage.set('Please fill in all fields');
-      return;
-    }
-
-    if (this.signUpUser.password.length < 6) {
-      this.errorMessage.set('Password must be at least 6 characters');
+      this.showMessage('error', 'Please fill in all fields');
       return;
     }
 
@@ -83,19 +77,49 @@ export class SignupComponent {
     this.errorMessage.set('');
 
     try {
-      await this.authService.signup(this.signUpUser);
+      const response: any = await firstValueFrom(this.authService.signup(this.signUpUser));
+      this.successMessage.set(response.message || 'Check your email to verify your account.');
+      this.signupSuccess.set(true);
     } catch (err: any) {
+      const msg = err.error?.message || err.error || 'Signup failed.';
+      this.showMessage('error', msg);
+    } finally {
       this.isLoading.set(false);
-      if (err.error && err.error.message) {
-        this.errorMessage.set(err.error.message);
-      } else {
-        this.errorMessage.set('Signup failed. Please try again.');
-      }
     }
+  }
+
+  async resendEmail() {
+    if (this.resendCooldown() > 0 || this.isResending()) return;
+
+    this.isResending.set(true);
+    try {
+      await firstValueFrom(this.authService.resendVerificationEmail(this.signUpUser.email));
+      this.showMessage('success', 'New verification link sent!');
+      
+      this.resendCooldown.set(60);
+      const interval = setInterval(() => {
+        this.resendCooldown.update(v => v - 1);
+        if (this.resendCooldown() <= 0) clearInterval(interval);
+      }, 1000);
+    } catch (err) {
+      this.showMessage('error', 'Failed to resend. Please try again later.');
+    } finally {
+      this.isResending.set(false);
+    }
+  }
+
+  showMessage(type: 'success' | 'error', message: string) {
+    this.clearMessages();
+    if (type === 'success') this.successMessage.set(message);
+    else this.errorMessage.set(message);
+
+    this.messageTimeout = setTimeout(() => this.clearMessages(), 5000);
   }
 
   clearMessages() {
     this.errorMessage.set('');
+    if (!this.signupSuccess()) this.successMessage.set('');
+    if (this.messageTimeout) clearTimeout(this.messageTimeout);
   }
 
   socialSignUp(provider: string) {

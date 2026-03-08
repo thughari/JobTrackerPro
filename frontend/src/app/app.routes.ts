@@ -14,6 +14,7 @@ import { ResetPasswordComponent } from './components/auth/reset-password/reset-p
 import { PrivacyComponent } from './components/privacy/privacy.component';
 import { ResourcesComponent } from './components/resources/resources.component';
 import { TocComponent } from './components/toc/toc.component';
+import { VerifyComponent } from './components/auth/verify/verify.component';
 
 export const routes: Routes = [
   { 
@@ -59,6 +60,11 @@ export const routes: Routes = [
     path: 'login-success', 
     component: LoginSuccessComponent, 
     canActivate: [guestGuard] 
+  },
+  { 
+    path: 'verify-email', 
+    component: VerifyComponent,
+    title: 'Verify Account | JobTrackerPro'
   },
   
   {

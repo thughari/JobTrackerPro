@@ -119,11 +119,11 @@ class JobServiceTest {
 
     @Test
     void createOrUpdateJob_updatesBestActiveMatch() {
-        Job matchA = baseJob("Acme", "Backend Engineer", "Applied", 2);
+        Job matchA = baseJob("Acme", "Backend Engineer", "Applied", 1);
         matchA.setNotes("Existing note");
         matchA.setUrl("https://existing.example.com");
 
-        Job matchB = baseJob("Acme Corp", "Data Analyst", "Applied", 2);
+        Job matchB = baseJob("Acme Corp", "Data Analyst", "Applied", 1);
 
         when(jobRepository.findByUserEmailOrderByUpdatedAtDesc(EMAIL)).thenReturn(List.of(matchA, matchB));
 
@@ -139,12 +139,15 @@ class JobServiceTest {
         jobService.createOrUpdateJob(incoming, EMAIL);
 
         ArgumentCaptor<Job> captor = ArgumentCaptor.forClass(Job.class);
-        verify(jobRepository).save(captor.capture());
+        
+        verify(jobRepository).saveAndFlush(captor.capture()); 
+        
         Job saved = captor.getValue();
 
         assertEquals("Interview Scheduled", saved.getStatus());
         assertEquals(3, saved.getStage());
         assertTrue(saved.getNotes().contains("Recruiter email update"));
+        
         assertEquals("https://existing.example.com", saved.getUrl());
     }
 

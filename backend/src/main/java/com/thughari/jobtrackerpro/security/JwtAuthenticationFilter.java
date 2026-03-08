@@ -27,6 +27,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         
         String authHeader = request.getHeader("Authorization");
         
+        if (authHeader == null && request.getRequestURI().contains("/api/notifications/stream")) {
+            String paramToken = request.getParameter("token");
+            if (paramToken != null) {
+            	authHeader = "Bearer " + paramToken;
+            }
+        }
+        
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;

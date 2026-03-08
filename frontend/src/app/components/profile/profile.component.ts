@@ -4,6 +4,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { environment } from '../../../environments/environment';
 import { GmailSetupModalComponent } from '../gmail-setup-modal/gmail-setup-modal.component';
+import { firstValueFrom } from 'rxjs';
+
+declare var google: any;
 
 @Component({
   selector: 'app-profile',
@@ -14,6 +17,7 @@ import { GmailSetupModalComponent } from '../gmail-setup-modal/gmail-setup-modal
 })
 export class ProfileComponent {
   private readonly API = environment.apiBaseUrl;
+  isConnectingGmail = signal(false);
 
   authService = inject(AuthService);
 
@@ -30,6 +34,9 @@ export class ProfileComponent {
   userHasPassword = signal(false);
 
   isUploading = signal(false);
+  isDisconnecting = signal(false);
+  showDisconnectConfirm = signal(false);
+  isDeleting = signal(false);
   imageTimestamp = signal(Date.now());
   showImageModal = signal(false);
   tempImageUrl = signal('');
@@ -266,5 +273,106 @@ export class ProfileComponent {
   copyEmail() {
     navigator.clipboard.writeText(this.inboundEmailAddress);
     this.showMessage('success', 'Forwarding address copied to clipboard!');
+  }
+
+  connectGmail() {
+
+    if (this.isConnectingGmail()) return;
+
+    const userEmail = this.authService.userProfile()?.email;
+
+    this.isConnectingGmail.set(true);
+
+    try{
+      const client = google.accounts.oauth2.initCodeClient({
+        client_id: '963261513098-j8u29ce8g5v0r9p3q3a1nqnpcg669a46.apps.googleusercontent.com',
+        scope: 'openid email profile https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.labels https://www.googleapis.com/auth/gmail.settings.basic',
+        ux_mode: 'popup',
+        login_hint: userEmail,
+        callback: (response: any) => {
+          if (response.code) {
+            this.authService.connectGmail(response.code).subscribe({
+              next: () => {
+                this.authService.fetchUserProfile(); 
+                this.showMessage('success', 'Gmail Auto-Tracking Enabled!');
+                this.isConnectingGmail.set(false);
+              },
+              error: (err) => {
+                console.error('Backend link failed', err);
+                this.showMessage('error', 'Failed to link Gmail account.');
+                this.isConnectingGmail.set(false);
+              }
+            });
+          }
+        },
+        error_callback: (error: any) => {
+          console.warn('Google Auth Error:', error.type);
+          this.isConnectingGmail.set(false);
+          if (error.type === 'popup_blocked_by_browser') {
+              this.showMessage('error', 'Please allow popups for this site.');
+          }
+        }
+      });
+      
+      client.requestCode();
+    } catch (err) {
+      console.error('Google Auth Initialization Failed', err);
+      this.showMessage('error', 'Failed to initiate Gmail connection.');
+      this.isConnectingGmail.set(false);
+    }
+  }
+
+  async disconnectGmail() {
+    if (!confirm('Are you sure you want to disable Gmail automation?')) return;
+    
+    this.isDisconnecting.set(true);
+    try {
+      await firstValueFrom(this.authService.disconnectGmail());
+      const current = this.authService.userProfile();
+      if (current) {
+        this.authService.userProfile.set({
+          ...current,
+          gmailConnected: false
+        });
+      }
+      this.showMessage('success', 'Gmail disconnected successfully.');
+    } catch (err) {
+      this.showMessage('error', 'Failed to disconnect Gmail.');
+      console.error('Disconnect failed', err);
+    } finally {
+      this.isDisconnecting.set(false);
+    }
+  }
+
+  openDisconnectModal() {
+    this.showDisconnectConfirm.set(true);
+  }
+
+  closeDisconnectModal() {
+    if (this.isDeleting()) return;
+    this.showDisconnectConfirm.set(false);
+  }
+
+  async confirmDisconnect() {
+    this.isDeleting.set(true);
+    try {
+      await firstValueFrom(this.authService.disconnectGmail());
+      
+      const current = this.authService.userProfile();
+      if (current) {
+        this.authService.userProfile.set({
+          ...current,
+          gmailConnected: false
+        });
+      }
+      
+      this.showMessage('success', 'Gmail integration removed.');
+      this.showDisconnectConfirm.set(false);
+    } catch (err) {
+      this.showMessage('error', 'Failed to disconnect Gmail.');
+      console.error('Disconnect failed', err);
+    } finally {
+      this.isDeleting.set(false);
+    }
   }
 }

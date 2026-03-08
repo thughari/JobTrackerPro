@@ -32,14 +32,12 @@ public class CloudStorageService implements StorageService {
     private static final long MAX_IMAGE_FILE_SIZE = 5 * 1024 * 1024; // 5MB
     private static final long MAX_RESOURCE_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
-    // Avatar Bucket Config
     @Value("${cloudflare.r2.bucket.avatars}")
     private String avatarBucket;
 
     @Value("${cloudflare.r2.public-url.avatars}")
     private String avatarPublicUrl;
 
-    // Resource Bucket Config
     @Value("${cloudflare.r2.bucket.resources}")
     private String resourceBucket;
 
@@ -93,7 +91,6 @@ public class CloudStorageService implements StorageService {
 
         try {
             String extension = getExtensionFromFilename(file.getOriginalFilename());
-            // Using a flat structure since we are in a dedicated resource bucket
             String fileName = userId + "-" + System.currentTimeMillis() + extension;
 
             uploadToS3(resourceBucket, fileName, contentType, file);
@@ -153,7 +150,6 @@ public class CloudStorageService implements StorageService {
 
         } catch (Exception e) {
             log.error("Failed to sync social image to R2: {}", e.getMessage());
-            // Fallback: return original URL so the profile still has an image
             return externalUrl;
         }
     }
@@ -167,8 +163,6 @@ public class CloudStorageService implements StorageService {
             return;
         }
 
-        // FIX: Must use AND (&&) here. If we used OR (||), a valid avatar URL would trigger 
-        // the return because it doesn't start with the resource URL.
         if (!fileUrl.startsWith(avatarPublicUrl) && !fileUrl.startsWith(resourcePublicUrl)) {
             return;
         }
@@ -197,7 +191,6 @@ public class CloudStorageService implements StorageService {
         }
     }
 
-    // --- Private Helpers ---
 
     private void uploadToS3(String bucket, String key, String contentType, MultipartFile file) throws Exception {
         PutObjectRequest putObj = PutObjectRequest.builder()

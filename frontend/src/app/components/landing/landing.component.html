@@ -137,23 +137,63 @@
     </div>
   </section>
 
-  <footer class="border-t border-white/5 bg-[#0B0E14] py-10 mt-auto">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
-      
-      <div class="flex items-center gap-2 text-gray-500 text-sm">
-        <span>© 2025 JobTrackerPro.</span>
-        <span class="hidden md:inline">Open Source.</span>
-      </div>
+  <footer class="border-t border-white/5 bg-[#0B0E14] py-12 md:py-20 mt-auto">
+    <div class="max-w-4xl mx-auto px-6">
+      <div class="flex flex-col items-center text-center space-y-12">
+        <div class="flex flex-col items-center space-y-4">
+          <app-logo size="md"></app-logo>
+          <p class="text-sm text-gray-500 max-w-sm leading-relaxed">
+            The enterprise-grade job tracker built to automate your career journey using Generative AI.
+          </p>
+        </div>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-12 sm:gap-24 w-full"> 
+          <div class="flex flex-col items-center space-y-4">
+            <h4 class="text-white font-black text-[10px] uppercase tracking-[0.3em]">Platform</h4>
+            <nav class="flex flex-col items-center gap-3">
+              <a routerLink="/about" class="text-sm text-gray-400 hover:text-indigo-400 transition-colors">Tech Stack</a>
+              <a routerLink="/resources" class="text-sm text-gray-400 hover:text-indigo-400 transition-colors">Career Vault</a>
+              <a href="https://github.com/thughari/JobTrackerPro" target="_blank" class="text-sm text-gray-400 hover:text-indigo-400 transition-colors flex items-center gap-2">
+                GitHub <i class="ph ph-arrow-square-out text-xs"></i>
+              </a>
+            </nav>
+          </div>
 
-      <div class="flex items-center gap-8">
-        <a routerLink="/about" class="text-sm font-medium text-gray-400 hover:text-white transition-colors">Tech Stack</a>
-        <a routerLink="/resources" class="text-sm font-medium text-gray-400 hover:text-white transition-colors">Resources</a>
-        <a routerLink="/privacy" class="text-sm font-medium text-gray-400 hover:text-white transition-colors">Privacy</a>
-        <a routerLink="/terms" class="text-sm font-medium text-gray-400 hover:text-white transition-colors">Terms of Service</a>
-        <a href="https://github.com/thughari/JobTrackerPro" target="_blank" class="text-sm font-medium text-gray-400 hover:text-white transition-colors">GitHub</a>
-      </div>
+          <div class="flex flex-col items-center space-y-4">
+            <h4 class="text-white font-black text-[10px] uppercase tracking-[0.3em]">Legal</h4>
+            <nav class="flex flex-col items-center gap-3">
+              <a routerLink="/privacy" class="text-sm text-gray-400 hover:text-indigo-400 transition-colors">Privacy Policy</a>
+              <a routerLink="/terms" class="text-sm text-gray-400 hover:text-indigo-400 transition-colors">Terms of Service</a>
+            </nav>
+          </div>
 
+        </div>
+
+        <div class="w-12 h-px bg-indigo-500/30"></div>
+
+        <div class="flex flex-col items-center space-y-6">
+          <div class="space-y-1">
+            <p class="text-gray-600 text-[11px] uppercase tracking-[0.2em] font-black">
+              © 2026 JobTrackerPro. Open Source.
+            </p>
+            <p class="text-gray-500 text-xs">
+              Designed & Engineered by <span class="text-gray-300 font-medium">Hari Thatikonda</span>
+            </p>
+          </div>
+
+          <div class="flex items-center gap-8">
+            <a href="https://linkedin.com/in/hari-thatikonda" target="_blank" class="text-gray-600 hover:text-white transition-colors text-2xl">
+              <i class="ph ph-linkedin-logo"></i>
+            </a>
+            <a href="https://github.com/thughari" target="_blank" class="text-gray-600 hover:text-white transition-colors text-2xl">
+              <i class="ph ph-github-logo"></i>
+            </a>
+            <a href="https://thughari.github.io" target="_blank" class="text-gray-600 hover:text-white transition-colors text-2xl">
+              <i class="ph ph-globe"></i>
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
   </footer>
-
 </div>
