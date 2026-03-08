@@ -6,15 +6,15 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class MockGeminiServiceTest {
 
-    @Test
-    void buildsMockJobFromEmailAndSubject() {
-        MockGeminiService service = new MockGeminiService();
+	@Test
+	void buildsMockJobFromEmailAndSubject() {
+		MockGeminiService service = new MockGeminiService();
 
-        var result = service.extractJobFromEmail("hr@acme.com", "Backend Engineer", "Body");
+		var result = service.extractJobFromEmail("hr@acme.com", "Backend Engineer", "Body");
 
-        assertEquals("acme", result.getCompany());
-        assertEquals("Backend Engineer", result.getRole());
-        assertEquals("Applied", result.getStatus());
-        assertNotNull(result.getAppliedDate());
-    }
+		assertEquals("Acme", result.getCompany()); 
+		assertEquals("Backend Engineer", result.getRole());
+		assertEquals("Applied", result.getStatus());
+		assertNotNull(result.getAppliedDate());
+	}
 }

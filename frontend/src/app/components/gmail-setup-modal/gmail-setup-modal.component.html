@@ -1,181 +1,329 @@
 @if (isVisible) {
-<div class="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4 backdrop-blur-sm">
-    <div class="absolute inset-0 bg-black/60 transition-opacity" (click)="close()"></div>
-    
-    <div class="relative w-full h-full md:h-auto md:max-w-xl bg-white dark:bg-[#151A23] md:rounded-3xl shadow-2xl overflow-hidden animate-scale-in flex flex-col max-h-[100vh] md:max-h-[90vh]">
-        
-        <!-- Header -->
-        <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-white dark:bg-[#151A23] sticky top-0 z-10">
-            <div class="flex items-center gap-3">
-                <img src="google-logo.svg" class="w-5 h-5 object-contain">
-                <h3 class="text-lg font-bold text-gray-900 dark:text-white">Gmail Sync Setup</h3>
-            </div>
-            <button (click)="close()" class="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
-                <i class="ph ph-x text-xl font-bold"></i>
-            </button>
+<div class="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-6 backdrop-blur-xl">
+
+  <div class="absolute inset-0 bg-black/80" (click)="close()"></div>
+
+  <div class="absolute w-[600px] h-[600px] bg-indigo-600/20 rounded-full blur-[140px]"></div>
+
+  <div class="relative w-full h-full md:h-auto md:max-w-xl 
+              bg-white/80 dark:bg-[#0F1117]/90 
+              backdrop-blur-xl
+              border border-white/20 dark:border-white/5
+              md:rounded-[2.5rem] shadow-[0_40px_120px_rgba(0,0,0,0.5)]
+              overflow-hidden animate-scale-in flex flex-col">
+
+    <div class="px-6 py-5 border-b border-gray-200/60 dark:border-white/5 flex justify-between items-center">
+
+      <div class="flex items-center gap-3">
+
+        <div class="relative w-9 h-9 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+          <div class="absolute inset-0 rounded-xl bg-indigo-500/20 blur"></div>
+          <i class="ph-fill ph-magic-wand text-indigo-500 text-lg relative"></i>
         </div>
 
-        <!-- Progress Bar (Breadcrumb) -->
-        <div class="flex border-b border-gray-50 dark:border-gray-800/50 bg-gray-50/50 dark:bg-[#0B0E14]/30">
-            @for (step of [1,2,3,4]; track step) {
-                <div class="flex-1 h-1.5 transition-all duration-500" 
-                     [class.bg-indigo-600]="activeStep() >= step" 
-                     [class.bg-gray-200]="activeStep() < step" 
-                     [class.dark:bg-gray-800]="activeStep() < step">
-                </div>
-            }
+        <div>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-white">
+            Automation Setup
+          </h3>
+          <p class="text-[11px] text-gray-400">
+            Connect Gmail or configure forwarding
+          </p>
         </div>
 
-        <div class="p-5 md:p-8 overflow-y-auto custom-scrollbar space-y-4">
-            
-            <!-- MOBILE WARNING -->
-            @if (isMobile && activeStep() < 4) {
-            <div class="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-xl flex gap-3">
-                <i class="ph ph-info text-amber-600 mt-0.5"></i>
-                <p class="text-[11px] text-amber-800 dark:text-amber-400 leading-tight">
-                    Forwarding setup is best on <strong>Desktop</strong>. Gmail's mobile app doesn't support filter creation.
-                </p>
-            </div>
-            }
+      </div>
 
-            <!-- STEP 1: FORWARDING -->
-            <div class="border rounded-2xl transition-all overflow-hidden" 
-                 [class.border-indigo-500]="activeStep() === 1" 
-                 [class.dark:border-gray-800]="activeStep() !== 1">
-                
-                <button (click)="setStep(1)" class="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                    <div class="flex items-center gap-4">
-                        <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" 
-                              [class.bg-indigo-600]="activeStep() >= 1" [class.text-white]="activeStep() >= 1"
-                              [class.bg-gray-100]="activeStep() < 1" [class.dark:bg-gray-800]="activeStep() < 1">1</span>
-                        <span class="font-bold text-sm md:text-base dark:text-white">Register Forwarding Address</span>
-                    </div>
-                    @if (activeStep() > 1) { <i class="ph ph-check-circle-fill text-green-500 text-xl"></i> }
-                </button>
-                
-                @if (activeStep() === 1) {
-                <div class="px-4 pb-5 ml-11 animate-fade-in space-y-4">
-                    <p class="text-xs md:text-sm text-gray-500 dark:text-gray-400">
-                        Open settings and click <strong>"Add a forwarding address"</strong>.
-                    </p>
-                    
-                    <button (click)="openForwardingSettings()" 
-                            class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 transition-all active:scale-95">
-                        <i class="ph ph-arrow-square-out-bold"></i>
-                        Open Gmail Settings
-                    </button>
+      <button (click)="close()"
+        class="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-200/60 dark:hover:bg-white/5 transition">
+        <i class="ph ph-x text-lg"></i>
+      </button>
 
-                    <div class="bg-gray-50 dark:bg-black/40 p-3 rounded-lg border border-dashed border-gray-200 dark:border-gray-800">
-                        <p class="text-[10px] text-gray-400 uppercase font-bold mb-1 tracking-widest">Address to paste</p>
-                        <code class="text-[10px] md:text-xs text-indigo-600 dark:text-indigo-400 font-mono break-all">{{ inboundEmail }}</code>
-                    </div>
-                    
-                    <button (click)="setStep(2)" class="w-full py-2 text-xs font-bold text-indigo-500 uppercase tracking-widest hover:text-indigo-400">
-                        I've added it, next step →
-                    </button>
-                </div>
-                }
-            </div>
+    </div>
 
-            <!-- STEP 2: VERIFICATION -->
-            <div class="border rounded-2xl transition-all overflow-hidden" 
-                 [class.border-indigo-500]="activeStep() === 2" 
-                 [class.dark:border-gray-800]="activeStep() !== 2">
-                
-                <button (click)="setStep(2)" class="w-full flex items-center justify-between p-4 text-left" [disabled]="activeStep() < 2">
-                    <div class="flex items-center gap-4">
-                        <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" 
-                              [class.bg-indigo-600]="activeStep() >= 2" [class.text-white]="activeStep() >= 2"
-                              [class.bg-gray-100]="activeStep() < 2" [class.dark:bg-gray-800]="activeStep() < 2">2</span>
-                        <span class="font-bold text-sm md:text-base dark:text-white" [class.opacity-40]="activeStep() < 2">Verify the Code</span>
-                    </div>
-                    @if (activeStep() > 2) { <i class="ph ph-check-circle-fill text-green-500 text-xl"></i> }
-                </button>
-                
-                @if (activeStep() === 2) {
-                <div class="px-4 pb-5 ml-11 animate-fade-in space-y-4">
-                    <div class="p-4 bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800/40 rounded-xl flex gap-3">
-                        <i class="ph ph-magic-wand text-green-600 text-xl"></i>
-                        <p class="text-xs text-green-800 dark:text-green-300 leading-relaxed">
-                            <strong>Gmail will send a verification link.</strong> We receive it automatically and forward it to your inbox.
-Just open the email and click the link to confirm.
-                        </p>
-                    </div>
-                    <button (click)="setStep(3)" class="w-full py-3 bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white rounded-xl font-bold hover:bg-gray-50 transition-colors">
-                        Done! Let's set up filters
-                    </button>
-                </div>
-                }
+
+    <div class="p-8 space-y-8 overflow-y-auto">
+
+      <div class="relative p-7 rounded-3xl bg-gradient-to-br from-indigo-600 to-violet-700 shadow-xl overflow-hidden">
+
+        <div class="absolute inset-0 bg-white/10 backdrop-blur-[2px]"></div>
+
+        <div class="relative z-10 space-y-4">
+
+          <span class="px-2 py-1 rounded bg-white/20 text-[9px] font-black text-white uppercase tracking-widest">
+            Recommended
+          </span>
+
+          <div>
+            <h4 class="text-white font-bold text-xl">
+              Automatic Gmail Sync
+            </h4>
+
+            <p class="text-white/70 text-sm mt-1">
+              Our AI automatically scans your inbox for job updates.
+              No filters. No setup. Just connect Gmail.
+            </p>
+          </div>
+
+          @if (!isGmailConnected()) {
+
+          <button (click)="triggerOAuth()"
+            class="w-full py-3 bg-white text-indigo-600 hover:bg-gray-50 rounded-xl font-bold text-sm flex items-center justify-center gap-2">
+
+            <img src="google-logo.svg" class="w-4 h-4">
+            Connect Gmail Instantly
+
+          </button>
+
+          } @else {
+
+          <div class="flex items-center justify-between bg-white/20 rounded-xl p-3">
+
+            <div class="flex items-center gap-2 text-white text-xs">
+              <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+              Gmail Connected
             </div>
 
-            <!-- STEP 3: FILTERS -->
-            <div class="border rounded-2xl transition-all overflow-hidden" 
-                 [class.border-indigo-500]="activeStep() === 3" 
-                 [class.dark:border-gray-800]="activeStep() !== 3">
-                
-                <button (click)="setStep(3)" class="w-full flex items-center justify-between p-4 text-left" [disabled]="activeStep() < 3">
-                    <div class="flex items-center gap-4">
-                        <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" 
-                              [class.bg-indigo-600]="activeStep() >= 3" [class.text-white]="activeStep() >= 3"
-                              [class.bg-gray-100]="activeStep() < 3" [class.dark:bg-gray-800]="activeStep() < 3">3</span>
-                        <span class="font-bold text-sm md:text-base dark:text-white" [class.opacity-40]="activeStep() < 3">Enable Sync Filters</span>
-                    </div>
-                </button>
-                
-                @if (activeStep() === 3) {
-                <div class="px-4 pb-5 ml-11 animate-fade-in space-y-4">
-                    <p class="text-xs text-gray-500">Only job emails are forwarded. Your private mail stays private.</p>
 
-                    <div class="space-y-3 bg-gray-50 dark:bg-black/30 p-4 rounded-2xl border dark:border-gray-800">
-                        <div class="flex items-start gap-3">
-                            <span class="w-5 h-5 rounded-full bg-indigo-600 text-white flex-shrink-0 flex items-center justify-center text-[10px] font-bold">1</span>
-                            <p class="text-xs dark:text-gray-300">Click the button below to open Gmail search.</p>
-                        </div>
-                        <div class="flex items-start gap-3">
-                            <span class="w-5 h-5 rounded-full bg-indigo-600 text-white flex-shrink-0 flex items-center justify-center text-[10px] font-bold">2</span>
-                            <p class="text-xs dark:text-gray-300">In the dropdown, click <strong>"Create filter"</strong>.</p>
-                        </div>
-                        <div class="flex items-start gap-3">
-                            <span class="w-5 h-5 rounded-full bg-indigo-600 text-white flex-shrink-0 flex items-center justify-center text-[10px] font-bold">3</span>
-                            <p class="text-xs text-indigo-600 dark:text-indigo-400 font-bold">Check "Forward it to" and select our address.</p>
-                        </div>
 
-                        <button (click)="openGmailWithFilter()" 
-                                class="w-full mt-2 py-3 bg-indigo-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg hover:bg-indigo-700 transition-all">
-                            <i class="ph ph-rocket-launch-fill"></i>
-                            🚀 Open & Create Filter
-                        </button>
-                    </div>
+          </div>
 
-                    <button (click)="setStep(4)" class="w-full py-2 text-xs font-bold text-indigo-500 uppercase tracking-widest">
-                        I've created the filter →
-                    </button>
-                </div>
-                }
+          }
+
+        </div>
+
+        <i class="ph ph-google-logo absolute -bottom-6 -right-6 text-[120px] text-white/10 rotate-12"></i>
+
+      </div>
+
+
+      <div class="space-y-6">
+
+        <div class="text-center space-y-1">
+          <h5 class="text-xs font-black text-gray-400 uppercase tracking-[0.25em]">
+            Manual Fallback
+          </h5>
+
+          <p class="text-xs text-gray-500">
+            Only required if you prefer not to grant Gmail access.
+          </p>
+        </div>
+
+
+        <div class="flex items-center justify-center">
+
+          @for (step of [1,2,3,4]; track step) {
+
+          <div class="flex items-center">
+
+
+            <div class="w-8 h-8 flex items-center justify-center rounded-full text-xs font-bold transition-all"
+              [class.bg-indigo-600]="activeStep() >= step" [class.text-white]="activeStep() >= step"
+              [class.bg-gray-700]="activeStep() < step">
+
+              {{step}}
+
             </div>
 
-            <!-- STEP 4: SUCCESS -->
-            @if (activeStep() === 4) {
-            <div class="py-10 text-center animate-fade-in flex flex-col items-center">
-<div class="relative mb-6 flex items-center justify-center">
-  <span class="absolute inline-flex h-20 w-20 rounded-full bg-green-400 opacity-20 animate-ping"></span>
-  <div class="w-20 h-20 rounded-full bg-green-500 flex items-center justify-center shadow-xl">
-    <i class="ph ph-check text-white text-3xl"></i>
+
+            @if(step < 4){ <div class="w-10 h-[2px] mx-2 transition-all" [class.bg-indigo-600]="activeStep() > step"
+              [class.bg-gray-700]="activeStep() <= step">
+          </div>
+
+          }
+
+        </div>
+
+        }
+
+      </div>
+
+
+      @if (activeStep() === 1) {
+
+      <div class="space-y-4 animate-fade-in">
+
+        <h4 class="text-sm font-bold text-gray-900 dark:text-white">
+          Add Forwarding Address
+        </h4>
+
+        <div
+          class="flex justify-between items-center bg-gray-50 dark:bg-black/30 border border-dashed border-gray-200 dark:border-gray-800 p-4 rounded-2xl">
+
+          <code class="text-xs text-indigo-600 dark:text-indigo-400 font-mono break-all">
+              {{ inboundEmail }}
+            </code>
+
+          <button (click)="copyText(inboundEmail, 'Address')" class="text-gray-400 hover:text-indigo-500">
+            <i class="ph ph-copy"></i>
+          </button>
+
+        </div>
+
+        <button (click)="openForwardingSettings()"
+          class="w-full py-4 rounded-2xl bg-gray-900 dark:bg-white text-white dark:text-black font-bold text-sm flex items-center justify-center gap-2">
+
+          Open Gmail Settings
+          <i class="ph ph-arrow-square-out"></i>
+
+        </button>
+
+        <button (click)="setStep(2)" class="w-full text-xs font-bold text-indigo-500 hover:text-indigo-400">
+          Next →
+        </button>
+
+      </div>
+
+      }
+
+      @if (activeStep() === 2) {
+
+      <div class="animate-fade-in space-y-6 text-center py-4">
+
+        <div class="w-16 h-16 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center mx-auto">
+          <i class="ph ph-envelope-open text-3xl"></i>
+        </div>
+
+        <div class="space-y-2">
+          <h4 class="text-sm font-bold text-gray-900 dark:text-white">
+            Verify Forwarding Address
+          </h4>
+
+          <p class="text-xs text-gray-500 leading-relaxed max-w-xs mx-auto">
+            Gmail just sent a verification email.
+            Open it and click the confirmation link to approve forwarding.
+          </p>
+        </div>
+
+        <button (click)="setStep(3)"
+          class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-indigo-500/20 transition active:scale-95">
+
+          I've Verified It
+
+        </button>
+
+      </div>
+
+      }
+
+      @if (activeStep() === 3) {
+
+      <div class="animate-fade-in space-y-6">
+
+        <div class="space-y-2 text-center">
+          <h4 class="text-sm font-bold text-gray-900 dark:text-white">
+            Create Gmail Filter
+          </h4>
+
+          <p class="text-xs text-gray-500 max-w-xs mx-auto">
+            This ensures only job-related emails are forwarded to the AI system.
+          </p>
+        </div>
+
+        <div class="p-5 bg-gray-50 dark:bg-black/30 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-4">
+
+          <ol class="space-y-4">
+
+            <li class="grid grid-cols-[24px_1fr] gap-3 items-start text-xs">
+
+              <span
+                class="w-5 h-5 flex items-center justify-center rounded-full bg-indigo-600 text-white text-[9px] font-bold mt-[2px]">
+                1
+              </span>
+
+              <p class="leading-relaxed">
+                Open Gmail search using the button below
+              </p>
+
+            </li>
+
+
+            <li class="grid grid-cols-[24px_1fr] gap-3 items-start text-xs">
+
+              <span
+                class="w-5 h-5 flex items-center justify-center rounded-full bg-indigo-600 text-white text-[9px] font-bold mt-[2px]">
+                2
+              </span>
+
+              <p class="leading-relaxed">
+                Click <strong>Create Filter</strong> inside the search dropdown
+              </p>
+
+            </li>
+
+
+            <li class="grid grid-cols-[24px_1fr] gap-3 items-start text-xs">
+
+              <span
+                class="w-5 h-5 flex items-center justify-center rounded-full bg-indigo-600 text-white text-[9px] font-bold mt-[2px]">
+                3
+              </span>
+
+              <p class="leading-relaxed">
+                Enable <strong>Forward it to</strong> and choose your inbound address
+              </p>
+
+            </li>
+
+          </ol>
+
+          <button (click)="openGmailWithFilter()"
+            class="w-full py-3 bg-white dark:bg-white/10 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-gray-50 transition">
+
+            🚀 Open Gmail Filter Setup
+
+          </button>
+
+        </div>
+
+        <button (click)="setStep(4)"
+          class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-indigo-500/20 active:scale-95">
+
+          Finish Setup
+
+        </button>
+
+      </div>
+
+      }
+
+
+      @if (activeStep() === 4) {
+
+      <div class="text-center py-10 space-y-4">
+
+        <div class="relative mx-auto w-16 h-16 flex items-center justify-center">
+
+          <span class="absolute w-full h-full rounded-full bg-green-400/30 animate-ping"></span>
+
+          <div class="relative w-16 h-16 rounded-full bg-green-500 flex items-center justify-center shadow-lg">
+
+            <i class="ph ph-check text-white text-2xl"></i>
+
+          </div>
+
+        </div>
+
+        <h4 class="text-xl font-bold text-gray-900 dark:text-white">
+          You're Automated
+        </h4>
+
+        <p class="text-sm text-gray-500">
+          Job emails will now automatically appear on your dashboard.
+        </p>
+
+        <button (click)="close()"
+          class="w-full py-4 rounded-2xl bg-gray-900 dark:bg-white text-white dark:text-black font-bold text-sm">
+          Back to Dashboard
+        </button>
+
+      </div>
+
+      }
+
+    </div>
+
   </div>
+
 </div>
 
-
-                <h4 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">You're all set!</h4>
-                <p class="text-sm text-gray-500 dark:text-gray-400 max-w-xs mx-auto mb-8 leading-relaxed">
-                    Any new job updates will now appear on your dashboard within seconds. Happy hunting!
-                </p>
-                <button (click)="close()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold shadow-xl shadow-indigo-500/30 transition-all active:scale-95">
-                    Finish & Close
-                </button>
-            </div>
-            }
-
-        </div>
-    </div>
 </div>
 }

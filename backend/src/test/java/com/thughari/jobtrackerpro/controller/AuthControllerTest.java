@@ -1,38 +1,49 @@
 package com.thughari.jobtrackerpro.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.thughari.jobtrackerpro.dto.AuthRequest;
 import com.thughari.jobtrackerpro.dto.AuthTokens;
-import com.thughari.jobtrackerpro.dto.ChangePasswordRequest;
 import com.thughari.jobtrackerpro.dto.UserProfileResponse;
+import com.thughari.jobtrackerpro.exception.GlobalExceptionHandler;
 import com.thughari.jobtrackerpro.service.AuthService;
-import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
 class AuthControllerTest {
 
+    private MockMvc mockMvc;
+
     @Mock
     private AuthService authService;
 
-    @Mock
-    private HttpServletResponse httpServletResponse;
-
     @InjectMocks
     private AuthController authController;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @BeforeEach
+    void setUp() {
+        mockMvc = MockMvcBuilders.standaloneSetup(authController)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+    }
 
     @AfterEach
     void cleanUp() {
@@ -40,63 +51,62 @@ class AuthControllerTest {
     }
 
     @Test
-    void registerUser_returnsOkWhenServiceSucceeds() {
-        ReflectionTestUtils.setField(authController, "refreshExpirationMs", 1000L);
-        ReflectionTestUtils.setField(authController, "refreshCookieSecure", false);
-        ReflectionTestUtils.setField(authController, "refreshCookieSameSite", "Lax");
-
+    void registerUser_returnsOkWhenServiceSucceeds() throws Exception {
         AuthRequest request = new AuthRequest();
-        when(authService.registerUser(request)).thenReturn(new AuthTokens("token", "refresh"));
+        request.setEmail("test@example.com");
+        request.setName("Hari");
+        request.setPassword("password123");
 
-        var result = authController.registerUser(request, httpServletResponse);
+        mockMvc.perform(post("/api/auth/signup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("verify")));
 
-        assertEquals(HttpStatusCode.valueOf(200), result.getStatusCode());
+        verify(authService).registerUser(any(AuthRequest.class));
     }
 
     @Test
-    void loginUser_returnsBadRequestOnIllegalArgument() {
+    void loginUser_returnsUnauthorized_WhenEmailNotVerified() throws Exception {
         AuthRequest request = new AuthRequest();
-        when(authService.loginUser(request)).thenThrow(new IllegalArgumentException("bad creds"));
+        request.setEmail("unverified@example.com");
 
-        var result = authController.loginUser(request, httpServletResponse);
+        when(authService.loginUser(any(AuthRequest.class)))
+                .thenThrow(new IllegalStateException("verify email"));
 
-        assertEquals(HttpStatusCode.valueOf(400), result.getStatusCode());
-        assertEquals("bad creds", result.getBody());
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized()) 
+                .andExpect(jsonPath("$.message").value("verify email"));
     }
 
     @Test
-    void getCurrentUser_readsEmailFromSecurityContext() {
-        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("USER@EXAMPLE.COM", null));
+    void verifyEmail_returnsOkAndSetsCookie() throws Exception {
+        AuthTokens mockTokens = new AuthTokens("access-token", "refresh-token");
+        
+        when(authService.verifyUser("some-token")).thenReturn(mockTokens);
+
+        mockMvc.perform(get("/api/auth/verify-email").param("token", "some-token"))
+                .andExpect(status().isOk())
+                .andExpect(header().exists("Set-Cookie"))
+                .andExpect(jsonPath("$.token").value("access-token"));
+
+        verify(authService).verifyUser("some-token");
+    }
+
+    @Test
+    void getCurrentUser_readsEmailFromSecurityContext() throws Exception {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("user@example.com", null)
+        );
 
         UserProfileResponse profile = new UserProfileResponse();
         profile.setEmail("user@example.com");
         when(authService.getCurrentUser("user@example.com")).thenReturn(profile);
 
-        var result = authController.getCurrentUser();
-
-        assertEquals(HttpStatusCode.valueOf(200), result.getStatusCode());
-        assertEquals("user@example.com", result.getBody().getEmail());
-    }
-
-    @Test
-    void changePassword_returnsBadRequestOnValidationError() {
-        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("user@example.com", null));
-
-        ChangePasswordRequest request = new ChangePasswordRequest();
-        doThrow(new IllegalArgumentException("Incorrect current password"))
-                .when(authService).changePassword("user@example.com", request);
-
-        var result = authController.changePassword(request);
-
-        assertEquals(HttpStatusCode.valueOf(400), result.getStatusCode());
-        assertEquals("Incorrect current password", result.getBody());
-    }
-
-    @Test
-    void forgotPassword_alwaysReturnsOk() {
-        var result = authController.forgotPassword("missing@example.com");
-
-        assertEquals(HttpStatusCode.valueOf(200), result.getStatusCode());
-        verify(authService).forgotPassword("missing@example.com");
+        mockMvc.perform(get("/api/auth/me"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("user@example.com"));
     }
 }

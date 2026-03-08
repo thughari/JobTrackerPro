@@ -69,11 +69,15 @@ public class JobService {
         DashboardResponse response = new DashboardResponse();
 
         long total = jobs.size();
-        long active = jobs.stream().filter(j -> !j.getStatus().equals("Rejected") && !j.getStatus().equals("Offer Received")).count();
-        long interviews = jobs.stream().filter(j -> j.getStatus().equals("Interview Scheduled") || j.getStage() >= 3).count();
-        long offers = jobs.stream().filter(j -> j.getStatus().equals("Offer Received")).count();
+        long active = jobs.stream().filter(j -> j.getStatus() != null && 
+        		!j.getStatus().equals("Rejected") && !j.getStatus().equals("Offer Received")).count();
+        long interviews = jobs.stream()
+        	    .filter(j -> "Interview Scheduled".equals(j.getStatus()) || 
+        	                 (j.getStage() != null && j.getStage() >= 3))
+        	    .count();
+        long offers = jobs.stream().filter(j -> "Offer Received".equals(j.getStatus())).count();
         long activeInterviews = jobs.stream().filter(j -> "Interview Scheduled".equals(j.getStatus())).count();
-        
+
         response.setStats(new DashboardStatsDTO(total, active, interviews, activeInterviews, offers));
 
         Map<String, Long> statusMap = jobs.stream()
@@ -90,8 +94,9 @@ public class JobService {
             ));
         response.setMonthlyChart(mapToChartData(monthMap));
 
-        long interviewCount = jobs.stream().filter(j -> j.getStage() >= 3).count();
-        response.setInterviewChart(List.of(
+        long interviewCount = jobs.stream()
+        	    .filter(j -> j.getStage() != null && j.getStage() >= 3)
+        	    .count();        response.setInterviewChart(List.of(
             new ChartData("Interviewed", interviewCount),
             new ChartData("Not Interviewed", total > 0 ? total - interviewCount : 0)
         ));
@@ -165,7 +170,7 @@ public class JobService {
 
     public void cleanupStaleApplications() {
     	LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
-    	LocalDateTime threeMonthsAgo = now.minusMonths(3);
+    	LocalDateTime threeMonthsAgo = now.minusMonths(2);
 
     	List<String> affectedEmails = jobRepository.findUserEmailsWithStaleJobs(threeMonthsAgo);
 
@@ -181,25 +186,25 @@ public class JobService {
     	Cache jobDashboard = cacheManager.getCache("jobDashboard");
     	Cache jobPages = cacheManager.getCache("jobPages");
 
-    	for (String email : affectedEmails) {
-    		if (jobList != null) jobList.evict(email);
-    		if (jobDashboard != null) jobDashboard.evict(email);
-    	}
+    	affectedEmails.parallelStream().forEach(email -> {
+            if (jobList != null) jobList.evict(email);
+            if (jobDashboard != null) jobDashboard.evict(email);
+        });
 
-        // Clear all paged results once
-        if (jobPages != null) jobPages.clear(); 
+    	if (jobPages != null) jobPages.clear(); 
 
         log.info("System Cleanup: Successfully rejected stale jobs for {} users.", affectedEmails.size());
     }
 
     private Job findBestMatch(List<Job> existingJobs, JobDTO incoming) {
-        if (incoming.getCompany() == null) return null;
+        if (incoming == null || incoming.getCompany() == null) return null;
         
         String incomingCompany = incoming.getCompany().toLowerCase().trim();
-        String incomingRole = incoming.getRole() != null ? incoming.getRole() : "";
+        String incomingRole = (incoming.getRole() != null) ? incoming.getRole().toLowerCase().trim() : "";
 
         List<Job> companyMatches = existingJobs.stream()
                 .filter(job -> {
+                    if (job.getCompany() == null) return false;
                     String dbCompany = job.getCompany().toLowerCase().trim();
                     return dbCompany.contains(incomingCompany) || incomingCompany.contains(dbCompany);
                 })
@@ -208,75 +213,74 @@ public class JobService {
         if (companyMatches.isEmpty()) return null;
 
         List<Job> activeMatches = companyMatches.stream()
-                .filter(j -> !j.getStatus().equals("Rejected") && !j.getStatus().equals("Offer Received"))
+                .filter(j -> j.getStatus() != null && 
+                        !j.getStatus().equalsIgnoreCase("Rejected") && 
+                        !j.getStatus().equalsIgnoreCase("Offer Received"))
                 .collect(Collectors.toList());
 
         if (activeMatches.isEmpty()) return null;
 
-        if (activeMatches.size() > 1) {
-            return activeMatches.stream()
-                    .max((j1, j2) -> {
-                        double sim1 = calculateSimilarity(j1.getRole(), incomingRole);
-                        double sim2 = calculateSimilarity(j2.getRole(), incomingRole);
-                        return Double.compare(sim1, sim2);
-                    })
-                    .filter(bestMatch -> calculateSimilarity(bestMatch.getRole(), incomingRole) > 0.3)
-                    .orElse(activeMatches.get(0));
-        }
-
-        return activeMatches.get(0);
-    }
-
-    private void updateExistingJobFromEmail(Job existingJob, JobDTO incoming) {
-    	// Precaution for email auto updation
-    	if (incoming.getStage() != null && incoming.getStage() >= existingJob.getStage()) {
-            existingJob.setStatus(incoming.getStatus());
-            existingJob.setStage(incoming.getStage());
-            existingJob.setStageStatus(incoming.getStageStatus());
-        }
-    	
-    	String timestamp = LocalDateTime.now().format(fmt); 
-        String newNote = "\n[" + timestamp + "] Update via Email: " + incoming.getNotes();
-        String currentNotes = existingJob.getNotes() != null ? existingJob.getNotes() : "";
-        existingJob.setNotes(currentNotes + newNote);
-        
-        if (incoming.getUrl() != null && incoming.getUrl().toLowerCase().startsWith("http")) {
-            
-            boolean currentUrlMissing = existingJob.getUrl() == null || 
-                                         existingJob.getUrl().isEmpty() || 
-                                         !existingJob.getUrl().startsWith("http");
-                                         
-            if (currentUrlMissing) {
-                existingJob.setUrl(incoming.getUrl());
-            }
-        }
-        
-        existingJob.setUpdatedAt(LocalDateTime.now());
-        jobRepository.save(existingJob);
-        
-//        existingJob.setStatus(incoming.getStatus());
-//        existingJob.setStage(incoming.getStage());
-//        existingJob.setStageStatus(incoming.getStageStatus());
-//        
-//        String newNote = "\n[" + LocalDateTime.now().format(fmt) + "] Update via Email: " + incoming.getNotes();
-//        String currentNotes = existingJob.getNotes() != null ? existingJob.getNotes() : "";
-//        existingJob.setNotes(currentNotes + newNote);
-//
-//        if ((existingJob.getUrl() == null || existingJob.getUrl().isEmpty()) && incoming.getUrl() != null) {
-//            existingJob.setUrl(incoming.getUrl());
-//        }
-//        
-//        existingJob.setUpdatedAt(LocalDateTime.now());
-//        jobRepository.save(existingJob);
+        return activeMatches.stream()
+                .max((j1, j2) -> {
+                    double sim1 = calculateSimilarity(j1.getRole(), incomingRole);
+                    double sim2 = calculateSimilarity(j2.getRole(), incomingRole);
+                    return Double.compare(sim1, sim2);
+                })
+                .filter(bestMatch -> calculateSimilarity(bestMatch.getRole(), incomingRole) > 0.2)
+                .orElse(activeMatches.get(0));
     }
     
+    private void updateExistingJobFromEmail(Job existingJob, JobDTO incoming) {
+        String currentStatus = (existingJob.getStatus() != null) ? existingJob.getStatus() : "";
+        String incomingStatus = (incoming.getStatus() != null) ? incoming.getStatus() : "";
+        
+        if (currentStatus.equalsIgnoreCase(incomingStatus) && 
+        		Objects.equals(existingJob.getStage(), incoming.getStage())) {
+        	return; 
+        }
+
+        String newNotesFromAI = (incoming.getNotes() != null) ? incoming.getNotes().trim() : "";
+
+        boolean statusChanged = !currentStatus.equalsIgnoreCase(incomingStatus);
+        boolean stageChanged = incoming.getStage() != null && !incoming.getStage().equals(existingJob.getStage());
+        
+        boolean isNewInfo = !newNotesFromAI.isEmpty() && 
+                            (existingJob.getNotes() == null || !existingJob.getNotes().contains(newNotesFromAI));
+
+        boolean shouldThrottle = existingJob.getUpdatedAt().isAfter(LocalDateTime.now().minusHours(1));
+
+        if (statusChanged || stageChanged || (isNewInfo && !shouldThrottle)) {
+            
+            log.info("Updating job for {}: Status change [{} -> {}], New Info: {}", 
+                     existingJob.getCompany(), currentStatus, incomingStatus, isNewInfo);
+
+            existingJob.setStatus(incomingStatus);
+            if (incoming.getStage() != null) existingJob.setStage(incoming.getStage());
+            if (incoming.getStageStatus() != null) existingJob.setStageStatus(incoming.getStageStatus());
+
+            if (isNewInfo) {
+                String timestamp = LocalDateTime.now().format(fmt);
+                String formattedNote = "\n[" + timestamp + "] Update via Email: " + newNotesFromAI;
+                
+                String updatedNotes = (existingJob.getNotes() != null ? existingJob.getNotes() : "") + formattedNote;
+                existingJob.setNotes(updatedNotes);
+            }
+
+            existingJob.setUpdatedAt(LocalDateTime.now());
+
+            jobRepository.saveAndFlush(existingJob);
+            
+        } else {
+            log.debug("Sync detected no significant changes for {}. Skipping redundant update.", existingJob.getCompany());
+        }
+    }
 
     private double calculateSimilarity(String role1, String role2) {
         if (role1 == null || role2 == null) return 0.0;
-
+        
         Set<String> set1 = tokenize(role1);
         Set<String> set2 = tokenize(role2);
-
+        
         if (set1.isEmpty() || set2.isEmpty()) return 0.0;
 
         Set<String> intersection = new HashSet<>(set1);
@@ -287,8 +291,10 @@ public class JobService {
 
         return (double) intersection.size() / union.size();
     }
-
+    
     private Set<String> tokenize(String text) {
+        if (text == null || text.isBlank()) return Collections.emptySet();
+        
         String[] words = text.toLowerCase().replaceAll("[^a-z0-9\\s]", "").split("\\s+");
         Set<String> uniqueWords = new HashSet<>();
         for (String w : words) {

@@ -1,9 +1,10 @@
 import { Injectable, signal, inject, Injector } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Observable } from 'rxjs';
 import { JobService } from './job.service';
 import { environment } from '../../environments/environment';
+import { SignUpUser } from '../components/auth/signup/signup.component';
 
 export interface UserProfile {
   name: string;
@@ -11,6 +12,7 @@ export interface UserProfile {
   imageUrl?: string;
   provider: string;
   hasPassword: boolean;
+  gmailConnected: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -77,11 +79,8 @@ export class AuthService {
     this.handleToken(res.token);
   }
 
-  async signup(data: any) {
-    const res: any = await firstValueFrom(
-      this.http.post(`${this.apiUrl}/signup`, data, { withCredentials: true })
-    );
-    this.handleToken(res.token);
+  signup(user: SignUpUser): Observable<any> {
+    return this.http.post(`${this.API}/api/auth/signup`, user);
   }
 
   async refreshToken(): Promise<boolean> {
@@ -120,12 +119,17 @@ export class AuthService {
   logout() {
     this.http.post(`${this.apiUrl}/logout`, {}, { withCredentials: true }).subscribe({
       error: () => {
-        // no-op: continue client logout even if backend logout fails
       }
     });
 
     this.clearClientSession();
     this.router.navigate(['/']);
+  }
+
+  resendVerificationEmail(email: string) {
+    return this.http.post(`${this.API}/api/auth/resend-verification`, null, {
+      params: { email }
+    });
   }
 
   private clearClientSession() {
@@ -180,6 +184,12 @@ export class AuthService {
     );
   }
 
+  syncGmail(): Observable<string> {
+    return this.http.post(`${this.API}/api/integrations/gmail/sync`, {}, { 
+      responseType: 'text' 
+    });
+  }
+
   private decodeToken() {
     const token = localStorage.getItem('token');
     return token ? { email: this.parseJwt(token).sub } : null;
@@ -202,5 +212,19 @@ export class AuthService {
     } catch {
       return {};
     }
+  }
+
+  connectGmail(code: string) {
+    return this.http.post(`${this.API}/api/integrations/gmail/connect`, 
+      { code }, 
+      { responseType: 'text' }
+    );
+  }
+
+  disconnectGmail() {
+    return this.http.post(`${this.API}/api/integrations/gmail/disconnect`, 
+      {}, 
+      { responseType: 'text' }
+    );
   }
 }

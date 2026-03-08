@@ -11,4 +11,7 @@ public class UserProfileResponse {
     private String imageUrl;
     private String provider;
     private boolean hasPassword;
+    private boolean gmailConnected;
+    private boolean gmailSyncInProgress;
+    private boolean enabled;
 }

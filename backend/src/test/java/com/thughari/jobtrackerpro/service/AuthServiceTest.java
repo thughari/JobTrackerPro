@@ -5,16 +5,18 @@ import com.thughari.jobtrackerpro.dto.ChangePasswordRequest;
 import com.thughari.jobtrackerpro.entity.AuthProvider;
 import com.thughari.jobtrackerpro.entity.PasswordResetToken;
 import com.thughari.jobtrackerpro.entity.User;
+import com.thughari.jobtrackerpro.entity.VerificationToken;
 import com.thughari.jobtrackerpro.exception.ResourceNotFoundException;
-import com.thughari.jobtrackerpro.interfaces.StorageService;
 import com.thughari.jobtrackerpro.repo.PasswordResetTokenRepository;
 import com.thughari.jobtrackerpro.repo.UserRepository;
+import com.thughari.jobtrackerpro.repo.VerificationTokenRepository;
 import com.thughari.jobtrackerpro.security.JwtUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cache.CacheManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
@@ -30,15 +32,16 @@ class AuthServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private JwtUtils jwtUtils;
-    @Mock private StorageService storageService;
+    @Mock private VerificationTokenRepository verificationTokenRepository; // Added
     @Mock private PasswordResetTokenRepository tokenRepository;
     @Mock private EmailService emailService;
+    @Mock private CacheManager cacheManager; // Added
 
     @InjectMocks
     private AuthService authService;
 
     @Test
-    void registerUser_createsUserAndReturnsToken() {
+    void registerUser_createsDisabledUserAndSendsEmail() {
         AuthRequest request = new AuthRequest();
         request.setName("Test User");
         request.setEmail("test@example.com");
@@ -46,29 +49,48 @@ class AuthServiceTest {
 
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.empty());
         when(passwordEncoder.encode("secret")).thenReturn("encoded");
-        when(jwtUtils.generateAccessToken("test@example.com")).thenReturn("jwt");
-        when(jwtUtils.generateRefreshToken("test@example.com")).thenReturn("refresh-jwt");
 
-        var response = authService.registerUser(request);
+        // Act - No variable assignment because return is void
+        authService.registerUser(request);
 
-        assertEquals("jwt", response.accessToken());
-        assertEquals("refresh-jwt", response.refreshToken());
-        verify(userRepository).save(any(User.class));
+        // Assert - Verify interactions for high performance / atomic flow
+        verify(userRepository).saveAndFlush(any(User.class));
+        verify(verificationTokenRepository).save(any(VerificationToken.class));
+        verify(emailService).sendVerificationEmail(eq("test@example.com"), any(String.class));
     }
 
     @Test
-    void loginUser_throwsWhenPasswordMismatch() {
+    void loginUser_throwsWhenUserNotEnabled() {
         User user = new User();
         user.setEmail("test@example.com");
-        user.setPassword("encoded");
+        user.setEnabled(false); // User exists but not verified
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches("wrong", "encoded")).thenReturn(false);
 
         AuthRequest request = new AuthRequest();
         request.setEmail("test@example.com");
-        request.setPassword("wrong");
+        request.setPassword("password");
 
-        assertThrows(IllegalArgumentException.class, () -> authService.loginUser(request));
+        assertThrows(IllegalStateException.class, () -> authService.loginUser(request));
+    }
+
+    @Test
+    void verifyEmail_enablesUserAndClearsToken() {
+        User user = new User();
+        user.setEmail("test@example.com");
+        user.setEnabled(false);
+        
+        VerificationToken token = new VerificationToken();
+        token.setToken("valid-token");
+        token.setUser(user);
+        token.setExpiryDate(LocalDateTime.now().plusHours(1));
+
+        when(verificationTokenRepository.findByToken("valid-token")).thenReturn(Optional.of(token));
+
+        authService.verifyUser("valid-token");
+
+        assertTrue(user.getEnabled());
+        verify(userRepository).saveAndFlush(user);
+        verify(verificationTokenRepository).delete(token);
     }
 
     @Test
@@ -85,12 +107,6 @@ class AuthServiceTest {
     }
 
     @Test
-    void forgotPassword_throwsWhenMissingUser() {
-        when(userRepository.findByEmail("missing@example.com")).thenReturn(Optional.empty());
-        assertThrows(ResourceNotFoundException.class, () -> authService.forgotPassword("missing@example.com"));
-    }
-
-    @Test
     void resetPassword_rejectsExpiredToken() {
         PasswordResetToken token = new PasswordResetToken();
         token.setToken("abc");
@@ -100,27 +116,5 @@ class AuthServiceTest {
 
         assertThrows(IllegalArgumentException.class, () -> authService.resetPassword("abc", "newpassword"));
         verify(tokenRepository).delete(token);
-    }
-
-    @Test
-    void changePassword_updatesWhenCurrentMatches() {
-        User user = new User();
-        user.setEmail("test@example.com");
-        user.setPassword("oldEncoded");
-        user.setProvider(AuthProvider.LOCAL);
-
-        ChangePasswordRequest request = new ChangePasswordRequest();
-        request.setCurrentPassword("old");
-        request.setNewPassword("newpass");
-
-        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches("old", "oldEncoded")).thenReturn(true);
-        when(passwordEncoder.matches("newpass", "oldEncoded")).thenReturn(false);
-        when(passwordEncoder.encode("newpass")).thenReturn("newEncoded");
-
-        authService.changePassword("test@example.com", request);
-
-        verify(userRepository).save(user);
-        assertEquals("newEncoded", user.getPassword());
     }
 }

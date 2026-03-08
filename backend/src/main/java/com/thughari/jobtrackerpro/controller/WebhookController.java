@@ -118,6 +118,11 @@ public class WebhookController {
                 log.warn("User unknown. From: [{}], To: [{}]", from, to);
                 return ResponseEntity.ok("User Unknown");
             }
+            
+            if (Boolean.TRUE.equals(user.getGmailConnected())) {
+                log.info("Forwarding Webhook: Discarding email for {} (Direct Sync is ACTIVE)", user.getEmail());
+                return ResponseEntity.ok("Ignored: Direct Sync Active");
+            }
 
             JobDTO job = geminiService.extractJobFromEmail(from, subject, plainText);
             

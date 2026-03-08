@@ -24,7 +24,6 @@ export class ResourcesComponent implements OnDestroy {
 
   @ViewChild('fileInput') fileInputVariable?: ElementRef;
 
-  // --- STATE SIGNALS ---
   readonly resources = signal<CareerResource[]>([]);
   readonly myResources = signal<CareerResource[]>([]);
   readonly isLoading = signal(true);
@@ -37,7 +36,6 @@ export class ResourcesComponent implements OnDestroy {
   readonly successMessage = signal('');
   private messageTimeout: any;
 
-  // UI Modals
   readonly showAddResourceModal = signal(false);
   readonly showDeleteConfirm = signal(false);
   readonly resourceToDelete = signal<CareerResource | null>(null);
@@ -46,13 +44,11 @@ export class ResourcesComponent implements OnDestroy {
   readonly isDeleting = signal(false);
   readonly isInAppRoute = signal(false);
 
-  // Filters
   readonly searchQuery = signal('');
   readonly selectedCategoryFilter = signal('');
   readonly backendCategories = signal<string[]>([]);
   readonly categoryOptions = computed(() => this.backendCategories());
 
-  // Add Form Models
   title = '';
   url = '';
   category = '';
@@ -64,7 +60,6 @@ export class ResourcesComponent implements OnDestroy {
   private searchDebounceRef: any = null;
   private scrollLoadDebounceRef: any = null;
 
-  // --- COMPUTED DATA ---
   readonly displayResources = computed(() => {
     return this.viewMode() === 'community' ? this.resources() : this.myResources();
   });
@@ -113,7 +108,6 @@ export class ResourcesComponent implements OnDestroy {
     }
   }
 
-  // --- TAB & DATA LOADING ---
   setViewMode(mode: 'community' | 'mine') {
     this.viewMode.set(mode);
     this.currentPage.set(0);
@@ -154,7 +148,6 @@ export class ResourcesComponent implements OnDestroy {
     this.backendCategories.set(cats);
   }
 
-  // --- CRUD ACTIONS ---
   async addResource() {
     if (!this.title.trim() || !this.category.trim()) return;
     this.isSaving.set(true);
@@ -202,7 +195,6 @@ export class ResourcesComponent implements OnDestroy {
     }
   }
 
-  // --- UI HELPERS ---
   onSearchQueryChange(value: string) {
     this.searchQuery.set(value);
     if (this.searchDebounceRef) clearTimeout(this.searchDebounceRef);

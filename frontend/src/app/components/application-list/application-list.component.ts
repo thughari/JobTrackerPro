@@ -12,9 +12,11 @@ import { Job, JobService } from '../../services/job.service';
 import {
   debounceTime,
   distinctUntilChanged,
+  firstValueFrom,
   Subject,
   Subscription,
 } from 'rxjs';
+import { AuthService } from '../../services/auth.service';
 
 type SortField = 'company' | 'role' | 'date' | 'status' | 'location';
 type SortDirection = 'asc' | 'desc';
@@ -28,6 +30,7 @@ type SortDirection = 'asc' | 'desc';
 })
 export class ApplicationListComponent implements OnInit, OnDestroy {
   private jobService = inject(JobService);
+  public authService = inject(AuthService);
 
   searchQuery = signal('');
   statusFilter = signal('All Statuses');
@@ -35,6 +38,10 @@ export class ApplicationListComponent implements OnInit, OnDestroy {
   sortDirection = signal<SortDirection>('desc');
   currentPage = signal(0);
   pageSize = signal(8);
+  isSyncing = signal(false);
+
+  successMessage = signal('');
+  errorMessage = signal('');
 
   activeMenuId = signal<string | null>(null);
 
@@ -60,10 +67,36 @@ export class ApplicationListComponent implements OnInit, OnDestroy {
         this.currentPage.set(0);
         this.searchQuery.set(val);
       });
+
+      this.jobService.startAutoRefresh();
   }
 
   ngOnDestroy() {
     this.searchSubscription?.unsubscribe();
+    this.jobService.stopAutoRefresh();
+  }
+
+  async onGmailSync() {
+    if (this.isSyncing() || !this.authService.userProfile()?.gmailConnected) return;
+
+    this.isSyncing.set(true);
+    try {
+      await firstValueFrom(this.authService.syncGmail());
+      this.showMessage('success', 'Gmail sync started in background.');
+      setTimeout(() => this.isSyncing.set(false), 30000);
+    } catch (err) {
+      this.showMessage('error', 'Failed to start sync.');
+    } finally {
+      this.isSyncing.set(false);
+    }
+  }
+
+  showMessage(type: 'success' | 'error', text: string) {
+    if (type === 'success') this.successMessage.set(text);
+    else this.errorMessage.set(text);
+    setTimeout(() => { this.successMessage.set('');
+      this.errorMessage.set(''); 
+    }, 5000);
   }
 
   onSearchInput(event: Event) {

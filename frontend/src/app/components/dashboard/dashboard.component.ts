@@ -1,10 +1,12 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, EventEmitter, inject, OnDestroy, OnInit, Output, signal } from '@angular/core';
 import { ThemeService } from '../../services/theme.service';
 import { JobService } from '../../services/job.service';
 import { CommonModule } from '@angular/common';
 import { DonutChartComponent } from '../donut-chart/donut-chart.component';
 import { BarChartComponent } from '../bar-chart/bar-chart.component';
 import { GmailSetupModalComponent } from '../gmail-setup-modal/gmail-setup-modal.component';
+import { AuthService } from '../../services/auth.service';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-dashboard',
@@ -18,16 +20,24 @@ import { GmailSetupModalComponent } from '../gmail-setup-modal/gmail-setup-modal
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
+
+  public authService = inject(AuthService);
   private jobService = inject(JobService);
   private themeService = inject(ThemeService);
 
   isRefreshing = signal(false);
   showHelpModal = signal(false);
+  isSyncing = signal(false);
+
+  isGmailConnected = computed(() => !!this.authService.userProfile()?.gmailConnected);
 
   successMessage = signal('');
   errorMessage = signal('');
   private messageTimeout: any;
+
+  @Output() onConnect = new EventEmitter<void>();
+  @Output() onClose = new EventEmitter<void>();
 
   stats = this.jobService.dashboardStats;
   statusData = this.jobService.statusDistribution;
@@ -36,6 +46,11 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit() {
     this.jobService.loadDashboard();
+    this.jobService.startAutoRefresh();
+  }
+
+  ngOnDestroy() {
+    this.jobService.stopAutoRefresh();
   }
 
   async onRefresh() {
@@ -45,6 +60,23 @@ export class DashboardComponent implements OnInit {
       this.jobService.loadJobs(),
     ]);
     this.isRefreshing.set(false);
+  }
+
+  async onGmailSync() {
+    if (this.isSyncing() || !this.authService.userProfile()?.gmailConnected) return;
+
+    this.isSyncing.set(true);
+    
+    try {
+      await firstValueFrom(this.authService.syncGmail());
+      this.showMessage('success', 'Syncing started! Your dashboard will update as jobs are found.');
+      setTimeout(() => this.isSyncing.set(false), 30000);
+
+    } catch (err) {
+      this.showMessage('error', 'Sync failed. Please check your Gmail connection.');
+    } finally {
+      this.isSyncing.set(false);
+    }
   }
 
   handleModalMessage(event: { type: 'success' | 'error'; text: string }) {
@@ -126,4 +158,9 @@ export class DashboardComponent implements OnInit {
   });
 
   interviewColors = ['#10b981', '#d1d5db'];
+
+  connectGmail() {
+    this.onConnect.emit();
+    this.onClose.emit(); 
+  }
 }
