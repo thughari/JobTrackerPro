@@ -141,3 +141,13 @@ spec:
             secretKeyRef:
               name: email-sender-address
               key: latest
+        - name: GOOGLE_PUBSUB_TOPIC
+          valueFrom:
+            secretKeyRef:
+              name: google-pubsub-topic
+              key: latest
+        - name: GOOGLE_PUBSUB_SERVICE_ACCOUNT
+          valueFrom:
+            secretKeyRef:
+              name: google-pubsub-service-account
+              key: latest
