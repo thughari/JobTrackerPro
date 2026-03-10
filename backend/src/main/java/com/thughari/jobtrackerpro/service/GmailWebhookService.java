@@ -10,6 +10,7 @@ import com.thughari.jobtrackerpro.dto.JobDTO;
 import com.thughari.jobtrackerpro.entity.User;
 import com.thughari.jobtrackerpro.interfaces.GeminiService;
 import com.thughari.jobtrackerpro.repo.UserRepository;
+import com.thughari.jobtrackerpro.util.CacheEvictService;
 import com.thughari.jobtrackerpro.util.UrlParser;
 
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigInteger;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -32,7 +36,7 @@ public class GmailWebhookService {
     private final GeminiService geminiService;
     private final JobService jobService;
     private final UserRepository userRepository;
-    private final CacheManager cacheManager;
+    private final CacheEvictService cacheEvictService;
 
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
     private String clientId;
@@ -40,22 +44,21 @@ public class GmailWebhookService {
     @Value("${spring.security.oauth2.client.registration.google.client-secret}")
     private String clientSecret;
 
-    public GmailWebhookService(GeminiService geminiService, JobService jobService, UserRepository userRepository, CacheManager cacheManager) {
+    public GmailWebhookService(GeminiService geminiService, JobService jobService, UserRepository userRepository, CacheEvictService cacheEvictService) {
         this.geminiService = geminiService;
         this.jobService = jobService;
         this.userRepository = userRepository;
-        this.cacheManager = cacheManager;
+        this.cacheEvictService = cacheEvictService;
     }
 
     @Async("taskExecutor")
-    @Transactional
     public void processHistorySync(String userEmail) {
         final String email = userEmail.toLowerCase();
 
         int updatedRows = userRepository.claimSyncLock(email);
-        if (updatedRows == 0) return; 
-
-        evictUserCaches(email);
+        if (updatedRows == 0) return;
+        
+        cacheEvictService.evictAllForUser(email);
 
         try {
             User user = userRepository.findByEmail(email)
@@ -84,59 +87,19 @@ public class GmailWebhookService {
 
             List<EmailBatchItem> batchItems = collectMessages(service, historyResponse.getHistory());
 
-            if (!batchItems.isEmpty()) {log.info("Ingesting batch of {} emails via Gemini for {}", batchItems.size(), email);
-            
-            List<List<String>> batchUrlLists = batchItems.stream()
-                    .map(item -> UrlParser.extractAndCleanUrls(item.body()))
-                    .toList();
-
-            List<JobDTO> extractedJobs = geminiService.extractJobsFromBatch(batchItems);
-            
-            for (JobDTO job : extractedJobs) {
-                Integer idx = job.getInputIndex();
-                
-                if (idx != null && idx >= 0 && idx < batchUrlLists.size()) {
-                    List<String> originalUrls = batchUrlLists.get(idx);
-
-                    if (job.getUrlIndex() != null && job.getUrlIndex() >= 0 && job.getUrlIndex() < originalUrls.size()) {
-                        job.setUrl(originalUrls.get(job.getUrlIndex()));
-                    } 
-                    else if (job.getUrl() == null || job.getUrl().isEmpty()) {
-                        job.setUrl(originalUrls.stream()
-                        		.filter(u -> {
-                        		    String lower = u.toLowerCase();
-                        		    return lower.contains("career") ||
-                        		           lower.contains("job") ||
-                        		           lower.contains("apply") ||
-                        		           lower.contains("/jobs/") ||
-                        		           lower.contains("/careers/");
-                        		})
-                            .findFirst().orElse(""));
-                    }
-                }
-                
-                if (job.getUrl() != null) {
-                    String lower = job.getUrl().toLowerCase();
-                    if (lower.contains("unsubscribe") ||
-                        lower.contains("privacy") ||
-                        lower.contains("help") ||
-                        lower.contains("settings")) {
-                        job.setUrl("");
-                    }
-                }
-                
-                job.setUrlIndex(null); 
-                job.setInputIndex(null);
-
-                jobService.createOrUpdateJob(job, email);
-            }
-        }
-
+            if (!batchItems.isEmpty()) {
+            	
+            	List<JobDTO> extractedJobs = geminiService.extractJobsFromBatch(batchItems);
+            	
+            	log.info("Ingesting batch of {} emails via Gemini for {}", batchItems.size(), email);
+            	
+            	jobService.saveBatchResults(email, batchItems, extractedJobs);
+	        }
         } catch (Exception e) {
             log.error("High-Performance Sync failed for {}: ", email, e);
         } finally {
             userRepository.releaseSyncLock(email);
-            evictUserCaches(email);
+            cacheEvictService.evictAllForUser(email);
         }
     }
 
@@ -151,15 +114,20 @@ public class GmailWebhookService {
                     Message m = service.users().messages().get("me", added.getMessage().getId())
                             .setFormat("full").execute();
                     
-                    String from = "", subj = "";
+                    long millisecondTimestamp = m.getInternalDate(); 
+                    LocalDateTime emailDate = LocalDateTime.ofInstant(
+                            Instant.ofEpochMilli(millisecondTimestamp), ZoneOffset.UTC);
+                    
+                    String from = "", subj = "", replyTo="";
                     for (var h : m.getPayload().getHeaders()) {
                         if ("From".equalsIgnoreCase(h.getName())) from = h.getValue();
                         if ("Subject".equalsIgnoreCase(h.getName())) subj = h.getValue();
+                        if ("Reply-To".equalsIgnoreCase(h.getName())) replyTo = h.getValue();
                     }
 
                     if (!isSystemNoise(subj)) {
                         String body = extractTextFromBody(m.getPayload());
-                        items.add(new EmailBatchItem(from, subj, body));
+                        items.add(new EmailBatchItem(from, subj, replyTo, body, emailDate));
                     }
                 } catch (Exception e) {
                     log.warn("Failed to fetch message {}: {}", added.getMessage().getId(), e.getMessage());
@@ -197,12 +165,12 @@ public class GmailWebhookService {
         return s.contains("security alert") || s.contains("sign-in") || s.contains("verification code");
     }
 
-    private void evictUserCaches(String email) {
-        Cache userCache = cacheManager.getCache("users");
-        Cache entityCache = cacheManager.getCache("userEntities");
-        if (userCache != null) userCache.evict(email);
-        if (entityCache != null) entityCache.evict(email);
-    }
+//    private void evictUserCaches(String email) {
+//        Cache userCache = cacheManager.getCache("users");
+//        Cache entityCache = cacheManager.getCache("userEntities");
+//        if (userCache != null) userCache.evict(email);
+//        if (entityCache != null) entityCache.evict(email);
+//    }
 
     public String getFreshAccessToken(String refreshToken) throws Exception {
         return new GoogleRefreshTokenRequest(GoogleNetHttpTransport.newTrustedTransport(), GsonFactory.getDefaultInstance(),

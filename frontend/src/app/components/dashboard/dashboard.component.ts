@@ -36,9 +36,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   errorMessage = signal('');
   private messageTimeout: any;
 
-  @Output() onConnect = new EventEmitter<void>();
-  @Output() onClose = new EventEmitter<void>();
-
   stats = this.jobService.dashboardStats;
   statusData = this.jobService.statusDistribution;
   monthlyData = this.jobService.monthlyApplications;
@@ -159,8 +156,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   interviewColors = ['#10b981', '#d1d5db'];
 
-  connectGmail() {
-    this.onConnect.emit();
-    this.onClose.emit(); 
+  async connectGmail() {
+    try {
+      await this.authService.initiateGmailConnection();
+      
+      this.showMessage('success', 'Gmail Auto-Tracking Enabled!');
+      this.closeHelpModal();
+      
+      this.jobService.loadDashboard(true); 
+    } catch (err) {
+      this.showMessage('error', 'Failed to link Gmail.');
+    }
   }
 }

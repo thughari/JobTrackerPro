@@ -2,8 +2,13 @@ package com.thughari.jobtrackerpro.service;
 
 import com.thughari.jobtrackerpro.dto.*;
 import com.thughari.jobtrackerpro.entity.Job;
+import com.thughari.jobtrackerpro.entity.User;
 import com.thughari.jobtrackerpro.exception.ResourceNotFoundException;
 import com.thughari.jobtrackerpro.repo.JobRepository;
+import com.thughari.jobtrackerpro.repo.UserRepository;
+import com.thughari.jobtrackerpro.util.CacheEvictService;
+import com.thughari.jobtrackerpro.util.UrlParser;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.cache.Cache;
@@ -31,11 +36,14 @@ public class JobService {
 
     private final JobRepository jobRepository;
     
-    private final CacheManager cacheManager;
+    private final CacheEvictService cacheEvictService;
+    
+    private final UserRepository userRepository;
 
-    public JobService(JobRepository jobRepository, CacheManager cacheManager) {
+    public JobService(JobRepository jobRepository, CacheManager cacheManager,UserRepository userRepository, CacheEvictService cacheEvictService) {
         this.jobRepository = jobRepository;
-        this.cacheManager = cacheManager;
+        this.userRepository = userRepository;
+        this.cacheEvictService = cacheEvictService;
     }
 
     private final DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm 'UTC'");
@@ -146,11 +154,56 @@ public class JobService {
                 .filter(job -> job.getUserEmail().equals(email))
                 .ifPresent(jobRepository::delete);
     }
+    
+    @Transactional
+    public void saveBatchResults(String email, List<EmailBatchItem> batchItems, List<JobDTO> extractedJobs) {
+    	
+    	List<List<String>> batchUrlLists = batchItems.stream()
+                .map(item -> UrlParser.extractAndCleanUrls(item.body()))
+                .toList();            
+        for (JobDTO job : extractedJobs) {
+            Integer idx = job.getInputIndex();
+            
+            if (idx != null && idx >= 0 && idx < batchUrlLists.size()) {
+                List<String> originalUrls = batchUrlLists.get(idx);
 
-    @Caching(evict = {
-    		@CacheEvict(value = {"jobList", "jobDashboard"}, key = "#userEmail"),
-    	    @CacheEvict(value = "jobPages", allEntries = true)
-    })
+                if (job.getUrlIndex() != null && job.getUrlIndex() >= 0 && job.getUrlIndex() < originalUrls.size()) {
+                    job.setUrl(originalUrls.get(job.getUrlIndex()));
+                } 
+                else if (job.getUrl() == null || job.getUrl().isEmpty()) {
+                    job.setUrl(originalUrls.stream()
+                    		.filter(u -> {
+                    		    String lower = u.toLowerCase();
+                    		    return lower.contains("career") ||
+                    		           lower.contains("job") ||
+                    		           lower.contains("apply") ||
+                    		           lower.contains("/jobs/") ||
+                    		           lower.contains("/comm/") ||
+                    		           lower.contains("/careers/") ||
+                    		           lower.contains("/view/");
+                    		})
+                        .findFirst().orElse(""));
+                }
+            }
+            
+            if (job.getUrl() != null) {
+                String lower = job.getUrl().toLowerCase();
+                if (lower.contains("unsubscribe") ||
+                    lower.contains("privacy") ||
+                    lower.contains("help") ||
+                    lower.contains("settings")) {
+                    job.setUrl("");
+                }
+            }
+            
+            job.setUrlIndex(null); 
+            job.setInputIndex(null);
+
+            createOrUpdateJob(job, email);
+        }
+        cacheEvictService.evictAllForUser(email);
+    }
+    
     public void createOrUpdateJob(JobDTO incomingJob, String userEmail) {
         List<Job> userJobs = jobRepository.findByUserEmailOrderByUpdatedAtDesc(userEmail);
 
@@ -167,6 +220,16 @@ public class JobService {
         }
     }
     
+    @Transactional
+    public void finalizeManualSync(String email, String historyId) {
+        User user = userRepository.findByEmail(email.toLowerCase())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        
+        user.setGmailHistoryId(historyId);
+        
+        userRepository.saveAndFlush(user); 
+    }
+    
 
     public void cleanupStaleApplications() {
     	LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
@@ -181,17 +244,8 @@ public class JobService {
 
     	String autoNote = "\n[" + now.format(fmt) + "] Status auto-set to Rejected (3 months inactivity).";
     	jobRepository.markStaleJobsAsRejected(threeMonthsAgo, now, autoNote);
-
-    	Cache jobList = cacheManager.getCache("jobList");
-    	Cache jobDashboard = cacheManager.getCache("jobDashboard");
-    	Cache jobPages = cacheManager.getCache("jobPages");
-
-    	affectedEmails.parallelStream().forEach(email -> {
-            if (jobList != null) jobList.evict(email);
-            if (jobDashboard != null) jobDashboard.evict(email);
-        });
-
-    	if (jobPages != null) jobPages.clear(); 
+    	
+    	affectedEmails.forEach(cacheEvictService::evictAllForUser);
 
         log.info("System Cleanup: Successfully rejected stale jobs for {} users.", affectedEmails.size());
     }
@@ -234,6 +288,13 @@ public class JobService {
         String currentStatus = (existingJob.getStatus() != null) ? existingJob.getStatus() : "";
         String incomingStatus = (incoming.getStatus() != null) ? incoming.getStatus() : "";
         
+        LocalDateTime incomingTime = incoming.getUpdatedAt();
+        LocalDateTime existingTime = existingJob.getUpdatedAt();
+        
+        if (incomingTime.isBefore(existingTime) || incomingTime.isEqual(existingTime)) {
+            return; 
+        }
+        
         if (currentStatus.equalsIgnoreCase(incomingStatus) && 
         		Objects.equals(existingJob.getStage(), incoming.getStage())) {
         	return; 
@@ -257,6 +318,7 @@ public class JobService {
             existingJob.setStatus(incomingStatus);
             if (incoming.getStage() != null) existingJob.setStage(incoming.getStage());
             if (incoming.getStageStatus() != null) existingJob.setStageStatus(incoming.getStageStatus());
+            existingJob.setUpdatedAt(incomingTime);
 
             if (isNewInfo) {
                 String timestamp = LocalDateTime.now().format(fmt);

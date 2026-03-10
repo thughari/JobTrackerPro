@@ -122,6 +122,7 @@ class JobServiceTest {
         Job matchA = baseJob("Acme", "Backend Engineer", "Applied", 1);
         matchA.setNotes("Existing note");
         matchA.setUrl("https://existing.example.com");
+        matchA.setUpdatedAt(LocalDateTime.now().minusDays(2));
 
         Job matchB = baseJob("Acme Corp", "Data Analyst", "Applied", 1);
 
@@ -135,6 +136,7 @@ class JobServiceTest {
         incoming.setStageStatus("active");
         incoming.setNotes("Recruiter email update");
         incoming.setUrl("https://new-link.example.com");
+        incoming.setUpdatedAt(LocalDateTime.now());
 
         jobService.createOrUpdateJob(incoming, EMAIL);
 
