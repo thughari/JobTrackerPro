@@ -17,16 +17,18 @@
 
     <div class="space-y-4">
       <h1 class="text-3xl md:text-5xl font-black text-white tracking-tight">Privacy Policy</h1>
-      <p class="text-gray-500 text-sm md:text-base font-medium">Last updated: February 21, 2026</p>
+      <p class="text-gray-500 text-sm md:text-base font-medium">Last updated: March 11, 2026</p>
     </div>
 
     <section class="space-y-4">
       <h2 class="text-xl md:text-2xl font-bold text-white">1. Introduction</h2>
       <p class="leading-relaxed text-sm md:text-base">
-        Welcome to <strong>JobTrackerPro</strong>. This is a personal portfolio project designed and developed by me, <strong>Hari Thatikonda</strong>. 
+        Welcome to <strong>JobTrackerPro</strong>. This is a personal portfolio project designed and developed by me,
+        <strong>Hari Thatikonda</strong>.
       </p>
       <p class="leading-relaxed text-sm md:text-base">
-        I built this application to demonstrate enterprise-grade software architecture and to provide a utility for automating the job hunt. Your privacy is paramount, and this policy outlines exactly how data is handled.
+        I built this application to demonstrate enterprise-grade software architecture and to provide a utility for
+        automating the job hunt. Your privacy is paramount, and this policy outlines exactly how data is handled.
       </p>
     </section>
 
@@ -35,36 +37,88 @@
       <div class="grid gap-6">
         <div class="space-y-2">
           <h3 class="text-sm font-black uppercase tracking-widest text-indigo-400">Account Information</h3>
-          <p class="text-sm md:text-base text-gray-400">When you authenticate via Google or GitHub, I collect your name, email address, and profile picture to establish your user identity.</p>
+          <p class="text-sm md:text-base text-gray-400">
+            When you authenticate via Google or GitHub, I collect your name, email address, and profile picture to
+            establish your user identity.
+          </p>
         </div>
         <div class="space-y-2">
           <h3 class="text-sm font-black uppercase tracking-widest text-indigo-400">Application Metadata</h3>
-          <p class="text-sm md:text-base text-gray-400">Data you provide about your job applications (e.g., Company, Role, Status, Salary) is stored in a private database record linked only to your account.</p>
+          <p class="text-sm md:text-base text-gray-400">
+            Data you provide about your job applications (e.g., Company, Role, Status, Salary) is stored in a private
+            database record linked only to your account.
+          </p>
         </div>
       </div>
     </section>
 
     <section class="space-y-4">
       <div class="p-6 md:p-8 bg-indigo-500/5 border border-indigo-500/20 rounded-[2rem] space-y-6">
+
         <div class="flex items-center gap-3">
           <img src="google-logo.svg" alt="Google" class="w-6 h-6 object-contain">
-          <h2 class="text-lg md:text-xl font-bold text-white">Google User Data Policy</h2>
+          <h2 class="text-lg md:text-xl font-bold text-white">
+            Google API Services User Data Policy
+          </h2>
         </div>
 
-        <div class="space-y-4">
-          <p class="text-sm leading-relaxed text-gray-300 font-bold italic border-l-4 border-indigo-500 pl-4">
-            JobTrackerPro's use and transfer to any other app of information received from Google APIs will adhere to the 
-            <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" class="text-indigo-400 underline hover:text-indigo-300">Google API Services User Data Policy</a>, including the Limited Use requirements.
+        <p class="text-sm leading-relaxed text-gray-300 font-bold italic border-l-4 border-indigo-500 pl-4">
+          JobTrackerPro's use and transfer to any other app of information received from Google APIs will adhere to the
+          <a href="https://developers.google.com/terms/api-services-user-data-policy"
+            target="_blank"
+            class="text-indigo-400 underline hover:text-indigo-300">
+            Google API Services User Data Policy
+          </a>, including the Limited Use requirements.
+        </p>
+
+        <div class="space-y-4 text-sm leading-relaxed text-gray-400">
+
+          <p>
+            <strong>Gmail Access:</strong>
+            If you enable Gmail integration, JobTrackerPro requests the
+            <code>gmail.readonly</code> scope to read job-related emails such as
+            application confirmations, recruiter outreach, interview invitations,
+            and hiring updates.
           </p>
 
-          <div class="space-y-4 text-sm leading-relaxed text-gray-400">
-            <p><strong>Gmail Access:</strong> If you enable Gmail integration, I use the <code>gmail.readonly</code> scope to access your messages. This access is restricted solely to identifying job application confirmations, interview invitations, and status updates.</p>
-            
-            <p><strong>AI Processing:</strong> Extracted email text is sent to <strong>Google Gemini AI</strong> for entity extraction. I do not use this data to train AI models, nor is it stored by the AI provider. The processing is ephemeral and used only to populate your dashboard.</p>
+          <p>
+            <strong>Email Processing:</strong>
+            Email content is processed temporarily to extract structured job
+            metadata such as company name, job role, status, and relevant links.
+            The original email body is <strong>not stored</strong> in the database.
+          </p>
 
-            <p><strong>Filtering:</strong> By using the <code>gmail.settings.basic</code> scope, the app automatically creates a "JobTrackerPro" label to ensure I only process relevant career emails, ignoring all other personal correspondence.</p>
-          </div>
+          <p>
+            <strong>AI Processing:</strong>
+            Relevant email text may be processed using Google AI services to
+            extract structured job information. This processing is transient and
+            used only to populate the user's job tracking dashboard.
+          </p>
+
+          <p>
+            <strong>Data Minimization:</strong>
+            Using the <code>gmail.labels</code> and
+            <code>gmail.settings.basic</code> scopes, the application creates a
+            dedicated Gmail label named <strong>"JobTrackerPro"</strong>. Only
+            emails matching this label are processed, ensuring unrelated personal
+            emails are never accessed.
+          </p>
+
+          <p>
+            <strong>No Destructive Actions:</strong>
+            The application never sends, deletes, or modifies user emails. Gmail
+            access is strictly read-only.
+          </p>
+
+          <p>
+            <strong>User Control:</strong>
+            Gmail integration is optional and can be disabled at any time from the
+            user's profile settings. Disconnecting Gmail removes stored refresh
+            tokens and stops all Gmail access.
+          </p>
+
         </div>
+
       </div>
     </section>
 
