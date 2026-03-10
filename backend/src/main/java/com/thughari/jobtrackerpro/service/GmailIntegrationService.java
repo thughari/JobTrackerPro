@@ -387,10 +387,11 @@ public class GmailIntegrationService {
     	String finalQuery = "(" + ATS_FILTER + " OR " + SUBJECT_FILTER + ")" + EXCLUSIONS;
     	
     	ListFiltersResponse listResponse = service.users().settings().filters().list("me").execute();
-        
-        List<Filter> existingFilters = listResponse.getFilter();
 
-        if (existingFilters != null) {
+        if (listResponse != null && listResponse.getFilter() != null) {
+        	
+        	List<Filter> existingFilters = listResponse.getFilter();
+        	
             for (Filter existingFilter : existingFilters) {
 
                 if (existingFilter.getAction() != null && 
