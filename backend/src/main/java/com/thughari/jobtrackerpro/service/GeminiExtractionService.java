@@ -113,6 +113,7 @@ public class GeminiExtractionService implements GeminiService {
             emailListBuilder.append("""
             		--- EMAIL INDEX: %d ---
             		FROM: %s
+            		REPLY-TO: %s
             		SUBJECT: %s
             		BODY: %s
 
@@ -122,6 +123,7 @@ public class GeminiExtractionService implements GeminiService {
             		""".formatted(
             		    i,
             		    item.from(),
+            		    item.replyTo(),
             		    item.subject(),
             		    safeBody,
             		    buildUrlIndexList(urls)
@@ -287,6 +289,28 @@ public class GeminiExtractionService implements GeminiService {
 		Examples:
 		careers@stripe.com → Stripe  
 		talent.wayfair.com → Wayfair
+		
+		Emails may be sent by recruiting platforms such as: Naukri, Talent500, LinkedIn, Hired, Wellfound, Indeed, etc.
+		
+		These platforms are NOT the hiring company.
+
+		If a recruiting platform is mentioned, identify the actual employer
+		mentioned in the job description or company section.
+		
+		Example:
+		Email from: Talent500
+		Job description mentions: Albertsons Companies
+		
+		Correct company: Albertsons
+		
+		If the email contains a Reply-To header, and the domain appears to be a company domain, prefer that domain over recruiting platforms.
+		
+		Example:
+		
+		From: messages.naukri.com
+		Reply-To: recruiter@yupptv.com
+		
+		Company = YuppTV
 		
 		Ignore generic domains:
 		gmail, yahoo, outlook, etc.

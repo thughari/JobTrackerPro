@@ -6,6 +6,8 @@ import { JobService } from './job.service';
 import { environment } from '../../environments/environment';
 import { SignUpUser } from '../components/auth/signup/signup.component';
 
+declare var google: any;
+
 export interface UserProfile {
   name: string;
   email: string;
@@ -212,6 +214,35 @@ export class AuthService {
     } catch {
       return {};
     }
+  }
+
+  initiateGmailConnection(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const userEmail = this.userProfile()?.email;
+
+      const client = google.accounts.oauth2.initCodeClient({
+        client_id: '963261513098-j8u29ce8g5v0r9p3q3a1nqnpcg669a46.apps.googleusercontent.com',
+        scope: 'openid email profile https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.labels https://www.googleapis.com/auth/gmail.settings.basic',
+        ux_mode: 'popup',
+        login_hint: userEmail,
+        callback: async (response: any) => {
+          if (response.code) {
+            try {
+              // 1. Backend Handshake
+              await firstValueFrom(this.connectGmail(response.code));
+              // 2. Immediate Refresh (No Stale Data)
+              await this.fetchUserProfile();
+              resolve();
+            } catch (err) {
+              reject(err);
+            }
+          }
+        },
+        error_callback: (error: any) => reject(error)
+      });
+
+      client.requestCode();
+    });
   }
 
   connectGmail(code: string) {

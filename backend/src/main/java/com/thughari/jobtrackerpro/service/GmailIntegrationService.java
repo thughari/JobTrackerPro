@@ -15,19 +15,21 @@ import com.thughari.jobtrackerpro.entity.User;
 import com.thughari.jobtrackerpro.exception.ResourceNotFoundException;
 import com.thughari.jobtrackerpro.interfaces.GeminiService;
 import com.thughari.jobtrackerpro.repo.UserRepository;
+import com.thughari.jobtrackerpro.util.CacheEvictService;
 import com.thughari.jobtrackerpro.util.UrlParser;
 
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,7 +41,7 @@ public class GmailIntegrationService {
     private final GeminiService geminiService;
     private final JobService jobService;
     private final RestClient restClient;
-    private final CacheManager cacheManager;
+    private final CacheEvictService cacheEvictService;
     private final String APPLICATION_NAME = "JobTrackerPro";
     
     private static final NetHttpTransport HTTP_TRANSPORT;
@@ -66,12 +68,12 @@ public class GmailIntegrationService {
     @Value("${app.google.pubsub-topic}")
     private String pubsubTopic;
 
-    public GmailIntegrationService(UserRepository userRepository, GeminiService geminiService, JobService jobService, CacheManager cacheManager) {
+    public GmailIntegrationService(UserRepository userRepository, GeminiService geminiService, JobService jobService, CacheEvictService cacheEvictService) {
         this.userRepository = userRepository;
         this.geminiService = geminiService;
         this.jobService = jobService;
         this.restClient = RestClient.create();
-        this.cacheManager = cacheManager;
+        this.cacheEvictService = cacheEvictService;
     }
 
     @Transactional
@@ -121,7 +123,6 @@ public class GmailIntegrationService {
     }
 
     @Async("taskExecutor")
-    @Transactional
     public void initiateManualSync(String email) {
     	
     	int updatedRows = userRepository.claimSyncLock(email);
@@ -129,6 +130,7 @@ public class GmailIntegrationService {
         if (updatedRows == 0) {
             return; 
         }
+        cacheEvictService.evictAllForUser(email);
         try {
             User user = userRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("User not connected to Gmail"));
@@ -145,15 +147,14 @@ public class GmailIntegrationService {
             Gmail service = createGmailClient(accessToken);
             String currentHistoryId = service.users().getProfile("me").execute().getHistoryId().toString();
             
-            user.setGmailHistoryId(currentHistoryId);
-            userRepository.saveAndFlush(user);
+            jobService.finalizeManualSync(email, currentHistoryId);
 
             log.info("Manual sync finished for {}. Found {} jobs.", email, found);
         } catch (Exception e) {
             log.error("Manual sync failed for {}: {}", email, e.getMessage());
         } finally {
             userRepository.releaseSyncLock(email);
-            evictUserCaches(email);
+            cacheEvictService.evictAllForUser(email);
         }
     }
 
@@ -198,18 +199,22 @@ public class GmailIntegrationService {
                 if (response.getMessages() != null) {
                     for (Message msg : response.getMessages()) {
                         Message fullMsg = service.users().messages().get("me", msg.getId()).setFormat("full").execute();
+                        long millisecondTimestamp = fullMsg.getInternalDate(); 
+                        LocalDateTime emailDate = LocalDateTime.ofInstant(
+                                Instant.ofEpochMilli(millisecondTimestamp), ZoneOffset.UTC);
                         
-                        String from = "", subj = "";
+                        String from = "", subj = "", replyTo="";
                         if (fullMsg.getPayload().getHeaders() != null) {
                             for (var h : fullMsg.getPayload().getHeaders()) {
                                 if ("From".equalsIgnoreCase(h.getName())) from = h.getValue();
                                 if ("Subject".equalsIgnoreCase(h.getName())) subj = h.getValue();
+                                if ("Reply-To".equalsIgnoreCase(h.getName())) replyTo = h.getValue();
                             }
                         }
 
                         if (!isSystemNoise(subj)) {
                             String body = extractTextFromBody(fullMsg.getPayload());
-                            batchItems.add(new EmailBatchItem(from, subj, body));
+                            batchItems.add(new EmailBatchItem(from, subj, replyTo, body, emailDate));
                         }
                     }
                 }
@@ -270,18 +275,6 @@ public class GmailIntegrationService {
             }
         }
         sanitizeUrl(job);
-    }
-    
-    private void evictUserCaches(String email) {
-        Cache userCache = cacheManager.getCache("users");
-        Cache entityCache = cacheManager.getCache("userEntities");
-        Cache jobList = cacheManager.getCache("jobList");
-        Cache jobDashboard = cacheManager.getCache("jobDashboard");
-
-        if (userCache != null) userCache.evict(email);
-        if (entityCache != null) entityCache.evict(email);
-        if (jobList != null) jobList.evict(email);
-        if (jobDashboard != null) jobDashboard.evict(email);
     }
 
     private void sanitizeUrl(JobDTO job) {
