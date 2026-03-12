@@ -5,3 +5,5 @@
 .env
 .env.local
 .env.*
+
+git-sync-main-dev.txt
