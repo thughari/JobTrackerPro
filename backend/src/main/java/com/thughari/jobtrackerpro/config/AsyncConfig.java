@@ -15,8 +15,7 @@ public class AsyncConfig {
 
 	@Bean(name = "dashboardExecutor")
 	public AsyncTaskExecutor dashboardExecutor() {
-		return new TaskExecutorAdapter(
-				Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("DashVT-", 0).factory()));
+		return new TaskExecutorAdapter(Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("DashVT-", 0).factory()));
 	}
 
 	@Primary

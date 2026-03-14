@@ -32,6 +32,6 @@ public class UrlParser {
             int index = body.indexOf(marker);
             if (index > 0) body = body.substring(0, index);
         }
-        return body.length() > 5000 ? body.substring(0, 5000) : body;
+        return body.length() > 3000 ? body.substring(0, 3000 ) : body;
     }
 }

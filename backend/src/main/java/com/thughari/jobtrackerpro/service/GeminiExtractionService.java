@@ -104,8 +104,8 @@ public class GeminiExtractionService implements GeminiService {
             String rawBody = item.body() == null ? "" : item.body();
 
             String trimmed = UrlParser.trimNoise(rawBody);
-            String safeBody = trimmed.length() > 6000
-                    ? trimmed.substring(0, 6000)
+            String safeBody = trimmed.length() > 3000 
+                    ? trimmed.substring(0, 3000 )
                     : trimmed;
 
             List<String> urls = UrlParser.extractAndCleanUrls(rawBody);

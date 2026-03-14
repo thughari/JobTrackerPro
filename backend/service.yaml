@@ -18,6 +18,9 @@ spec:
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: "prod"
+
+        - name: JAVA_TOOL_OPTIONS
+          value: "-XX:MaxRAMPercentage=75.0 -XX:ActiveProcessorCount=2 -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError"
         
         - name: JDBC_URL
           valueFrom:
