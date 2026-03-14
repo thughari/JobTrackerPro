@@ -11,16 +11,21 @@ spec:
         autoscaling.knative.dev/minScale: "1"
         autoscaling.knative.dev/maxScale: "5"
     spec:
+      timeoutSeconds: 300
       containers:
       - image: asia-south1-docker.pkg.dev/job-tracker-pro-480917/my-repo/my-java-app:v1
         ports:
-        - containerPort: 8080
+          - containerPort: 8080
+        resources:
+          limits:
+            memory: 1Gi
+            cpu: "1"
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: "prod"
 
         - name: JAVA_TOOL_OPTIONS
-          value: "-XX:MaxRAMPercentage=75.0 -XX:ActiveProcessorCount=2 -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError"
+          value: "-Xms256m -Xmx512m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError"
         
         - name: JDBC_URL
           valueFrom:
