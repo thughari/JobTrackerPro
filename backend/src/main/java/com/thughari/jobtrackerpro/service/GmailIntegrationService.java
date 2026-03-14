@@ -31,7 +31,9 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @Slf4j
@@ -55,7 +57,41 @@ public class GmailIntegrationService {
         }
     }
 
-    private static final String ATS_FILTER = "from:(myworkday.com OR greenhouse.io OR lever.co OR smartrecruiters.com OR icims.com OR jobvite.com OR bamboo.hr OR workablemail.com OR successfactors.com OR taleo.net OR avature.net OR jobs2careers.com OR ziprecruiter.com OR monster.com OR careerbuilder.com OR wellfound.com OR lu.ma OR breezy.hr OR jazzhr.com OR comeet.com OR recruitee.com OR teamtailor.com OR applytojob.com OR jobs.github.com OR hackerrankforwork.com OR hackerrank.com OR hackerearth.com OR codility.com OR testgorilla.com OR hirevue.com OR vidcruiter.com OR codemetry.com OR pymetrics.com OR hired.com OR triplebyte.com OR newtonsoftware.com OR jobadder.com OR jobscore.com OR jobsoid.com OR jobplex.com OR jobdroid.com OR jobiak.com OR jobg8.com OR jobisjob.com OR jobrapido.com OR simplyhired.com OR glassdoor.com OR indeed.com OR remoteok.io OR weworkremotely.com OR remote.co OR angel.co OR stackoverflow.com)";
+    private static final List<String> MAJOR_ATS = List.of(
+        "myworkday.com", "greenhouse.io", "lever.co", "smartrecruiters.com", 
+        "icims.com", "jobvite.com", "bamboo.hr", "workablemail.com", 
+        "successfactors.com", "taleo.net", "avature.net", "newtonsoftware.com"
+    );
+
+    private static final List<String> JOB_BOARDS = List.of(
+        "linkedin.com", "indeed.com", "glassdoor.com", "ziprecruiter.com", 
+        "monster.com", "careerbuilder.com", "simplyhired.com", "careerjet.com"
+    );
+
+    private static final List<String> TECH_REMOTE = List.of(
+        "wellfound.com", "angel.co", "stackoverflow.com", "remoteok.io", 
+        "weworkremotely.com", "flexjobs.com", "workingnomads.co", "remote.co", 
+        "remotive.io", "jobs.github.com", "hackerrank.com", "hackerearth.com", "codility.com"
+    );
+
+    private static final List<String> DESIGN_CREATIVE = List.of(
+        "dribbble.com", "behance.net", "coroflot.com", "99designs.com", 
+        "artstation.com", "creativepool.com", "krop.com"
+    );
+
+    public static final String ATS_FILTER;
+
+    static {
+        Set<String> allDomains = new LinkedHashSet<>();
+        allDomains.addAll(MAJOR_ATS);
+        allDomains.addAll(JOB_BOARDS);
+        allDomains.addAll(TECH_REMOTE);
+        allDomains.addAll(DESIGN_CREATIVE);
+        
+        ATS_FILTER = "from:(" + String.join(" OR ", allDomains) + ")";
+    }
+
+    // private static final String ATS_FILTER = "from:(myworkday.com OR greenhouse.io OR lever.co OR smartrecruiters.com OR icims.com OR jobvite.com OR bamboo.hr OR workablemail.com OR successfactors.com OR taleo.net OR avature.net OR jobs2careers.com OR ziprecruiter.com OR monster.com OR careerbuilder.com OR wellfound.com OR lu.ma OR breezy.hr OR jazzhr.com OR comeet.com OR recruitee.com OR teamtailor.com OR applytojob.com OR jobs.github.com OR hackerrankforwork.com OR hackerrank.com OR hackerearth.com OR codility.com OR testgorilla.com OR hirevue.com OR vidcruiter.com OR codemetry.com OR pymetrics.com OR hired.com OR triplebyte.com OR newtonsoftware.com OR jobadder.com OR jobscore.com OR jobsoid.com OR jobplex.com OR jobdroid.com OR jobiak.com OR jobg8.com OR jobisjob.com OR jobrapido.com OR simplyhired.com OR glassdoor.com OR indeed.com OR remoteok.io OR weworkremotely.com OR remote.co OR angel.co OR stackoverflow.com)";
     private static final String SUBJECT_FILTER = "subject:(Application OR Applied OR Applying OR Thanks OR \"Thank You\" OR Received OR Confirmation OR Interview OR Status OR Sollicitatie OR Engineer OR Developer OR Analyst OR Scientist OR Specialist OR Invitation OR Invite OR Assessment OR Challenge OR Test OR Screened OR Position OR Declaration OR Talent OR Opportunity OR Role OR Job OR Opening OR Opened OR Lead OR Recruiter OR HR OR \"Human Resources\" OR Hiring OR Resume OR CV)";
     private static final String EXCLUSIONS = " -\"payment\" -\"invoice\" -\"otp\" -\"transaction\" -\"statement\" -\"bank\" -\"security alert\" -\"verification code\"";
     

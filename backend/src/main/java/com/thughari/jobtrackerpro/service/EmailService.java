@@ -70,7 +70,7 @@ public class EmailService {
 		}
 	}
 
-	@Async
+	@Async("taskExecutor")
 	public void sendForwardingHelper(String to, String code, String link) {
 		try {
 			MimeMessage message = mailSender.createMimeMessage();

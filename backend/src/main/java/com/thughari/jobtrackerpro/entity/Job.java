@@ -47,5 +47,5 @@ public class Job {
 	private String url;
 
 	@Column(columnDefinition = "TEXT")
-	private String notes; //ALTER TABLE jobs ALTER COLUMN notes TYPE TEXT;
+	private String notes;
 }
