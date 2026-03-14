@@ -5,15 +5,13 @@
   <title>Redirecting...</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <script>
-    const base = '/JobTrackerPro';
-    const path = location.pathname.replace(base, '');
-    const search = location.search;
-    const hash = location.hash;
 
-    location.replace(
-      base + '/?redirect=' +
-      encodeURIComponent(path + search + hash)
-    );
+    const l = window.location;
+    const redirect = l.pathname + l.search + l.hash;
+
+    if (!l.search.includes('redirect=')) {
+      l.replace('/?redirect=' + encodeURIComponent(redirect));
+    }
   </script>
 </head>
 <body></body>
