@@ -9,7 +9,7 @@ The robust, enterprise-grade backend for **JobTrackerPro**. This REST API handle
 
 ## 🔗 Quick Links
 
-*   **Live Application:** [https://thughari.github.io/JobTrackerPro](https://thughari.github.io/JobTrackerPro)
+*   **Live Application:** [https://jobtrackerpro.in](https://jobtrackerpro.in)
 *   **Frontend Repository:** [github.com/thughari/JobTrackerPro/tree/main/frontend](https://github.com/thughari/JobTrackerPro/tree/main/frontend)
 *   **API Base URL:** [jobtracker-service-963261513098.asia-south1.run.app](https://jobtracker-service-963261513098.asia-south1.run.app)
 
@@ -36,7 +36,7 @@ The robust, enterprise-grade backend for **JobTrackerPro**. This REST API handle
 | `JWT_SECRET` | 256-bit Secret Key for signing tokens |
 | `GOOGLE_CLIENT_ID` | OAuth2 Client ID |
 | `CLOUDFLARE_ENDPOINT` | R2 S3 API Endpoint |
-| `APP_UI_URL` | `https://thughari.github.io/JobTrackerPro` |
+| `APP_UI_URL` | `https://jobtrackerpro.in` |
 
 ## 🛠️ Development & Caching
 

@@ -8,7 +8,7 @@ The modern, responsive frontend for **JobTrackerPro**. Built with Angular and Ta
 
 ## 🔗 Quick Links
 
-*   **Live Application:** [https://thughari.github.io/JobTrackerPro](https://thughari.github.io/JobTrackerPro)
+*   **Live Application:** [https://jobtrackerpro.in](https://jobtrackerpro.in)
 *   **Backend Repository:** [github.com/thughari/JobTrackerPro](https://github.com/thughari/JobTrackerPro)
 *   **Backend API URL:** [jobtracker-service-963261513098.asia-south1.run.app](https://jobtracker-service-963261513098.asia-south1.run.app)
 
