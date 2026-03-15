@@ -33,7 +33,7 @@
 
 ## 🔗 Quick Links
 
-- 🚀 Live Demo: https://thughari.github.io/JobTrackerPro
+- 🚀 Live Demo: https://jobtrackerpro.in
 - 📂 Source Code: https://github.com/thughari/JobTrackerPro
 
 ---
