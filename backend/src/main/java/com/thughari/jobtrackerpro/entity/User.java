@@ -49,6 +49,9 @@ public class User {
 
 	@Column(name = "gmail_sync_in_progress")
 	private Boolean gmailSyncInProgress = false;
+	
+	@Column(name = "gmail_sync_started_at")
+	private LocalDateTime gmailSyncStartedAt;
 
 	@Column(name = "gmail_connected")
 	private Boolean gmailConnected = false;

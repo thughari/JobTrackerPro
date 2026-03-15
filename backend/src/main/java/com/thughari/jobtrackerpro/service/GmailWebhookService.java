@@ -50,8 +50,11 @@ public class GmailWebhookService {
     @Async("taskExecutor")
     public void processHistorySync(String userEmail) {
         final String email = userEmail.toLowerCase();
+        
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expiryThreshold = now.minusMinutes(15);
 
-        int updatedRows = userRepository.claimSyncLock(email);
+        int updatedRows = userRepository.claimSyncLock(email, now, expiryThreshold);
         if (updatedRows == 0) return;
         
         cacheEvictService.evictAllForUser(email);

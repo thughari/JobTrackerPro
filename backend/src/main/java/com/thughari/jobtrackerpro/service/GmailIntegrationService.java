@@ -125,7 +125,10 @@ public class GmailIntegrationService {
     @Async("taskExecutor")
     public void initiateManualSync(String email) {
     	
-    	int updatedRows = userRepository.claimSyncLock(email);
+    	LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expiryThreshold = now.minusMinutes(15);
+    	
+    	int updatedRows = userRepository.claimSyncLock(email, now, expiryThreshold);
     	
         if (updatedRows == 0) {
             return; 
