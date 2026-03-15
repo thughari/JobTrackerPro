@@ -22,8 +22,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 	
 	@Modifying
 	@Transactional
-	@Query("UPDATE User u SET u.gmailSyncInProgress = true WHERE u.email = :email AND u.gmailSyncInProgress = false")
-	int claimSyncLock(@Param("email") String email);
+	@Query("UPDATE User u SET u.gmailSyncInProgress = true, u.gmailSyncStartedAt = :now WHERE u.email = :email AND (u.gmailSyncInProgress = false OR u.gmailSyncStartedAt < :expiry)")
+	int claimSyncLock(@Param("email") String email, @Param("now") LocalDateTime now, @Param("expiry") LocalDateTime expiry);
 	
 	@Modifying
 	@Transactional
