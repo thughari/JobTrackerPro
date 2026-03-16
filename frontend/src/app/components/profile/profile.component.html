@@ -323,7 +323,114 @@
         }
     </div>
 
+    @if (userProfile()?.pendingDeletion) {
+    <div
+        class="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-xl overflow-hidden shadow-sm">
+        <div class="px-6 py-4 border-b border-red-100 dark:border-red-800">
+            <h3 class="text-lg font-semibold text-red-900 dark:text-red-100 flex items-center gap-2">
+                <i class="ph ph-warning-circle"></i> Account Deletion Pending
+            </h3>
+        </div>
+        <div class="p-6">
+            <div class="flex items-start gap-4">
+                <div class="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg">
+                    <i class="ph ph-clock text-xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h4 class="text-sm font-bold text-red-900 dark:text-red-100 mb-2">Your account is scheduled for
+                        deletion
+                    </h4>
+                    <p class="text-sm text-red-700 dark:text-red-300 mb-4">
+                        {{ getDeletionTimeRemaining() }}
+                    </p>
+                    <button (click)="cancelDeletion()" [disabled]="isCancelingDeletion()"
+                        class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2">
+                        @if (isCancelingDeletion()) { <i class="ph ph-spinner animate-spin"></i> }
+                        Cancel Deletion
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    } @else {
+    <div class="bg-white dark:bg-[#151A23] border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-sm">
+        <div class="flex items-start justify-between mb-8">
+            <div class="space-y-1.5">
+                <div class="flex items-center gap-2">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">Account Management</h3>
+                    @if (userProfile()?.pendingDeletion) {
+                    <span
+                        class="flex items-center gap-1.5 text-[10px] font-black tracking-widest text-red-500 bg-red-500/10 px-2.5 py-1 rounded-full border border-red-500/20">
+                        <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+                        PENDING
+                    </span>
+                    }
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Delete Account</p>
+            </div>
+        </div>
+
+        <div class="p-6 bg-red-500/[0.03] border border-red-500/10 rounded-2xl border-dashed">
+            <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-6 text-center">
+                Permanently delete your account and all associated data. This action cannot be undone. You will have 3
+                days
+                to cancel the deletion after requesting it.
+            </p>
+            <button (click)="openDeleteModal()"
+                class="w-full py-3.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-3 active:scale-[0.98] shadow-xl shadow-red-500/20">
+                <i class="ph ph-trash"></i>
+                Delete Account
+            </button>
+        </div>
+    </div>
+    }
+
 </div>
+
+
+
+@if (showDeleteConfirm()) {
+<div class="fixed inset-0 z-[130] bg-[#0B0E14]/90 backdrop-blur-sm p-4 flex items-center justify-center">
+    <div
+        class="w-full max-w-md bg-white dark:bg-[#151A23] rounded-[2.5rem] border border-gray-200 dark:border-red-900/20 shadow-2xl animate-scale-in overflow-hidden">
+        <div class="p-8 text-center space-y-6">
+            <div
+                class="w-20 h-20 bg-red-50 dark:bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                <i class="ph-fill ph-warning-octagon text-4xl"></i>
+            </div>
+
+            <div class="space-y-2">
+                <h2 class="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Delete Account?
+                </h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+                    This will permanently delete your account, all job applications, Gmail integration, and any uploaded
+                    files.
+                    <span class="font-bold text-red-600 dark:text-red-400">This action cannot be undone.</span>
+                </p>
+                <div
+                    class="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                    <p class="text-xs text-yellow-700 dark:text-yellow-300">
+                        <i class="ph ph-info text-sm mr-1"></i>
+                        You have 3 days to cancel this request after confirmation.
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-3">
+                <button (click)="requestDeletion()" [disabled]="isRequestingDeletion()"
+                    class="w-full py-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-red-500/20 transition-all active:scale-95 flex items-center justify-center gap-2">
+                    @if (isRequestingDeletion()) { <i class="ph ph-spinner animate-spin text-lg"></i> }
+                    {{ isRequestingDeletion() ? 'REQUESTING DELETION...' : 'YES, DELETE MY ACCOUNT' }}
+                </button>
+                <button (click)="closeDeleteModal()" [disabled]="isRequestingDeletion()"
+                    class="w-full py-4 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+}
 
 @if (showImageModal()) {
 <div class="fixed inset-0 z-50 flex items-center justify-center p-4">

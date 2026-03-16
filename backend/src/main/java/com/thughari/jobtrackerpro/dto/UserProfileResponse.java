@@ -14,4 +14,6 @@ public class UserProfileResponse {
     private boolean gmailConnected;
     private boolean gmailSyncInProgress;
     private boolean enabled;
+    private boolean pendingDeletion;
+    private long daysUntilDeletion;
 }

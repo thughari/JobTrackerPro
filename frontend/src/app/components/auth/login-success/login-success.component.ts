@@ -1,5 +1,5 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 
 @Component({
@@ -13,11 +13,18 @@ import { AuthService } from '../../../services/auth.service';
 export class LoginSuccessComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private authService = inject(AuthService);
+  private router = inject(Router);
 
   ngOnInit() {
     const token = this.route.snapshot.queryParamMap.get('token');
     if (token) {
-      this.authService.handleToken(token);
+      this.authService.handleToken(token, false).then(profile => {
+        if (profile?.pendingDeletion) {
+          this.router.navigate(['/login']);
+        } else {
+          this.router.navigate(['/app/dashboard']);
+        }
+      });
     }
   }
 }

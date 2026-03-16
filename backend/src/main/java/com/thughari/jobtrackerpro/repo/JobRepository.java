@@ -61,5 +61,9 @@ public interface JobRepository extends JpaRepository<Job, UUID> {
 			@Param("now") LocalDateTime now, 
 			@Param("note") String note
 			);
+	
+	@Modifying(clearAutomatically = true, flushAutomatically = true)
+	@Query("DELETE FROM Job j WHERE j.userEmail = :email")
+	void deleteByUserEmail(@Param("email") String email);
 
 }

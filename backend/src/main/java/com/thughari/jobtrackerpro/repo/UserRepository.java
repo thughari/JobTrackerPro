@@ -35,4 +35,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 	@Modifying
     @Query("DELETE FROM User u WHERE u.enabled = false AND u.provider = 'LOCAL' AND u.createdAt < :cutoff")
     void deleteUnverifiedUsers(@Param("cutoff") LocalDateTime cutoff);
+	
+	@Query("SELECT u FROM User u WHERE u.pendingDeletion = true AND u.deletionRequestedAt < :cutoffDate")
+	List<User> findAllByPendingDeletionTrueAndDeletionRequestedAtBefore(@Param("cutoffDate") LocalDateTime cutoffDate);
 }

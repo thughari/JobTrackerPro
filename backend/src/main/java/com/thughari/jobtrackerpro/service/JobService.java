@@ -51,7 +51,7 @@ public class JobService {
     @Cacheable(value = "jobList", key = "#email")
     public List<JobDTO> getAllJobs(String email) {
         return jobRepository.findByUserEmailOrderByUpdatedAtDesc(email)
-                .stream()
+                .parallelStream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
@@ -76,24 +76,40 @@ public class JobService {
         DashboardResponse response = new DashboardResponse();
 
         long total = jobs.size();
-        long active = jobs.stream().filter(j -> j.getStatus() != null && 
+        long active = jobs.parallelStream().filter(j -> j.getStatus() != null && 
         		!j.getStatus().equals("Rejected") && !j.getStatus().equals("Offer Received")).count();
-        long interviews = jobs.stream()
+        long interviews = jobs.parallelStream()
         	    .filter(j -> "Interview Scheduled".equals(j.getStatus()) || 
         	                 (j.getStage() != null && j.getStage() >= 3))
         	    .count();
-        long offers = jobs.stream().filter(j -> "Offer Received".equals(j.getStatus())).count();
-        long activeInterviews = jobs.stream().filter(j -> "Interview Scheduled".equals(j.getStatus())).count();
+        long offers = jobs.parallelStream().filter(j -> "Offer Received".equals(j.getStatus())).count();
+        long activeInterviews = jobs.parallelStream().filter(j -> "Interview Scheduled".equals(j.getStatus())).count();
 
         response.setStats(new DashboardStatsDTO(total, active, interviews, activeInterviews, offers));
 
-        Map<String, Long> statusMap = jobs.stream()
+        Map<String, Long> statusMap = jobs.parallelStream()
             .collect(Collectors.groupingBy(Job::getStatus, Collectors.counting()));
         response.setStatusChart(mapToChartData(statusMap));
 
+        LocalDateTime sixMonthsAgo = LocalDateTime.now().minusMonths(6);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM yy");
-        Map<String, Long> monthMap = jobs.stream()
+        
+        List<Job> jobsForMonthly = jobs.parallelStream()
+            .filter(job -> job.getAppliedDate() != null)
             .sorted(Comparator.comparing(Job::getAppliedDate))
+            .toList();
+        
+        List<Job> last6Months = jobsForMonthly.parallelStream()
+            .filter(job -> job.getAppliedDate().isAfter(sixMonthsAgo))
+            .toList();
+        
+        List<Job> jobsToChart = last6Months.parallelStream()
+            .collect(Collectors.groupingBy(
+                job -> job.getAppliedDate().format(formatter),
+                Collectors.toList()
+            )).size() >= 3 ? last6Months : jobsForMonthly;
+        
+        Map<String, Long> monthMap = jobsToChart.parallelStream()
             .collect(Collectors.groupingBy(
                 job -> job.getAppliedDate().format(formatter),
                 LinkedHashMap::new, 
@@ -101,7 +117,7 @@ public class JobService {
             ));
         response.setMonthlyChart(mapToChartData(monthMap));
 
-        long interviewCount = jobs.stream()
+        long interviewCount = jobs.parallelStream()
         	    .filter(j -> j.getStage() != null && j.getStage() >= 3)
         	    .count();        response.setInterviewChart(List.of(
             new ChartData("Interviewed", interviewCount),
@@ -157,7 +173,7 @@ public class JobService {
     @Transactional
     public void saveBatchResults(String email, List<EmailBatchItem> batchItems, List<JobDTO> extractedJobs) {
     	
-    	List<List<String>> batchUrlLists = batchItems.stream()
+    	List<List<String>> batchUrlLists = batchItems.parallelStream()
                 .map(item -> UrlParser.extractAndCleanUrls(item.body()))
                 .toList();            
         for (JobDTO job : extractedJobs) {
@@ -170,7 +186,7 @@ public class JobService {
                     job.setUrl(originalUrls.get(job.getUrlIndex()));
                 } 
                 else if (job.getUrl() == null || job.getUrl().isEmpty()) {
-                    job.setUrl(originalUrls.stream()
+                    job.setUrl(originalUrls.parallelStream()
                     		.filter(u -> {
                     		    String lower = u.toLowerCase();
                     		    return lower.contains("career") ||
@@ -255,7 +271,7 @@ public class JobService {
         String incomingCompany = incoming.getCompany().toLowerCase().trim();
         String incomingRole = (incoming.getRole() != null) ? incoming.getRole().toLowerCase().trim() : "";
 
-        List<Job> companyMatches = existingJobs.stream()
+        List<Job> companyMatches = existingJobs.parallelStream()
                 .filter(job -> {
                     if (job.getCompany() == null) return false;
                     String dbCompany = job.getCompany().toLowerCase().trim();
@@ -265,7 +281,7 @@ public class JobService {
 
         if (companyMatches.isEmpty()) return null;
 
-        List<Job> activeMatches = companyMatches.stream()
+        List<Job> activeMatches = companyMatches.parallelStream()
                 .filter(j -> j.getStatus() != null && 
                         !j.getStatus().equalsIgnoreCase("Rejected") && 
                         !j.getStatus().equalsIgnoreCase("Offer Received"))
@@ -273,7 +289,7 @@ public class JobService {
 
         if (activeMatches.isEmpty()) return null;
 
-        return activeMatches.stream()
+        return activeMatches.parallelStream()
                 .max((j1, j2) -> {
                     double sim1 = calculateSimilarity(j1.getRole(), incomingRole);
                     double sim2 = calculateSimilarity(j2.getRole(), incomingRole);
@@ -380,7 +396,7 @@ public class JobService {
     }
     
     private List<ChartData> mapToChartData(Map<String, Long> map) {
-        return map.entrySet().stream()
+        return map.entrySet().parallelStream()
             .map(e -> new ChartData(e.getKey(), e.getValue()))
             .collect(Collectors.toList());
     }

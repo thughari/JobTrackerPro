@@ -15,6 +15,8 @@ export interface UserProfile {
   provider: string;
   hasPassword: boolean;
   gmailConnected: boolean;
+  pendingDeletion?: boolean;
+  daysUntilDeletion?: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -78,7 +80,7 @@ export class AuthService {
     const res: any = await firstValueFrom(
       this.http.post(`${this.apiUrl}/login`, credentials, { withCredentials: true })
     );
-    this.handleToken(res.token);
+    return await this.handleToken(res.token, false);
   }
 
   signup(user: SignUpUser): Observable<any> {
@@ -107,10 +109,23 @@ export class AuthService {
     return this.refreshInFlight;
   }
 
-  handleToken(token: string) {
+  /**
+   * Store the access token, refresh the user profile, and optionally redirect.
+   * Returns the loaded user profile (if available).
+   */
+  async handleToken(token: string, redirect = true): Promise<UserProfile | null> {
     this.setAccessToken(token);
-    this.router.navigate(['/app/dashboard']);
-    this.fetchUserProfile();
+    await this.fetchUserProfile();
+
+    const profile = this.userProfile();
+    if (redirect) {
+      if (profile?.pendingDeletion) {
+        return profile;
+      }
+      this.router.navigate(['/app/dashboard']);
+    }
+
+    return profile;
   }
 
   setAccessToken(token: string) {
@@ -257,5 +272,17 @@ export class AuthService {
       {}, 
       { responseType: 'text' }
     );
+  }
+
+  requestDeletion() {
+    return this.http.post(`${this.API}/api/users/request-deletion`, {}, { responseType: 'text' });
+  }
+
+  getDeletionStatus() {
+    return this.http.get(`${this.API}/api/users/deletion-status`);
+  }
+
+  cancelDeletion() {
+    return this.http.post(`${this.API}/api/users/cancel-deletion`, {}, { responseType: 'text' });
   }
 }
