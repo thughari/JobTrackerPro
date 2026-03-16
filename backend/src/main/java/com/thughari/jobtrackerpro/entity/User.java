@@ -61,4 +61,10 @@ public class User {
 	
 	@Column(nullable = false)
     private Boolean enabled = false;
+
+	@Column(name = "deletion_requested_at")
+	private LocalDateTime deletionRequestedAt;
+
+	@Column(name = "pending_deletion")
+	private Boolean pendingDeletion = false;
 }

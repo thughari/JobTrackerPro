@@ -40,6 +40,7 @@ public class AuthService {
     private final JwtUtils jwtUtils;
     private final StorageService storageService;
     private final CacheManager cacheManager;
+    private final UserDeletionService userDeletionService;
     
     @Value("${app.base-url}")
     private String baseUrl;
@@ -55,7 +56,7 @@ public class AuthService {
 
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, 
     		JwtUtils jwtUtils, StorageService storageService, 
-    		PasswordResetTokenRepository passwordResetTokenRepository, EmailService emailService, CacheManager cacheManager, VerificationTokenRepository verificationTokenRepository) {
+    		PasswordResetTokenRepository passwordResetTokenRepository, EmailService emailService, CacheManager cacheManager, VerificationTokenRepository verificationTokenRepository, UserDeletionService userDeletionService) {
     	this.userRepository = userRepository;
     	this.passwordEncoder = passwordEncoder;
     	this.jwtUtils = jwtUtils;
@@ -64,6 +65,7 @@ public class AuthService {
     	this.emailService = emailService;
     	this.cacheManager = cacheManager;
     	this.verificationTokenRepository = verificationTokenRepository;
+    	this.userDeletionService = userDeletionService;
     }
 
     public void registerUser(AuthRequest request) {
@@ -350,6 +352,17 @@ public class AuthService {
         response.setGmailConnected(Boolean.TRUE.equals(user.getGmailConnected()));
         response.setGmailSyncInProgress(Boolean.TRUE.equals(user.getGmailSyncInProgress()));
         response.setEnabled(Boolean.TRUE.equals(user.getEnabled()));
+        
+        // Set deletion warning info
+        if (Boolean.TRUE.equals(user.getPendingDeletion())) {
+            DeletionWarning warning = userDeletionService.checkPendingDeletion(user.getEmail());
+            response.setPendingDeletion(true);
+            response.setDaysUntilDeletion(warning.daysRemaining);
+        } else {
+            response.setPendingDeletion(false);
+            response.setDaysUntilDeletion(0);
+        }
+        
         return response;
     }
 

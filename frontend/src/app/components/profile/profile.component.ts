@@ -48,11 +48,17 @@ export class ProfileComponent {
   localPreviewUrl = signal<string | null>(null);
 
   showHelpModal = signal(false);
+
+  // Deletion related signals
+  showDeleteConfirm = signal(false);
+  isRequestingDeletion = signal(false);
+  isCancelingDeletion = signal(false);
+  deletionStatus = signal<any>(null);
   
 
   private messageTimeout: any;
 
-  userProfile = this.authService.userProfile();
+  userProfile = this.authService.userProfile;
 
   constructor() {
     effect(
@@ -373,6 +379,60 @@ export class ProfileComponent {
       console.error('Disconnect failed', err);
     } finally {
       this.isDeleting.set(false);
+    }
+  }
+
+  openDeleteModal() {
+    this.showDeleteConfirm.set(true);
+  }
+
+  closeDeleteModal() {
+    this.showDeleteConfirm.set(false);
+  }
+
+  async requestDeletion() {
+    this.isRequestingDeletion.set(true);
+    try {
+      await firstValueFrom(this.authService.requestDeletion());
+      this.showMessage('success', 'Account deletion requested. You have 3 days to cancel.');
+      this.showDeleteConfirm.set(false);
+      this.authService.fetchUserProfile();
+    } catch (err: any) {
+      if (err.error && err.error.message) {
+        this.showMessage('error', err.error.message);
+      } else {
+        this.showMessage('error', 'Failed to request account deletion.');
+      }
+    } finally {
+      this.isRequestingDeletion.set(false);
+    }
+  }
+
+  async cancelDeletion() {
+    this.isCancelingDeletion.set(true);
+    try {
+      await firstValueFrom(this.authService.cancelDeletion());
+      this.showMessage('success', 'Account deletion cancelled successfully.');
+      this.authService.fetchUserProfile();
+    } catch (err: any) {
+      if (err.error && err.error.message) {
+        this.showMessage('error', err.error.message);
+      } else {
+        this.showMessage('error', 'Failed to cancel deletion.');
+      }
+    } finally {
+      this.isCancelingDeletion.set(false);
+    }
+  }
+
+  getDeletionTimeRemaining(): string {
+    const profile = this.userProfile();
+    if (!profile?.daysUntilDeletion) return 'Account will be deleted soon';
+    
+    if (profile.daysUntilDeletion > 0) {
+      return `${profile.daysUntilDeletion} day${profile.daysUntilDeletion > 1 ? 's' : ''} remaining`;
+    } else {
+      return 'Account will be deleted soon';
     }
   }
 }

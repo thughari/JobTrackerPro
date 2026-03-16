@@ -6,6 +6,7 @@ import com.thughari.jobtrackerpro.repo.UserRepository;
 import com.thughari.jobtrackerpro.repo.VerificationTokenRepository;
 import com.thughari.jobtrackerpro.service.GmailIntegrationService;
 import com.thughari.jobtrackerpro.service.JobService;
+import com.thughari.jobtrackerpro.service.UserDeletionService;
 
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,8 @@ public class JobScheduler {
     private final UserRepository userRepository;
     private final GmailIntegrationService gmailIntegrationService;
     
+    private final UserDeletionService userDeletionService;
+    
     private final PasswordResetTokenRepository passwordTokenRepo;
     private final VerificationTokenRepository verificationTokenRepo;
 
@@ -30,12 +33,14 @@ public class JobScheduler {
                         UserRepository userRepository, 
                         GmailIntegrationService gmailIntegrationService,
                         PasswordResetTokenRepository passwordTokenRepo,
-                        VerificationTokenRepository verificationTokenRepo) {
+                        VerificationTokenRepository verificationTokenRepo,
+                        UserDeletionService userDeletionService) {
         this.jobService = jobService;
         this.userRepository = userRepository;
         this.gmailIntegrationService = gmailIntegrationService;
         this.passwordTokenRepo = passwordTokenRepo;
         this.verificationTokenRepo = verificationTokenRepo;
+        this.userDeletionService = userDeletionService;
     }
 
     /**
@@ -56,7 +61,7 @@ public class JobScheduler {
     /**
      * Gmail Security: Renews the 7-day watch lease every 5 days.
      */
-    @Scheduled(cron = "0 0 0 */5 * *") 
+    @Scheduled(cron = "0 30 0 */5 * *") 
     public void renewGmailWatches() {
         log.info("Gmail Sync: Starting bulk watch renewal...");
         
@@ -78,7 +83,7 @@ public class JobScheduler {
         log.info("Gmail Sync: Finished bulk watch renewal for {} users.", users.size());
     }
     
-    @Scheduled(cron = "0 0 2 * * *")
+    @Scheduled(cron = "0 0 1 * * *")
     @Transactional
     public void runSystemCleanup() {
         log.info("Starting system-wide security cleanup...");
@@ -91,5 +96,27 @@ public class JobScheduler {
         userRepository.deleteUnverifiedUsers(now.minusDays(3));
 
         log.info("System cleanup completed. Database pruned of expired security entries.");
+    }
+    
+    /*
+     * Scheduled task to process user deletions after the 3-day grace period.
+     */
+    @Scheduled(cron = "0 30 1 * * *") 
+    public void processScheduledDeletions() {
+        log.info("Starting scheduled user deletion cleanup...");
+        
+        List<User> usersToDelete = userRepository.findAllByPendingDeletionTrueAndDeletionRequestedAtBefore(
+            LocalDateTime.now().minusDays(3)
+        );
+
+        for (User user : usersToDelete) {
+            try {
+                userDeletionService.deleteUserCompletely(user.getEmail());
+            } catch (Exception e) {
+                log.error("Failed to delete user: {}", user.getEmail(), e);
+            }
+        }
+
+        log.info("Scheduled deletion cleanup completed. Deleted {} users.", usersToDelete.size());
     }
 }

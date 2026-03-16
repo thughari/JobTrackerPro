@@ -84,6 +84,13 @@ export class JobService implements OnDestroy {
   private dashboardLoaded = false;
   private listLoaded = false;
 
+  private currentPageState = 0;
+  private currentSizeState = 8;
+  private currentSortState = 'updatedAt';
+  private currentDirState = 'desc';
+  private currentSearchState = '';
+  private currentStatusState = 'All Statuses';
+
   constructor() {}
 
   private refreshActiveView() {
@@ -125,7 +132,14 @@ export class JobService implements OnDestroy {
       await this.loadDashboard(true); 
 
       if (currentUrl.includes('/applications')) {
-        await this.loadJobs(); 
+        await this.loadJobs(
+          this.currentPageState,
+          this.currentSizeState,
+          this.currentSortState,
+          this.currentDirState,
+          this.currentSearchState,
+          this.currentStatusState
+        ); 
       }
       
       console.log('✨ Data auto-refreshed successfully.');
@@ -147,18 +161,46 @@ export class JobService implements OnDestroy {
         this.http.get<DashboardResponse>(`${this.apiUrl}/dashboard`),
       );
 
-      this.dashboardStats.set(data.stats);
-      this.statusDistribution.set(data.statusChart);
-      this.monthlyApplications.set(data.monthlyChart);
+      // Only update if data has changed
+      if (!this.isDashboardDataEqual(data)) {
+        this.dashboardStats.set(data.stats);
+        this.statusDistribution.set(data.statusChart);
+        this.monthlyApplications.set(data.monthlyChart);
 
-      if (data.interviewChart && data.interviewChart.length >= 2) {
-        this.interviewProgress.set(data.interviewChart);
+        if (data.interviewChart && data.interviewChart.length >= 2) {
+          this.interviewProgress.set(data.interviewChart);
+        }
       }
 
       this.dashboardLoaded = true;
     } catch (e) {
       console.error(e);
     }
+  }
+
+  private isDashboardDataEqual(newData: DashboardResponse): boolean {
+    const currentStats = this.dashboardStats();
+    const currentStatusChart = this.statusDistribution();
+    const currentMonthlyChart = this.monthlyApplications();
+    const currentInterviewChart = this.interviewProgress();
+
+    if (JSON.stringify(currentStats) !== JSON.stringify(newData.stats)) {
+      return false;
+    }
+
+    if (JSON.stringify(currentStatusChart) !== JSON.stringify(newData.statusChart)) {
+      return false;
+    }
+
+    if (JSON.stringify(currentMonthlyChart) !== JSON.stringify(newData.monthlyChart)) {
+      return false;
+    }
+
+    if (JSON.stringify(currentInterviewChart) !== JSON.stringify(newData.interviewChart)) {
+      return false;
+    }
+
+    return true;
   }
 
   private totalJobsSignal = signal(0);
@@ -173,6 +215,13 @@ export class JobService implements OnDestroy {
     status = 'All Statuses',
   ) {
     try {
+      this.currentPageState = page;
+      this.currentSizeState = size;
+      this.currentSortState = sort;
+      this.currentDirState = dir;
+      this.currentSearchState = search;
+      this.currentStatusState = status;
+
       const params: any = {
         page: page.toString(),
         size: size.toString(),
