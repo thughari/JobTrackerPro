@@ -50,6 +50,7 @@ public class InterviewService {
         session.setJobId(jobId);
         session.setJobCompany(job.getCompany());
         session.setJobRole(job.getRole());
+        session.setResumeId(UUID.randomUUID());
         session.setStatus("IN_PROGRESS");
         session.setCurrentQuestionIndex(0);
         session.setTotalQuestions(questions.size());

@@ -26,6 +26,9 @@ public class InterviewSession {
     private String jobCompany;
     private String jobRole;
 
+    @Column(nullable = false, columnDefinition = "uuid")
+    private UUID resumeId;
+
     @Column(nullable = false)
     private String status;
 
