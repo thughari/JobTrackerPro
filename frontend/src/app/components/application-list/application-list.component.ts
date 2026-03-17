@@ -17,6 +17,8 @@ import {
   Subscription,
 } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
+import { Router } from '@angular/router';
+import { InterviewService } from '../../services/interview.service';
 
 type SortField = 'company' | 'role' | 'date' | 'status' | 'location';
 type SortDirection = 'asc' | 'desc';
@@ -31,6 +33,8 @@ type SortDirection = 'asc' | 'desc';
 export class ApplicationListComponent implements OnInit, OnDestroy {
   private jobService = inject(JobService);
   public authService = inject(AuthService);
+  private interviewService = inject(InterviewService);
+  private router = inject(Router);
 
   searchQuery = signal('');
   statusFilter = signal('All Statuses');
@@ -42,6 +46,7 @@ export class ApplicationListComponent implements OnInit, OnDestroy {
 
   successMessage = signal('');
   errorMessage = signal('');
+  startingInterviewId = signal<string | null>(null);
 
   activeMenuId = signal<string | null>(null);
 
@@ -197,5 +202,21 @@ export class ApplicationListComponent implements OnInit, OnDestroy {
   deleteJob(id: string) {
     this.jobService.deleteJob(id);
     this.closeMenu();
+  }
+
+  async prepareInterview(job: Job) {
+    if (this.startingInterviewId()) return;
+
+    this.startingInterviewId.set(job.id);
+    this.errorMessage.set('');
+    try {
+      const session = await this.interviewService.startInterview(job.id);
+      this.closeMenu();
+      await this.router.navigate(['/app/interviews', session.sessionId]);
+    } catch {
+      this.showMessage('error', 'Unable to start interview prep right now.');
+    } finally {
+      this.startingInterviewId.set(null);
+    }
   }
 }
