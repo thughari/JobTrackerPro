@@ -25,12 +25,11 @@ import java.util.*;
 public class InterviewService {
     private final JobRepository jobRepository;
     private final InterviewSessionRepository interviewSessionRepository;
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public InterviewService(JobRepository jobRepository, InterviewSessionRepository interviewSessionRepository, ObjectMapper objectMapper) {
+    public InterviewService(JobRepository jobRepository, InterviewSessionRepository interviewSessionRepository) {
         this.jobRepository = jobRepository;
         this.interviewSessionRepository = interviewSessionRepository;
-        this.objectMapper = objectMapper;
     }
 
     public InterviewSessionStartResponse startSession(UUID jobId, String userEmail) {
