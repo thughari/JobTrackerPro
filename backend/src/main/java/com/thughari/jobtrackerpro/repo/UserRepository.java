@@ -17,7 +17,7 @@ import java.util.UUID;
 
 public interface UserRepository extends JpaRepository<User, UUID> {
 	
-	@Cacheable(value = "userEntities", key = "#email")
+	@Cacheable(value = "userEntities", key = "#root.args[0]")
 	Optional<User> findByEmail(String email);
 	
 	@Modifying

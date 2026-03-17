@@ -221,7 +221,12 @@
               </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-              <div class="relative inline-block">
+              <div class="flex items-center justify-end gap-2">
+                <button (click)="prepareInterview(job)" [disabled]="startingInterviewId() === job.id"
+                  class="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                  {{ startingInterviewId() === job.id ? 'Starting...' : 'Prepare for Interview' }}
+                </button>
+                <div class="relative inline-block">
                 <button (click)="toggleMenu(job.id, $event)"
                   class="text-gray-400 hover:text-gray-600 dark:hover:text-white p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                   <i class="ph ph-dots-three-vertical text-xl"></i>
@@ -237,6 +242,7 @@
                       class="ph ph-trash"></i> Delete</button>
                 </div>
                 }
+              </div>
               </div>
             </td>
           </tr>
@@ -292,6 +298,11 @@
           <i class="ph ph-calendar"></i> {{ job.appliedDate | date:'MM/dd/yy' }}
         </div>
       </div>
+
+      <button (click)="prepareInterview(job)" [disabled]="startingInterviewId() === job.id"
+        class="w-full mb-3 px-3 py-2 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
+        {{ startingInterviewId() === job.id ? 'Starting...' : 'Prepare for Interview' }}
+      </button>
 
       <div class="flex items-center justify-between gap-3">
         <div class="flex items-center gap-0.5 overflow-x-auto pr-1">

@@ -15,6 +15,7 @@ import { PrivacyComponent } from './components/privacy/privacy.component';
 import { ResourcesComponent } from './components/resources/resources.component';
 import { TocComponent } from './components/toc/toc.component';
 import { VerifyComponent } from './components/auth/verify/verify.component';
+import { InterviewPrepComponent } from './components/interview-prep/interview-prep.component';
 
 export const routes: Routes = [
   { 
@@ -75,6 +76,7 @@ export const routes: Routes = [
       { path: 'applications', component: ApplicationListComponent },
       { path: 'profile', component: ProfileComponent },
       { path: 'resources', component: ResourcesComponent },
+      { path: 'interviews/:sessionId', component: InterviewPrepComponent },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ],
   },

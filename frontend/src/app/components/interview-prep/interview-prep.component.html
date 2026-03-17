@@ -1,0 +1,86 @@
+<div class="space-y-5">
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-2xl md:text-3xl font-black text-gray-900 dark:text-white tracking-tight">Interview Prep</h2>
+      <p class="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400">AI Copilot session in progress</p>
+    </div>
+    <a routerLink="/app/applications" class="text-xs md:text-sm text-indigo-500 font-semibold hover:text-indigo-400">Back to applications</a>
+  </div>
+
+  @if (error()) {
+    <div class="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-600 dark:text-red-300">
+      {{ error() }}
+    </div>
+  }
+
+  <div class="bg-white dark:bg-[#151A23] border border-gray-200 dark:border-gray-800 rounded-2xl p-4">
+    <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">Resume Upload (optional)</label>
+    <input type="file" accept=".pdf,.doc,.docx,.txt" (change)="onResumeSelected($event)" class="block w-full text-xs text-gray-600 dark:text-gray-300" />
+    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+      @if (uploadStatus() === 'uploading') { Uploading resume... }
+      @else if (uploadStatus() === 'processing') { Processing resume in background... }
+      @else if (uploadStatus() === 'done') { Resume processed successfully. }
+      @else if (uploadStatus() === 'error') { Resume upload failed. Try again. }
+      @else { Upload a resume to enrich answer feedback. }
+    </p>
+  </div>
+
+  @if (report()) {
+    <div class="bg-white dark:bg-[#151A23] border border-gray-200 dark:border-gray-800 rounded-2xl p-6 space-y-4">
+      <h3 class="text-xl font-bold text-gray-900 dark:text-white">Final Report</h3>
+      <div class="text-3xl font-black text-indigo-500">{{ report()?.overallScore }}/10</div>
+      <div class="w-full h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+        <div class="h-full bg-indigo-500" [style.width.%]="(report()?.overallScore || 0) * 10"></div>
+      </div>
+      <div>
+        <p class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Weak Areas</p>
+        <ul class="text-sm text-gray-600 dark:text-gray-300 list-disc ml-5">
+          @for (item of report()?.weakAreas || []; track item) { <li>{{ item }}</li> }
+        </ul>
+      </div>
+      <div>
+        <p class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Improvement Suggestions</p>
+        <ul class="text-sm text-gray-600 dark:text-gray-300 list-disc ml-5">
+          @for (item of report()?.improvementSuggestions || []; track item) { <li>{{ item }}</li> }
+        </ul>
+      </div>
+    </div>
+  } @else {
+    <div class="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-4">
+      <div class="bg-white dark:bg-[#151A23] border border-gray-200 dark:border-gray-800 rounded-2xl p-4 space-y-2">
+        <p class="text-xs uppercase tracking-wider font-bold text-gray-500">Questions</p>
+        @for (q of questions(); track q.index) {
+          <div class="text-xs px-2 py-1 rounded-lg" [class.bg-indigo-600]="q.index === currentIndex()" [class.text-white]="q.index === currentIndex()" [class.bg-gray-100]="q.index !== currentIndex()" [class.dark:bg-gray-800]="q.index !== currentIndex()">
+            Q{{ q.index + 1 }}
+          </div>
+        }
+      </div>
+
+      <div class="bg-white dark:bg-[#151A23] border border-gray-200 dark:border-gray-800 rounded-2xl p-4 md:p-6 space-y-4">
+        @if (isLoading()) {
+          <div class="text-sm text-gray-500">Loading interview questions...</div>
+        } @else {
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ currentQuestionText }}</h3>
+
+          @if (lastScore() !== null) {
+            <div class="rounded-xl border border-indigo-200 dark:border-indigo-800/50 bg-indigo-50 dark:bg-indigo-900/20 p-3 space-y-1">
+              <p class="text-sm font-semibold text-indigo-700 dark:text-indigo-300">Score: {{ lastScore() }}/10</p>
+              <p class="text-xs text-gray-700 dark:text-gray-300">{{ lastFeedback() }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Gap: {{ lastGap() }}</p>
+            </div>
+          }
+
+          <textarea [ngModel]="answer()" (ngModelChange)="answer.set($event)" rows="6" placeholder="Type your answer..."
+            class="w-full bg-white dark:bg-[#0B0E14] border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30"></textarea>
+
+          <div class="flex justify-end">
+            <button (click)="submitAnswer()" [disabled]="isSubmitting() || !answer().trim()"
+              class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
+              {{ isSubmitting() ? 'Submitting...' : 'Submit Answer' }}
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>
