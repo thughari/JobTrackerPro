@@ -60,7 +60,7 @@
         @if (isLoading()) {
           <div class="text-sm text-gray-500">Loading interview questions...</div>
         } @else {
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ questions()[currentIndex()]?.question }}</h3>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ currentQuestionText }}</h3>
 
           @if (lastScore() !== null) {
             <div class="rounded-xl border border-indigo-200 dark:border-indigo-800/50 bg-indigo-50 dark:bg-indigo-900/20 p-3 space-y-1">

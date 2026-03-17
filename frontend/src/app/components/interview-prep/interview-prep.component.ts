@@ -57,6 +57,12 @@ export class InterviewPrepComponent implements OnInit {
     }
   }
 
+
+  get currentQuestionText() {
+    const current = this.questions()[this.currentIndex()];
+    return current ? current.question : '';
+  }
+
   async submitAnswer() {
     if (this.isSubmitting() || !this.answer().trim()) return;
 
