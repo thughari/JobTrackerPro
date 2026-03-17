@@ -148,42 +148,45 @@ public class InterviewService {
 
 
     private UUID resolveOrCreateResumeId(String userEmail) {
-        List<UUID> existing = jdbcTemplate.query(
-                "SELECT id FROM user_resumes WHERE user_email = ? ORDER BY updated_at DESC NULLS LAST LIMIT 1",
-                (rs, rowNum) -> (UUID) rs.getObject("id"),
-                userEmail
-        );
-
-        if (!existing.isEmpty() && existing.get(0) != null) {
-            return existing.get(0);
-        }
-
-        UUID newResumeId = UUID.randomUUID();
-        LocalDateTime now = LocalDateTime.now();
-
-        try {
-            jdbcTemplate.update(
-                    "INSERT INTO user_resumes (id, user_email, created_at, updated_at, extracted_text) VALUES (?, ?, ?, ?, ?)",
-                    newResumeId, userEmail, now, now, "Local mock resume for interview prep"
-            );
-            return newResumeId;
-        } catch (Exception ex) {
-            log.warn("Could not auto-create mock user resume for {}. Falling back to dynamic insert. Reason: {}", userEmail, ex.getMessage());
-            return insertDynamicMockResume(userEmail, newResumeId, now);
-        }
-    }
-
-    private UUID insertDynamicMockResume(String userEmail, UUID resumeId, LocalDateTime now) {
         List<Map<String, Object>> cols = jdbcTemplate.queryForList(
                 "SELECT column_name, is_nullable, data_type, column_default FROM information_schema.columns WHERE table_schema='public' AND table_name='user_resumes'"
         );
 
+        UUID existingId = findAnyExistingResumeId(cols);
+        if (existingId != null) {
+            return existingId;
+        }
+
+        UUID newResumeId = UUID.randomUUID();
+        LocalDateTime now = LocalDateTime.now();
+        return insertDynamicMockResume(userEmail, newResumeId, now, cols);
+    }
+
+    private UUID findAnyExistingResumeId(List<Map<String, Object>> cols) {
+        try {
+            boolean hasUpdatedAt = cols.stream().anyMatch(c -> "updated_at".equalsIgnoreCase(String.valueOf(c.get("column_name"))));
+            String sql = hasUpdatedAt
+                    ? "SELECT id FROM user_resumes ORDER BY updated_at DESC LIMIT 1"
+                    : "SELECT id FROM user_resumes LIMIT 1";
+
+            List<UUID> existing = jdbcTemplate.query(sql, (rs, rowNum) -> (UUID) rs.getObject("id"));
+            return existing.isEmpty() ? null : existing.get(0);
+        } catch (Exception ex) {
+            log.warn("Could not query existing user_resumes row. Will attempt mock insert. Reason: {}", ex.getMessage());
+            return null;
+        }
+    }
+
+    private UUID insertDynamicMockResume(String userEmail, UUID resumeId, LocalDateTime now, List<Map<String, Object>> cols) {
         Map<String, Object> values = new LinkedHashMap<>();
-        values.put("id", resumeId);
-        values.put("user_email", userEmail);
-        values.put("created_at", now);
-        values.put("updated_at", now);
-        values.put("extracted_text", "Local mock resume for interview prep");
+        Set<String> colNames = cols.stream().map(c -> String.valueOf(c.get("column_name"))).collect(java.util.stream.Collectors.toSet());
+
+        if (colNames.contains("id")) values.put("id", resumeId);
+        if (colNames.contains("user_email")) values.put("user_email", userEmail);
+        if (colNames.contains("email")) values.put("email", userEmail);
+        if (colNames.contains("created_at")) values.put("created_at", now);
+        if (colNames.contains("updated_at")) values.put("updated_at", now);
+        if (colNames.contains("extracted_text")) values.put("extracted_text", "Local mock resume for interview prep");
 
         for (Map<String, Object> col : cols) {
             String name = String.valueOf(col.get("column_name"));
@@ -196,6 +199,10 @@ public class InterviewService {
             }
 
             values.put(name, defaultForType(dataType, now));
+        }
+
+        if (values.isEmpty()) {
+            throw new IllegalStateException("user_resumes schema has no writable columns");
         }
 
         String columnsSql = String.join(", ", values.keySet());
