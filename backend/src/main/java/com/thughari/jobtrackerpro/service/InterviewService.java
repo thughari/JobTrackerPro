@@ -12,6 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.NoArgsConstructor;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,11 +26,13 @@ import java.util.*;
 public class InterviewService {
     private final JobRepository jobRepository;
     private final InterviewSessionRepository interviewSessionRepository;
+    private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public InterviewService(JobRepository jobRepository, InterviewSessionRepository interviewSessionRepository) {
+    public InterviewService(JobRepository jobRepository, InterviewSessionRepository interviewSessionRepository, JdbcTemplate jdbcTemplate) {
         this.jobRepository = jobRepository;
         this.interviewSessionRepository = interviewSessionRepository;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     public InterviewSessionStartResponse startSession(UUID jobId, String userEmail) {
@@ -50,7 +53,7 @@ public class InterviewService {
         session.setJobId(jobId);
         session.setJobCompany(job.getCompany());
         session.setJobRole(job.getRole());
-        session.setResumeId(UUID.randomUUID());
+        session.setResumeId(resolveOrCreateResumeId(userEmail));
         session.setStatus("IN_PROGRESS");
         session.setCurrentQuestionIndex(0);
         session.setTotalQuestions(questions.size());
@@ -141,6 +144,81 @@ public class InterviewService {
         session.setResumeProcessingStatus("PROCESSED");
         session.setUpdatedAt(LocalDateTime.now());
         interviewSessionRepository.save(session);
+    }
+
+
+    private UUID resolveOrCreateResumeId(String userEmail) {
+        List<UUID> existing = jdbcTemplate.query(
+                "SELECT id FROM user_resumes WHERE user_email = ? ORDER BY updated_at DESC NULLS LAST LIMIT 1",
+                (rs, rowNum) -> (UUID) rs.getObject("id"),
+                userEmail
+        );
+
+        if (!existing.isEmpty() && existing.get(0) != null) {
+            return existing.get(0);
+        }
+
+        UUID newResumeId = UUID.randomUUID();
+        LocalDateTime now = LocalDateTime.now();
+
+        try {
+            jdbcTemplate.update(
+                    "INSERT INTO user_resumes (id, user_email, created_at, updated_at, extracted_text) VALUES (?, ?, ?, ?, ?)",
+                    newResumeId, userEmail, now, now, "Local mock resume for interview prep"
+            );
+            return newResumeId;
+        } catch (Exception ex) {
+            log.warn("Could not auto-create mock user resume for {}. Falling back to dynamic insert. Reason: {}", userEmail, ex.getMessage());
+            return insertDynamicMockResume(userEmail, newResumeId, now);
+        }
+    }
+
+    private UUID insertDynamicMockResume(String userEmail, UUID resumeId, LocalDateTime now) {
+        List<Map<String, Object>> cols = jdbcTemplate.queryForList(
+                "SELECT column_name, is_nullable, data_type, column_default FROM information_schema.columns WHERE table_schema='public' AND table_name='user_resumes'"
+        );
+
+        Map<String, Object> values = new LinkedHashMap<>();
+        values.put("id", resumeId);
+        values.put("user_email", userEmail);
+        values.put("created_at", now);
+        values.put("updated_at", now);
+        values.put("extracted_text", "Local mock resume for interview prep");
+
+        for (Map<String, Object> col : cols) {
+            String name = String.valueOf(col.get("column_name"));
+            String nullable = String.valueOf(col.get("is_nullable"));
+            String dataType = String.valueOf(col.get("data_type"));
+            String defaultVal = col.get("column_default") == null ? null : String.valueOf(col.get("column_default"));
+
+            if (values.containsKey(name) || !"NO".equalsIgnoreCase(nullable) || (defaultVal != null && !defaultVal.isBlank())) {
+                continue;
+            }
+
+            values.put(name, defaultForType(dataType, now));
+        }
+
+        String columnsSql = String.join(", ", values.keySet());
+        String placeholders = String.join(", ", Collections.nCopies(values.size(), "?"));
+        String sql = "INSERT INTO user_resumes (" + columnsSql + ") VALUES (" + placeholders + ")";
+        jdbcTemplate.update(sql, values.values().toArray());
+
+        return resumeId;
+    }
+
+    private Object defaultForType(String dataType, LocalDateTime now) {
+        String dt = dataType == null ? "" : dataType.toLowerCase();
+
+        return switch (dt) {
+            case "uuid" -> UUID.randomUUID();
+            case "boolean" -> false;
+            case "smallint", "integer", "bigint" -> 0;
+            case "numeric", "real", "double precision" -> 0.0;
+            case "json", "jsonb" -> "{}";
+            case "date" -> now.toLocalDate();
+            case "timestamp without time zone", "timestamp with time zone" -> now;
+            default -> "mock";
+        };
     }
 
     private InterviewSession getSession(UUID sessionId, String userEmail) {
