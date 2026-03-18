@@ -248,17 +248,17 @@ public class JobService {
 
     public void cleanupStaleApplications() {
     	LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
-    	LocalDateTime threeMonthsAgo = now.minusMonths(2);
+    	LocalDateTime twoMonthsAgo = now.minusMonths(2);
 
-    	List<String> affectedEmails = jobRepository.findUserEmailsWithStaleJobs(threeMonthsAgo);
+    	List<String> affectedEmails = jobRepository.findUserEmailsWithStaleJobs(twoMonthsAgo);
 
     	if (affectedEmails.isEmpty()) {
     		log.info("System Cleanup: No stale applications found.");
     		return;
     	}
 
-    	String autoNote = "\n[" + now.format(fmt) + "] Status auto-set to Rejected (3 months inactivity).";
-    	jobRepository.markStaleJobsAsRejected(threeMonthsAgo, now, autoNote);
+    	String autoNote = "\n[" + now.format(fmt) + "] Status auto-set to Rejected (2 months inactivity).";
+    	jobRepository.markStaleJobsAsRejected(twoMonthsAgo, now, autoNote);
     	
     	affectedEmails.forEach(cacheEvictService::evictAllForUser);
 
