@@ -175,7 +175,7 @@ public class JobService {
     	
     	List<List<String>> batchUrlLists = batchItems.parallelStream()
                 .map(item -> UrlParser.extractAndCleanUrls(item.body()))
-                .toList();            
+                .toList();
         for (JobDTO job : extractedJobs) {
             Integer idx = job.getInputIndex();
             

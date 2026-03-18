@@ -24,6 +24,8 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @Slf4j
@@ -50,19 +52,14 @@ public class GmailWebhookService {
     @Async("taskExecutor")
     public void processHistorySync(String userEmail) {
         final String email = userEmail.toLowerCase();
-        
+
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime expiryThreshold = now.minusMinutes(15);
 
-        int updatedRows = userRepository.claimSyncLock(email, now, expiryThreshold);
-        if (updatedRows == 0) return;
-        
-        cacheEvictService.evictAllForUser(email);
+        if (userRepository.claimSyncLock(email, now, expiryThreshold) == 0) return;
 
         try {
-            User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("User not found after lock"));
-
+            User user = userRepository.findByEmail(email).orElseThrow();
             if (user.getGmailRefreshToken() == null) return;
 
             String accessToken = getFreshAccessToken(user.getGmailRefreshToken());
@@ -87,15 +84,12 @@ public class GmailWebhookService {
             List<EmailBatchItem> batchItems = collectMessages(service, historyResponse.getHistory());
 
             if (!batchItems.isEmpty()) {
-            	
-            	List<JobDTO> extractedJobs = geminiService.extractJobsFromBatch(batchItems);
-            	
-            	log.info("Ingesting batch of {} emails via Gemini for {}", batchItems.size(), email);
-            	
-            	jobService.saveBatchResults(email, batchItems, extractedJobs);
-	        }
+                log.info("Ingesting batch of {} emails for {}", batchItems.size(), email);
+                List<JobDTO> extractedJobs = geminiService.extractJobsFromBatch(batchItems);
+                jobService.saveBatchResults(email, batchItems, extractedJobs);
+            }
         } catch (Exception e) {
-            log.error("High-Performance Sync failed for {}: ", email, e);
+            log.error("Sync failed for {}: ", email, e);
         } finally {
             userRepository.releaseSyncLock(email);
             cacheEvictService.evictAllForUser(email);
@@ -110,14 +104,10 @@ public class GmailWebhookService {
             if (history.getMessagesAdded() == null) continue;
             for (HistoryMessageAdded added : history.getMessagesAdded()) {
                 try {
-                    Message m = service.users().messages().get("me", added.getMessage().getId())
-                            .setFormat("full").execute();
+                    Message m = service.users().messages().get("me", added.getMessage().getId()).setFormat("full").execute();
+                    LocalDateTime emailDate = LocalDateTime.ofInstant(Instant.ofEpochMilli(m.getInternalDate()), ZoneOffset.UTC);
                     
-                    long millisecondTimestamp = m.getInternalDate(); 
-                    LocalDateTime emailDate = LocalDateTime.ofInstant(
-                            Instant.ofEpochMilli(millisecondTimestamp), ZoneOffset.UTC);
-                    
-                    String from = "", subj = "", replyTo="";
+                    String from = "", subj = "", replyTo = "";
                     for (var h : m.getPayload().getHeaders()) {
                         if ("From".equalsIgnoreCase(h.getName())) from = h.getValue();
                         if ("Subject".equalsIgnoreCase(h.getName())) subj = h.getValue();
@@ -125,30 +115,94 @@ public class GmailWebhookService {
                     }
 
                     if (!isSystemNoise(subj)) {
-                        String body = extractTextFromBody(m.getPayload());
+                        String body = extractProcessedBody(m.getPayload());
                         items.add(new EmailBatchItem(from, subj, replyTo, body, emailDate));
                     }
                 } catch (Exception e) {
-                    log.warn("Failed to fetch message {}: {}", added.getMessage().getId(), e.getMessage());
+                    log.warn("Failed message fetch: {}", e.getMessage());
                 }
             }
         }
         return items;
     }
 
-    private String extractTextFromBody(MessagePart part) {
-        if (part.getBody() != null && part.getBody().getData() != null) {
-            String content = new String(Base64.getUrlDecoder().decode(part.getBody().getData()));
-            if (part.getMimeType().contains("text/plain")) return content;
-            if (part.getMimeType().contains("text/html")) return content.replaceAll("<[^>]*>", " ");
-        }
+    private String extractProcessedBody(MessagePart payload) {
+        StringBuilder rawBuffer = new StringBuilder();
+        recursiveRawCollect(payload, rawBuffer);
+        
+        String cleaned = surgicalClean(rawBuffer.toString());
+                
+        return cleaned;
+    }
+
+    private void recursiveRawCollect(MessagePart part, StringBuilder buffer) {
         if (part.getParts() != null) {
-            for (MessagePart subPart : part.getParts()) {
-                String text = extractTextFromBody(subPart);
-                if (text != null && !text.isBlank()) return text;
-            }
+            for (MessagePart subPart : part.getParts()) recursiveRawCollect(subPart, buffer);
         }
-        return "";
+        if (part.getBody() != null && part.getBody().getData() != null) {
+            buffer.append(new String(Base64.getUrlDecoder().decode(part.getBody().getData()))).append("\n");
+        }
+    }
+
+    private String surgicalClean(String rawHtml) {
+        if (rawHtml == null || rawHtml.isBlank()) return "";
+
+        String content = rawHtml.replaceAll("(?is)<style.*?>.*?</style>", "")
+                                .replaceAll("(?is)<script.*?>.*?</script>", "");
+
+        StringBuilder sb = new StringBuilder();
+        Matcher m = Pattern.compile("(?is)<a\\s+[^>]*?href\\s*=\\s*[\"']([^\"']+)[\"'][^>]*?>(.*?)</a>").matcher(content);
+
+        int lastEnd = 0;
+        while (m.find()) {
+            sb.append(content, lastEnd, m.start());
+            
+            String rawUrl = m.group(1).replace("&amp;", "&");
+            String linkText = m.group(2).replaceAll("<[^>]*>", "").trim();
+            
+            String processedUrl = processUrlByDomain(rawUrl);
+            
+            boolean isJobLink = processedUrl.contains("viewjob") || processedUrl.contains("confirmemail") || 
+                               processedUrl.contains("linkedin.com/jobs") || processedUrl.contains("careers") || 
+                               processedUrl.contains("apply");
+            
+            if (isJobLink && processedUrl.length() > 15) {
+                sb.append(" [LINK_START]").append(linkText).append("[LINK_URL]").append(processedUrl).append("[LINK_END] ");
+            } else {
+                sb.append(" ").append(linkText).append(" ");
+            }
+            
+            lastEnd = m.end();
+        }
+        sb.append(content.substring(lastEnd));
+
+        return sb.toString()
+                .replaceAll("(?i)<br\\s*/?>", "\n")
+                .replaceAll("(?i)</td>", " ")
+                .replaceAll("<[^>]*>", " ")
+                .replaceAll("&nbsp;", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+    }
+
+    private String processUrlByDomain(String url) {
+        if (url == null) return "";
+        String lowerUrl = url.toLowerCase();
+
+        if (lowerUrl.contains("linkedin.com/jobs") || lowerUrl.contains("linkedin.com/comm/jobs")) {
+            int queryIndex = url.indexOf("?");
+            return queryIndex > 0 ? url.substring(0, queryIndex) : url;
+        }
+
+        if (lowerUrl.contains("indeed.com")) {
+            return url;
+        }
+
+        if (url.contains("utm_") || url.contains("ref=")) {
+            return url.replaceAll("[?&]utm_[^&]+", "").replaceAll("[?&]ref=[^&]+", "");
+        }
+
+        return url;
     }
 
     private void bootstrapUserHistory(Gmail service, User user) throws Exception {
@@ -163,13 +217,6 @@ public class GmailWebhookService {
         String s = subject.toLowerCase();
         return s.contains("security alert") || s.contains("sign-in") || s.contains("verification code");
     }
-
-//    private void evictUserCaches(String email) {
-//        Cache userCache = cacheManager.getCache("users");
-//        Cache entityCache = cacheManager.getCache("userEntities");
-//        if (userCache != null) userCache.evict(email);
-//        if (entityCache != null) entityCache.evict(email);
-//    }
 
     public String getFreshAccessToken(String refreshToken) throws Exception {
         return new GoogleRefreshTokenRequest(GoogleNetHttpTransport.newTrustedTransport(), GsonFactory.getDefaultInstance(),

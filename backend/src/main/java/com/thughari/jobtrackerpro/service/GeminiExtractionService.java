@@ -395,7 +395,6 @@ public class GeminiExtractionService implements GeminiService {
 		- help
 		- privacy
 		- settings
-		- account management
 		
 		If no job-related link exists:
 		

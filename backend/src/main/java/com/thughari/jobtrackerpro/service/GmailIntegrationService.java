@@ -119,7 +119,7 @@ public class GmailIntegrationService {
 
         userRepository.saveAndFlush(user);
         
-        log.info("Gmail Automation enabled with 1 DB transaction for: {}", user.getEmail());
+        log.info("User {} successfully connected Gmail. Watch set with label ID: {}", email, labelId);
     }
 
     @Async("taskExecutor")
@@ -151,8 +151,6 @@ public class GmailIntegrationService {
             String currentHistoryId = service.users().getProfile("me").execute().getHistoryId().toString();
             
             jobService.finalizeManualSync(email, currentHistoryId);
-
-            log.info("Manual sync finished for {}. Found {} jobs.", email, found);
         } catch (Exception e) {
             log.error("Manual sync failed for {}: {}", email, e.getMessage());
         } finally {
@@ -340,8 +338,6 @@ public class GmailIntegrationService {
         userRepository.saveAndFlush(user);
 
         cleanupGoogleResourcesAsync(refreshToken, labelId);
-        
-        log.info("User {} disconnected from Gmail. Local state cleared.", email);
     }
 
     @Async("taskExecutor")
@@ -358,7 +354,6 @@ public class GmailIntegrationService {
                     .uri("https://oauth2.googleapis.com/revoke?token=" + refreshToken)
                     .retrieve();
                     
-            log.info("Google resources cleaned up and token revoked.");
         } catch (Exception e) {
             log.warn("Non-critical: Google resource cleanup failed: {}", e.getMessage());
         }

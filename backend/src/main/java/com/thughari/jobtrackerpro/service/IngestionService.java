@@ -30,7 +30,7 @@ public class IngestionService {
         if (user == null) return;
 
         if (Boolean.TRUE.equals(user.getGmailConnected())) {
-            log.info("Discarding forwarded email for {}: Direct Sync is active.", userEmail);
+            log.warn("Discarding forwarded email for {}: Direct Sync is active.", userEmail);
             return;
         }
 
@@ -39,7 +39,6 @@ public class IngestionService {
 
         if (job != null) {
             jobService.createOrUpdateJob(job, userEmail);
-            log.info("Successfully ingested forwarded job: {} for {}", job.getCompany(), userEmail);
         }
     }
 }
