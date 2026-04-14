@@ -1,246 +1,502 @@
-<div class="min-h-screen bg-gray-50 dark:bg-[#0B0E14] text-gray-700 dark:text-gray-300 font-sans selection:bg-indigo-500/30 flex flex-col relative">
+<div
+  class="min-h-screen bg-gray-50 dark:bg-[#0B0E14] text-gray-700 dark:text-gray-300 font-sans selection:bg-indigo-500/30 flex flex-col relative">
 
-  <div class="fixed top-4 left-4 right-4 md:left-auto md:right-6 md:top-6 z-[100] flex flex-col gap-3 pointer-events-none">
+  <!-- Notifications -->
+  <div
+    class="fixed top-4 left-4 right-4 md:left-auto md:right-6 md:top-6 z-[250] flex flex-col gap-3 pointer-events-none">
     @if (successMessage()) {
-      <div class="pointer-events-auto w-full md:max-w-sm bg-white dark:bg-[#151A23] border-l-4 border-green-500 rounded-r-xl shadow-2xl p-4 flex items-start justify-between gap-3 animate-slide-in">
-        <div class="flex items-start gap-3">
-          <i class="ph-fill ph-check-circle text-green-500 text-xl mt-0.5"></i>
-          <div class="min-w-0">
-            <p class="text-sm font-bold text-gray-900 dark:text-white">Success</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ successMessage() }}</p>
-          </div>
+    <div
+      class="pointer-events-auto w-full md:max-w-sm bg-white dark:bg-[#151A23] border-l-4 border-green-500 rounded-r-xl shadow-2xl p-4 flex items-start justify-between gap-3 animate-slide-in">
+      <div class="flex items-start gap-3">
+        <i class="ph-fill ph-check-circle text-green-500 text-xl mt-0.5"></i>
+        <div class="min-w-0">
+          <p class="text-sm font-bold text-gray-900 dark:text-white">Applied</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ successMessage() }}</p>
         </div>
-        <button (click)="clearMessages()" class="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><i class="ph ph-x"></i></button>
       </div>
+      <button (click)="clearMessages()"
+        class="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><i
+          class="ph ph-x"></i></button>
+    </div>
     }
     @if (errorMessage()) {
-      <div class="pointer-events-auto w-full md:max-w-sm bg-white dark:bg-[#151A23] border-l-4 border-red-500 rounded-r-xl shadow-2xl p-4 flex items-start justify-between gap-3 animate-slide-in">
-        <div class="flex items-start gap-3">
-          <i class="ph-fill ph-warning-circle text-red-500 text-xl mt-0.5"></i>
-          <div class="min-w-0">
-            <p class="text-sm font-bold text-gray-900 dark:text-white">Error</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ errorMessage() }}</p>
-          </div>
+    <div
+      class="pointer-events-auto w-full md:max-w-sm bg-white dark:bg-[#151A23] border-l-4 border-red-500 rounded-r-xl shadow-2xl p-4 flex items-start justify-between gap-3 animate-slide-in">
+      <div class="flex items-start gap-3">
+        <i class="ph-fill ph-warning-circle text-red-500 text-xl mt-0.5"></i>
+        <div class="min-w-0">
+          <p class="text-sm font-bold text-gray-900 dark:text-white">Error</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ errorMessage() }}</p>
         </div>
-        <button (click)="clearMessages()" class="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><i class="ph ph-x"></i></button>
       </div>
+      <button (click)="clearMessages()"
+        class="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><i
+          class="ph ph-x"></i></button>
+    </div>
     }
   </div>
 
   @if (!isInAppRoute()) {
-    <nav class="sticky top-0 z-50 bg-white/80 dark:bg-[#0B0E14]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
-      <div class="max-w-7xl mx-auto px-4 h-16 sm:h-20 flex items-center justify-between">
-        <a routerLink="/" class="hover:opacity-80 transition-opacity"><app-logo size="md"></app-logo></a>
-        <div class="flex items-center gap-3">
-          @if (authService.isAuthenticated()) {
-            <a routerLink="/app/dashboard" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold shadow-lg flex items-center gap-2">
-              <i class="ph ph-squares-four text-lg"></i> Dashboard
-            </a>
-          } @else {
-            <a routerLink="/login" class="text-sm font-medium text-gray-500 hover:text-white px-2">Log in</a>
-            <a routerLink="/signup" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold transition-all">Sign up</a>
+  <nav
+    class="sticky top-0 z-[100] bg-white/80 dark:bg-[#0B0E14]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
+    <div class="max-w-7xl mx-auto px-4 h-16 sm:h-20 flex items-center justify-between">
+      <a routerLink="/" class="hover:opacity-80 transition-opacity"><app-logo size="md"></app-logo></a>
+      <div class="flex items-center gap-6">
+        <a routerLink="/about"
+          class="hidden md:block text-sm font-medium text-gray-400 hover:text-white transition-colors">Tech Stack</a>
+        <a routerLink="/resources"
+          class="hidden md:block text-sm font-bold text-indigo-500 border-b-2 border-indigo-500 py-2">Explore</a>
+        @if (authService.isAuthenticated()) {
+        <a routerLink="/app/dashboard"
+          class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-500/20 flex items-center gap-2 transition-all">
+          <i class="ph ph-squares-four text-lg"></i> Dashboard
+        </a>
+        } @else {
+        <a routerLink="/login" class="text-sm font-medium text-gray-500 hover:text-white px-2">Log in</a>
+        <a routerLink="/signup"
+          class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-500/20">Sign
+          up</a>
+        }
+      </div>
+    </div>
+  </nav>
+  }
+
+  <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 md:py-16 space-y-12 flex-grow">
+
+    <!-- Hero Header -->
+    <header class="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+      <div class="space-y-4">
+        <div
+          class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 text-[10px] font-black uppercase tracking-[0.2em]">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+          </span>
+          Community Discoveries
+        </div>
+        <h1 class="text-4xl md:text-6xl font-black text-gray-900 dark:text-white tracking-tighter leading-tight">
+          Explore <span
+            class="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent italic">Community</span>
+          Hub
+        </h1>
+        <p class="text-base text-gray-500 max-w-xl leading-relaxed">
+          Find public jobs, walk-ins, and tech events shared by the community. Your next big opportunity is just a click
+          away.
+        </p>
+
+        <!-- Listing Type Tabs -->
+        <div class="flex overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap gap-2 pt-4">
+          @for (type of ['ALL', 'JOB', 'WALK_IN', 'EVENT', 'RESOURCE']; track type) {
+          <button (click)="onListingTypeFilterChange(type)"
+            [class]="selectedListingTypeFilter() === type ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 border-indigo-500' : 'bg-white dark:bg-[#151A23] text-gray-500 border-gray-200 dark:border-gray-800 hover:border-indigo-500/30'"
+            class="flex-shrink-0 px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest uppercase border transition-all active:scale-95 whitespace-nowrap">
+            {{ type.replace('_', ' ') }}
+          </button>
           }
         </div>
       </div>
-    </nav>
-  }
 
-  <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 md:py-12 space-y-8">
-    
-    <header class="flex flex-col md:flex-row md:items-end justify-between gap-6">
-      <div class="space-y-2">
-        <div class="inline-flex items-center gap-2 text-indigo-500 text-[10px] font-black uppercase tracking-[0.2em]">
-          <i class="ph-fill ph-sparkle"></i> Community Career Mine
-        </div>
-        <h1 class="text-3xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight">Career Vault</h1>
-        <p class="text-sm text-gray-500 max-w-lg leading-relaxed">Explore and contribute to a wide range of career resources.</p>
-      </div>
-
-      <div class="flex p-1 bg-gray-200/50 dark:bg-[#151A23] rounded-2xl w-fit border border-gray-200 dark:border-gray-800 shadow-inner">
+      <div
+        class="flex p-1.5 bg-gray-200/50 dark:bg-[#151A23] rounded-2xl md:rounded-[2rem] border border-gray-200 dark:border-gray-800 shadow-inner w-full sm:w-fit self-start lg:self-end">
         <button (click)="setViewMode('community')"
-          [class]="viewMode() === 'community' ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-sm' : 'text-gray-500'"
-          class="px-5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2">
-          <i class="ph-fill ph-planet"></i> COMMUNITY
+          [class]="viewMode() === 'community' ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xl' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'"
+          class="flex-1 sm:flex-none px-6 md:px-8 py-3 rounded-xl md:rounded-3xl text-[10px] md:text-xs font-black transition-all flex items-center justify-center gap-2 min-w-[120px] md:min-w-[140px]">
+          <i class="ph-fill ph-planet"></i> GLOBAL FEED
         </button>
         <button (click)="setViewMode('mine')"
-          [class]="viewMode() === 'mine' ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-sm' : 'text-gray-500'"
-          class="px-5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2">
-          <i class="ph-fill ph-user-circle"></i> MY SHARES
+          [class]="viewMode() === 'mine' ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xl' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'"
+          class="flex-1 sm:flex-none px-6 md:px-8 py-3 rounded-xl md:rounded-3xl text-[10px] md:text-xs font-black transition-all flex items-center justify-center gap-2 min-w-[120px] md:min-w-[140px]">
+          <i class="ph-fill ph-user-circle"></i> CONTRIBUTIONS
         </button>
       </div>
     </header>
 
-    <section class="grid grid-cols-1 lg:grid-cols-12 gap-3 bg-white dark:bg-[#151A23] p-3 md:p-4 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm transition-all">
-      <div class="lg:col-span-6 relative group">
-        <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors"></i>
-        <input [ngModel]="searchQuery()" (ngModelChange)="onSearchQueryChange($event)" type="text" 
-          placeholder="Search roadmaps, tech, or contributors..."
-          class="w-full rounded-2xl border-none bg-gray-50 dark:bg-[#0B0E14] pl-12 pr-4 py-4 text-sm focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder-gray-500" />
+    <!-- Unified Filter Bar -->
+    <div
+      class="flex flex-col md:flex-row items-center gap-4 bg-white dark:bg-[#151A23] p-5 rounded-[2.5rem] border border-gray-200 dark:border-gray-800 shadow-2xl relative z-10">
+
+      <!-- Search Input -->
+      <div class="flex-grow relative group w-full md:w-auto">
+        <i
+          class="ph ph-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors text-xl"></i>
+        <input [ngModel]="searchQuery()" (ngModelChange)="onSearchQueryChange($event)" type="text"
+          placeholder="Search jobs, companies, or events..."
+          class="w-full rounded-2xl border-none bg-gray-50 dark:bg-[#0B0E14] pl-14 pr-6 py-4 text-sm focus:ring-2 focus:ring-indigo-500/40 transition-all placeholder-gray-500 font-medium" />
       </div>
 
-      <div class="lg:col-span-3 relative">
-        <i class="ph ph-tag absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
-        <input [ngModel]="selectedCategoryFilter()" (ngModelChange)="onCategoryFilterChange($event)" list="categories" 
-          placeholder="Filter category..."
-          class="w-full rounded-2xl border-none bg-gray-50 dark:bg-[#0B0E14] pl-12 pr-4 py-4 text-sm focus:ring-2 focus:ring-indigo-500" />
+      <!-- Location Filter -->
+      <div class="flex-shrink-0 relative group w-full md:w-56">
+        <i
+          class="ph ph-map-pin absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors text-xl"></i>
+        <select [ngModel]="selectedLocationFilter()" (ngModelChange)="onLocationFilterChange($event)"
+          class="w-full appearance-none rounded-2xl border-none bg-gray-50 dark:bg-[#0B0E14] pl-14 pr-10 py-4 text-sm focus:ring-2 focus:ring-indigo-500/40 transition-all text-gray-700 dark:text-gray-300 font-medium cursor-pointer">
+          <option value="">All Locations</option>
+          @for (city of cityOptions(); track city) {
+          <option [value]="city">{{ city }}</option>
+          }
+        </select>
+        <i class="ph ph-caret-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"></i>
       </div>
 
-      <button (click)="openAddResourceModal()" 
-        class="hidden lg:flex lg:col-span-3 bg-indigo-600 hover:bg-indigo-500 text-white font-black py-2.5 px-6 rounded-2xl shadow-xl transition-all items-center justify-center gap-2 active:scale-95 text-xs uppercase tracking-widest">
-        <i class="ph-fill ph-plus-circle text-lg"></i> Share
-      </button>
-    </section>
+      <!-- Category List Filter -->
+      <div class="flex-shrink-0 relative group w-full md:w-64 flex gap-2">
+        <div class="relative flex-grow">
+          <i
+            class="ph ph-tag absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors text-xl"></i>
+          <input [ngModel]="selectedCategoryFilter()" (ngModelChange)="onCategoryFilterChange($event)" list="categories"
+            placeholder="Filter Category..."
+            class="w-full rounded-2xl border-none bg-gray-50 dark:bg-[#0B0E14] pl-14 pr-5 py-4 text-sm focus:ring-2 focus:ring-indigo-500/40 transition-all placeholder-gray-500 font-medium" />
+        </div>
 
+        <button (click)="openAddResourceModal()"
+          class="hidden md:flex flex-shrink-0 bg-indigo-600 hover:bg-indigo-500 text-white font-black w-12 h-12 rounded-xl shadow-lg transition-all items-center justify-center active:scale-90">
+          <i class="ph-bold ph-plus text-xl"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Feed Content -->
     @if (isLoading() && viewMode() === 'community') {
-      <div class="flex flex-col items-center py-24 text-gray-500 animate-pulse">
-        <i class="ph-fill ph-database text-5xl mb-4 text-indigo-500/20"></i>
-        <p class="font-medium uppercase tracking-widest text-xs">Mapping the career mine...</p>
+    <div class="flex flex-col items-center py-32 text-center animate-pulse">
+      <div class="w-16 h-16 bg-indigo-500/10 rounded-full flex items-center justify-center text-indigo-500 mb-6">
+        <i class="ph-bold ph-spinning-wheel animate-spin text-4xl"></i>
       </div>
+      <p class="font-black uppercase tracking-[0.2em] text-[10px] text-gray-500">Scanning the community horizon...</p>
+    </div>
     } @else {
-      <div class="space-y-12">
-        @for (section of groupedResources(); track section.category) {
-          <div class="space-y-6">
-            <div class="flex items-center gap-4 px-2">
-              <h2 class="text-xs font-black uppercase tracking-[0.2em] text-indigo-500 whitespace-nowrap">{{ section.category }}</h2>
-              <div class="h-px bg-gray-200 dark:bg-gray-800 w-full"></div>
-              <span class="text-[10px] font-black text-gray-400">{{ section.links.length }}</span>
+    <div class="space-y-16 pb-20">
+      @for (section of groupedResources(); track section.category) {
+      <div class="space-y-8 animate-fade-in-up" [style.animation-delay]="'100ms'">
+        <div class="flex items-center gap-6 px-4">
+          <h2 class="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-500 whitespace-nowrap">{{
+            section.category }}</h2>
+          <div class="h-px bg-gradient-to-r from-gray-200 dark:from-gray-800 to-transparent flex-grow"></div>
+          <span
+            class="text-[9px] font-black text-gray-400 bg-gray-100 dark:bg-[#151A23] px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-800">{{
+            section.links.length }} items</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          @for (listing of section.links; track listing.id) {
+          <div
+            class="group bg-white dark:bg-[#151A23] border border-gray-200 dark:border-gray-800 rounded-[2.5rem] p-8 transition-all hover:border-indigo-500/50 hover:shadow-[0_20px_50px_-15px_rgba(79,70,229,0.15)] flex flex-col justify-between h-full relative overflow-hidden">
+
+            <!-- Listing Type Decorative Badge -->
+            <div
+              class="absolute -top-1 -right-1 w-24 h-24 bg-gradient-to-br from-indigo-500/10 to-transparent rounded-full blur-2xl group-hover:from-indigo-500/20 transition-all opacity-50">
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              @for (link of section.links; track link.id) {
-                <div class="group bg-white dark:bg-[#151A23] border border-gray-200 dark:border-gray-800 rounded-[2.5rem] p-6 transition-all hover:border-indigo-500/50 hover:shadow-xl flex flex-col justify-between h-full animate-fade-in">
-                  <div class="space-y-4">
-                    <div class="flex justify-between items-start gap-3">
-                      <a class="flex-1 min-w-0" [href]="link.url" target="_blank">
-                         <h3 class="text-base font-bold text-gray-900 dark:text-gray-100 group-hover:text-indigo-400 transition-colors leading-snug">
-                           {{ link.title }}
-                           @if (link.submittedByName === 'JobTrackerPro') {
-                             <i class="ph-fill ph-seal-check text-blue-500 text-sm ml-1" title="Verified Official"></i>
-                           }
-                         </h3>
-                      </a>
-                      <a [href]="link.url" target="_blank" 
-                        class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-indigo-500 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-all active:scale-90">
-                        <i class="ph-bold ph-arrow-square-out"></i>
-                      </a>
-                    </div>
-                    <p class="text-xs text-gray-500 line-clamp-3 leading-relaxed">{{ link.description || 'No description provided.' }}</p>
-                  </div>
+            <div class="space-y-5 relative z-10">
+              <div class="flex justify-between items-start gap-4">
 
-                  <div class="mt-6 pt-4 border-t border-gray-50 dark:border-gray-800/50 flex items-center justify-between">
-                    <span [ngClass]="link.resourceType === 'FILE' ? 'text-red-500 bg-red-500/10 border-red-500/20' : 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'" 
-                          class="text-[9px] font-black px-2 py-0.5 rounded-lg border dark:border-transparent uppercase">
-                      {{ link.resourceType }}
+                <div class="flex flex-col gap-1 flex-grow min-w-0">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span [ngClass]="{
+                              'bg-indigo-500/10 text-indigo-500': listing.listingType === 'JOB',
+                              'bg-purple-500/10 text-purple-500': listing.listingType === 'WALK_IN',
+                              'bg-amber-500/10 text-amber-500': listing.listingType === 'EVENT',
+                              'bg-emerald-500/10 text-emerald-500': listing.listingType === 'RESOURCE' || !listing.listingType
+                            }" class="text-[9px] font-black px-2.5 py-1 rounded-lg tracking-widest uppercase">
+                      {{ (listing.listingType || 'RESOURCE').replace('_', ' ') }}
                     </span>
-
-                    <div class="flex items-center gap-2">
-                       @if (link.ownedByCurrentUser) {
-                        <button (click)="onDeleteClick(link)" class="p-1.5 text-gray-400 hover:text-red-500 transition-colors">
-                          <i class="ph-fill ph-trash text-sm"></i>
-                        </button>
-                       }
-                       <span class="text-[10px] text-gray-500 font-medium italic opacity-60">via {{ link.submittedByName }}</span>
-                    </div>
+                    @if (listing.location) {
+                    <span
+                      class="flex items-center gap-1 text-[9px] font-bold text-gray-500 dark:text-gray-400 tracking-wide uppercase">
+                      <i class="ph ph-map-pin"></i> {{ listing.location }}
+                    </span>
+                    }
                   </div>
+
+                  <a [href]="listing.url" target="_blank" class="block">
+                    <h3
+                      class="text-xl font-black text-gray-900 dark:text-gray-100 group-hover:text-indigo-400 transition-colors leading-tight tracking-tight decoration-none">
+                      {{ listing.title }}
+                      @if (listing.submittedByName === 'JobTrackerPro') {
+                      <i class="ph-fill ph-seal-check text-blue-500 text-sm ml-1" title="Official Posting"></i>
+                      }
+                    </h3>
+                  </a>
+
+                  @if (listing.company) {
+                  <p class="text-xs font-bold text-gray-400 flex items-center gap-2">
+                    <i class="ph-fill ph-buildings opacity-50"></i> {{ listing.company }}
+                  </p>
+                  }
                 </div>
-              }
+
+                <a [href]="listing.url" target="_blank"
+                  class="w-12 h-12 rounded-2xl bg-gray-50 dark:bg-[#0B0E14] border border-gray-200 dark:border-gray-800 text-gray-500 hover:text-indigo-500 hover:bg-white dark:hover:bg-[#151A23] hover:border-indigo-500/30 transition-all active:scale-90 flex items-center justify-center shadow-sm">
+                  <i class="ph-bold ph-arrow-up-right text-lg"></i>
+                </a>
+              </div>
+
+              <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-3 leading-relaxed font-medium mb-4">
+                {{ listing.description || 'No detailed description provided for this community discovery.' }}
+              </p>
+            </div>
+
+            <div
+              class="mt-8 pt-5 border-t border-gray-100 dark:border-gray-800/80 flex items-center justify-between relative z-10">
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-8 h-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500 font-black text-[10px] uppercase shadow-inner">
+                  {{ (listing.submittedByName || '?').substring(0,1) }}
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-[10px] font-black text-gray-900 dark:text-white tracking-wide">via {{
+                    listing.submittedByName }}</span>
+                  <span class="text-[9px] text-gray-500 font-medium opacity-60">{{ listing.createdAt | date:'MMM d, y'
+                    }}</span>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2">
+                @if (listing.ownedByCurrentUser) {
+                <button (click)="onDeleteClick(listing)"
+                  class="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-500/10 transition-all active:scale-90">
+                  <i class="ph-fill ph-trash text-lg"></i>
+                </button>
+                }
+              </div>
             </div>
           </div>
-        }
-      </div>
-
-      @if (hasNext() && viewMode() === 'community') {
-        <div class="flex justify-center pt-12 pb-10">
-          <button (click)="loadResources()" [disabled]="isLoadingMore()"
-            class="px-10 py-4 rounded-2xl bg-white dark:bg-[#151A23] border border-gray-200 dark:border-gray-800 font-black text-xs uppercase tracking-widest hover:border-indigo-500/50 hover:text-indigo-500 transition-all shadow-xl active:scale-95">
-            {{ isLoadingMore() ? 'Digging...' : 'Load More Discoveries' }}
-          </button>
+          }
         </div>
+      </div>
       }
+
+      @if (displayResources().length === 0) {
+      <div class="flex flex-col items-center py-32 text-center space-y-4">
+        <div
+          class="w-20 h-20 bg-gray-100 dark:bg-[#151A23] rounded-[2rem] flex items-center justify-center text-gray-500/30">
+          <i class="ph-fill ph-magnifying-glass text-5xl"></i>
+        </div>
+        <div class="space-y-1">
+          <h3 class="text-xl font-bold dark:text-white">No Discoveries Found</h3>
+          <p class="text-sm text-gray-500 max-w-xs mx-auto">Try adjusting your filters or be the first to share an
+            opportunity in this category!</p>
+        </div>
+        <button (click)="openAddResourceModal()"
+          class="mt-4 px-6 py-3 rounded-2xl bg-indigo-600 text-white font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-500/20">Post
+          New Listing</button>
+      </div>
+      }
+    </div>
+
+    @if (hasNext() && viewMode() === 'community') {
+    <div class="flex justify-center pt-8 pb-16">
+      <button (click)="loadResources()" [disabled]="isLoadingMore()"
+        class="group relative px-12 py-5 rounded-[2rem] bg-indigo-600 text-white font-black text-[10px] uppercase tracking-[0.3em] overflow-hidden shadow-2xl transition-all active:scale-95 disabled:opacity-50">
+        <span class="relative z-10 flex items-center gap-3">
+          @if (isLoadingMore()) { <i class="ph-bold ph-spinning-wheel animate-spin"></i> }
+          {{ isLoadingMore() ? 'SYNCING DATA...' : 'LOAd MORE OPPORTUNITIES' }}
+        </span>
+        <div
+          class="absolute inset-0 bg-indigo-500 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+        </div>
+      </button>
+    </div>
+    }
     }
   </div>
 
+  <!-- Mobile Floating Action Button -->
   @if (authService.isAuthenticated()) {
-    <button (click)="openAddResourceModal()" 
-      class="fixed bottom-6 right-6 lg:hidden w-16 h-16 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center z-[40] active:scale-90 animate-bounce-slow">
-      <i class="ph-bold ph-plus text-2xl"></i>
-    </button>
+  <button (click)="openAddResourceModal()"
+    class="fixed bottom-8 right-8 lg:hidden w-16 h-16 bg-indigo-600 text-white rounded-[1.5rem] shadow-[0_20px_40px_-10px_rgba(79,70,229,0.5)] flex items-center justify-center z-[80] active:scale-90 animate-subtle-bounce border-2 border-indigo-400/20">
+    <i class="ph-bold ph-plus text-3xl"></i>
+  </button>
   }
 </div>
 
+<!-- Category Datalist -->
 <datalist id="categories">
-    @for (cat of categoryOptions(); track cat) { <option [value]="cat"></option> }
+  @for (cat of categoryOptions(); track cat) { <option [value]="cat"></option> }
 </datalist>
 
+<!-- Create Posting Modal -->
 @if (showAddResourceModal()) {
-<div class="fixed inset-0 z-[110] bg-[#0B0E14]/80 backdrop-blur-md p-4 flex items-center justify-center overflow-y-auto">
-  <div class="w-full max-w-xl bg-white dark:bg-[#151A23] rounded-3xl border border-gray-200 dark:border-gray-800 shadow-2xl animate-scale-in">
-    
-    <div class="px-6 py-4 border-b dark:border-gray-800 flex justify-between items-center">
-      <h2 class="text-xl font-bold dark:text-white">Contribute Resource</h2>
-      <button (click)="closeAddResourceModal()" class="text-gray-500 hover:text-white"><i class="ph ph-x text-xl"></i></button>
+<div
+  class="fixed inset-0 z-[300] bg-[#0B0E14]/90 backdrop-blur-xl p-4 flex items-center justify-center overflow-y-auto pt-20 pb-20">
+  <div
+    class="w-full max-w-2xl bg-white dark:bg-[#151A23] rounded-[3rem] border border-gray-200 dark:border-gray-800 shadow-[0_0_100px_-20px_rgba(79,70,229,0.3)] animate-scale-in flex flex-col max-h-[90vh]">
+
+    <!-- Modal Header -->
+    <div class="px-10 py-8 border-b dark:border-gray-800/50 flex justify-between items-center">
+      <div class="space-y-1">
+        <h2 class="text-2xl font-black text-gray-900 dark:text-white tracking-tight uppercase">Share Discovery</h2>
+        <p class="text-xs text-gray-500 font-bold uppercase tracking-widest leading-none">Contribute to the hub</p>
+      </div>
+      <button (click)="closeAddResourceModal()"
+        class="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-[#0B0E14] text-gray-500 hover:text-white transition-all flex items-center justify-center border border-transparent dark:hover:border-indigo-500/50">
+        <i class="ph ph-x text-2xl"></i>
+      </button>
     </div>
 
-    <div class="p-6 space-y-6">
-      <div class="flex p-1 bg-gray-100 dark:bg-[#0B0E14] rounded-xl border dark:border-gray-800">
-        <button (click)="onModeChange('link')" [class]="contributionMode === 'link' ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-sm' : 'text-gray-500'" class="flex-1 py-2 rounded-lg text-xs font-bold transition-all">LINK</button>
-        <button (click)="onModeChange('file')" [class]="contributionMode === 'file' ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-sm' : 'text-gray-500'" class="flex-1 py-2 rounded-lg text-xs font-bold transition-all">FILE UPLOAD</button>
+    <!-- Modal Form Body -->
+    <div class="p-10 space-y-8 overflow-y-auto thin-scrollbar">
+
+      <!-- High-Level Selectors -->
+      <div class="space-y-6">
+        <div class="space-y-3">
+          <label class="text-[10px] font-black text-indigo-500 uppercase tracking-widest ml-1">Listing Type</label>
+          <div
+            class="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1.5 bg-gray-100 dark:bg-[#0B0E14] rounded-2xl border dark:border-gray-800">
+            @for (type of ['JOB', 'WALK_IN', 'EVENT', 'RESOURCE']; track type) {
+            <button (click)="onListingTypeSelect(type)"
+              [class]="listingType === type ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xl' : 'text-gray-500 hover:text-gray-300'"
+              class="py-2.5 rounded-xl text-[9px] font-black transition-all flex items-center justify-center uppercase tracking-widest">
+              {{ type.replace('_', ' ') }}
+            </button>
+            }
+          </div>
+        </div>
+
+        @if (listingType === 'RESOURCE') {
+        <div class="space-y-3 animate-fade-in">
+          <label class="text-[10px] font-black text-indigo-500 uppercase tracking-widest ml-1">Submission Mode</label>
+          <div class="flex p-1.5 bg-gray-100 dark:bg-[#0B0E14] rounded-2xl border dark:border-gray-800">
+            <button (click)="onModeChange('link')"
+              [class]="contributionMode === 'link' ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xl' : 'text-gray-500'"
+              class="flex-1 py-3 rounded-xl text-[10px] font-black tracking-widest transition-all">WEBSITE LINK</button>
+            <button (click)="onModeChange('file')"
+              [class]="contributionMode === 'file' ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xl' : 'text-gray-500'"
+              class="flex-1 py-3 rounded-xl text-[10px] font-black tracking-widest transition-all">FILE UPLOAD</button>
+          </div>
+        </div>
+        }
       </div>
 
-      <div class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input [(ngModel)]="title" type="text" placeholder="Title" class="w-full rounded-xl dark:bg-[#0B0E14] border-none p-4 text-sm focus:ring-2 focus:ring-indigo-500" />
-          <input [(ngModel)]="category" type="text" list="categories" placeholder="Category (e.g. DSA)" class="w-full rounded-xl dark:bg-[#0B0E14] border-none p-4 text-sm focus:ring-2 focus:ring-indigo-500" />
+      <div class="grid gap-6">
+        <!-- Title & Category -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-2">
+            <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Headline</label>
+            <input [(ngModel)]="title" type="text" placeholder="e.g. Senior Java Engineer"
+              class="w-full rounded-2xl dark:bg-[#0B0E14] border-none p-5 text-sm focus:ring-2 focus:ring-indigo-500 font-medium placeholder-gray-600" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Category</label>
+            <input [(ngModel)]="category" type="text" list="categories" placeholder="e.g. Software Development"
+              class="w-full rounded-2xl dark:bg-[#0B0E14] border-none p-5 text-sm focus:ring-2 focus:ring-indigo-500 font-medium placeholder-gray-600" />
+          </div>
         </div>
-        
-        @if (contributionMode === 'link') {
-          <input [(ngModel)]="url" type="url" placeholder="https://..." class="w-full rounded-xl dark:bg-[#0B0E14] border-none p-4 text-sm focus:ring-2 focus:ring-indigo-500 animate-fade-in" />
-        } @else {
-          <label class="block group cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-800 bg-gray-50 dark:bg-[#0B0E14] rounded-2xl p-8 text-center hover:border-indigo-500 transition-all animate-fade-in">
-            <input type="file" #fileInput (change)="onFileSelected($event)" class="hidden" accept=".pdf,.doc,.docx,.txt" />
-            <div class="space-y-2">
-              <i class="ph-fill ph-cloud-arrow-up text-4xl text-gray-400 group-hover:text-indigo-500 transition-colors"></i>
-              <p class="text-sm font-bold text-gray-600 dark:text-gray-300">
-                {{ selectedFile ? selectedFile.name : 'Choose PDF, DOCX or TXT' }}
-              </p>
-              <p class="text-[10px] text-gray-500 uppercase tracking-widest">Max size 10MB</p>
+
+        <!-- Optional Listing Metadata -->
+        @if (listingType !== 'RESOURCE') {
+        <div
+          class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 rounded-[2rem] bg-gray-50 dark:bg-[#0B0E14] border dark:border-gray-800/50 animate-fade-in">
+          <div class="space-y-2">
+            <label class="text-[10px] font-black text-indigo-500/50 uppercase tracking-widest ml-1">Company /
+              Organizer</label>
+            <input [(ngModel)]="company" type="text" placeholder="e.g. Google India"
+              class="w-full rounded-xl bg-white dark:bg-[#151A23] border hover:border-indigo-500/30 dark:border-gray-800 p-4 text-xs font-bold focus:ring-2 focus:ring-indigo-500 transition-all shadow-inner" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-[10px] font-black text-indigo-500/50 uppercase tracking-widest ml-1">Work
+              Location</label>
+            <select [(ngModel)]="location"
+              class="w-full rounded-xl bg-white dark:bg-[#151A23] border hover:border-indigo-500/30 dark:border-gray-800 p-4 text-xs font-bold focus:ring-2 focus:ring-indigo-500 transition-all shadow-inner">
+              <option value="">Select Location</option>
+              @for (city of cityOptions(); track city) {
+              <option [value]="city">{{ city }}</option>
+              }
+            </select>
+          </div>
+          @if (listingType === 'WALK_IN' || listingType === 'EVENT') {
+          <div class="space-y-2 md:col-span-2 animate-fade-in">
+            <label class="text-[10px] font-black text-indigo-500/50 uppercase tracking-widest ml-1">Date & Time</label>
+            <input [(ngModel)]="eventDate" type="datetime-local"
+              class="w-full rounded-xl bg-white dark:bg-[#151A23] border hover:border-indigo-500/30 dark:border-gray-800 p-4 text-xs font-bold focus:ring-2 focus:ring-indigo-500 transition-all shadow-inner" />
+          </div>
+          }
+        </div>
+        }
+
+        <!-- URL or File -->
+        <div class="space-y-2">
+          <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">
+            {{ contributionMode === 'link' ? 'Reference Link' : 'Attachment' }}
+          </label>
+          @if (contributionMode === 'link') {
+          <div class="relative group">
+            <i
+              class="ph-bold ph-link absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors"></i>
+            <input [(ngModel)]="url" type="url" placeholder="https://..."
+              class="w-full rounded-2xl dark:bg-[#0B0E14] border-none pl-14 pr-6 py-5 text-sm focus:ring-2 focus:ring-indigo-500 animate-fade-in font-medium" />
+          </div>
+          } @else {
+          <label
+            class="block group cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-800 bg-gray-50 dark:bg-[#0B0E14] rounded-3xl p-10 text-center hover:border-indigo-500 transition-all animate-fade-in">
+            <input type="file" #fileInput (change)="onFileSelected($event)" class="hidden"
+              accept=".pdf,.doc,.docx,.txt" />
+            <div class="space-y-4">
+              <div
+                class="w-20 h-20 bg-indigo-500/10 rounded-[1.5rem] flex items-center justify-center text-indigo-500 mx-auto group-hover:scale-110 transition-transform">
+                <i class="ph-fill ph-cloud-arrow-up text-5xl"></i>
+              </div>
+              <div class="space-y-1">
+                <p class="text-base font-black dark:text-gray-100 uppercase tracking-tighter">
+                  {{ selectedFile ? selectedFile.name : 'Upload Document' }}
+                </p>
+                <p class="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-black opacity-60">PDF, DOCX OR TXT •
+                  MAX 10MB</p>
+              </div>
             </div>
           </label>
-          @if (selectedFileError) { <p class="text-xs text-red-500 mt-1 ml-1 font-medium">{{ selectedFileError }}</p> }
-        }
-        
-        <textarea [(ngModel)]="description" rows="3" placeholder="Brief description of this resource..." class="w-full rounded-xl dark:bg-[#0B0E14] border-none p-4 text-sm focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
+          @if (selectedFileError) { <p class="text-xs text-red-500 mt-2 font-bold px-4">{{ selectedFileError }}</p> }
+          }
+        </div>
+
+        <!-- Description -->
+        <div class="space-y-2">
+          <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">About the scope</label>
+          <textarea [(ngModel)]="description" rows="5"
+            placeholder="Provide extra details, requirements or tips for the community..."
+            class="w-full rounded-3xl dark:bg-[#0B0E14] border-none p-6 text-sm focus:ring-2 focus:ring-indigo-500 resize-none font-medium placeholder-gray-600 leading-relaxed thin-scrollbar"></textarea>
+        </div>
       </div>
 
-      <button (click)="addResource()" [disabled]="isSaving()" 
-        class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black shadow-lg shadow-indigo-500/20 disabled:opacity-50 flex items-center justify-center gap-2 active:scale-95 transition-all uppercase text-xs tracking-widest">
-        @if (isSaving()) { <i class="ph ph-spinner animate-spin text-lg"></i> }
-        {{ isSaving() ? 'Uploading...' : 'Save to Vault' }}
+      <!-- Action -->
+      <button (click)="addResource()" [disabled]="isSaving()"
+        class="w-full py-6 bg-indigo-600 hover:bg-indigo-500 text-white rounded-[2rem] font-black shadow-2xl shadow-indigo-500/40 disabled:opacity-50 flex items-center justify-center gap-3 active:scale-95 transition-all uppercase text-xs tracking-[0.2em]">
+        @if (isSaving()) { <i class="ph-bold ph-circle-notch animate-spin text-xl"></i> }
+        {{ isSaving() ? 'Transmitting...' : 'Finalize Broadcast' }}
       </button>
     </div>
   </div>
 </div>
 }
 
+<!-- Delete Confirmation Modal -->
 @if (showDeleteConfirm()) {
-<div class="fixed inset-0 z-[130] bg-[#0B0E14]/90 backdrop-blur-sm p-4 flex items-center justify-center">
-  <div class="w-full max-w-sm bg-white dark:bg-[#151A23] rounded-[2.5rem] border border-gray-200 dark:border-red-900/20 shadow-2xl animate-scale-in overflow-hidden">
-    <div class="p-8 text-center space-y-6">
-      <div class="w-20 h-20 bg-red-50 dark:bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto shadow-inner">
-        <i class="ph-fill ph-warning-octagon text-4xl"></i>
+<div class="fixed inset-0 z-[300] bg-[#0B0E14]/95 backdrop-blur-lg p-4 flex items-center justify-center">
+  <div
+    class="w-full max-w-sm bg-white dark:bg-[#151A23] rounded-[3rem] border border-gray-200 dark:border-red-900/30 shadow-2xl animate-scale-in overflow-hidden relative">
+
+    <div class="absolute -top-10 -left-10 w-40 h-40 bg-red-500/10 rounded-full blur-[40px]"></div>
+
+    <div class="p-10 text-center space-y-8 relative z-10">
+      <div
+        class="w-24 h-24 bg-red-50 dark:bg-red-500/10 text-red-500 rounded-[2rem] flex items-center justify-center mx-auto shadow-inner border border-red-500/20">
+        <i class="ph-fill ph-warning-octagon text-5xl"></i>
       </div>
-      <div class="space-y-2">
-        <h2 class="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Are you sure?</h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-          You are about to delete <span class="font-bold text-gray-900 dark:text-white">"{{ resourceToDelete()?.title }}"</span>. This action cannot be undone.
+      <div class="space-y-3">
+        <h2 class="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">Retract Posting</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed font-medium">
+          Retracting <span class="font-bold text-red-400">"{{ resourceToDelete()?.title }}"</span> will remove it from
+          the community global feed instantly.
         </p>
       </div>
       <div class="flex flex-col gap-3">
-        <button (click)="confirmDelete()" [disabled]="isDeleting()" class="w-full py-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-red-500/20 transition-all active:scale-95 flex items-center justify-center gap-2">
-          @if (isDeleting()) { <i class="ph ph-spinner animate-spin text-lg"></i> }
-          {{ isDeleting() ? 'DELETING...' : 'YES, REMOVE IT' }}
+        <button (click)="confirmDelete()" [disabled]="isDeleting()"
+          class="w-full py-5 bg-red-500 hover:bg-red-600 text-white rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-red-500/20 transition-all active:scale-90 flex items-center justify-center gap-2">
+          @if (isDeleting()) { <i class="ph-bold ph-circle-notch animate-spin"></i> }
+          {{ isDeleting() ? 'REMOVING...' : 'YES, RETRACT NOW' }}
         </button>
-        <button (click)="closeDeleteModal()" [disabled]="isDeleting()" class="w-full py-4 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Cancel</button>
+        <button (click)="closeDeleteModal()" [disabled]="isDeleting()"
+          class="w-full py-5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.2em] hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">ABORT</button>
       </div>
     </div>
   </div>

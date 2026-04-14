@@ -40,15 +40,17 @@ public class CareerResourceController {
 			@RequestParam(defaultValue = "20") int size,
 			@RequestParam(required = false) String query,
 			@RequestParam(required = false) String category,
-			@RequestParam(required = false) String type
+			@RequestParam(required = false) String type,
+			@RequestParam(required = false) String location,
+			@RequestParam(required = false) String listingType
 			) {
-		return ResponseEntity.ok(careerResourceService.getResourcePage(page, size, query, category, type, getAuthenticatedEmailOrNull()));
+		return ResponseEntity.ok(careerResourceService.getResourcePage(page, size, query, category, type, location, listingType, getAuthenticatedEmailOrNull()));
 	}
 
 
 	@GetMapping("/categories")
-	public ResponseEntity<List<String>> getCategories() {
-		return ResponseEntity.ok(careerResourceService.getAllCategories());
+	public ResponseEntity<List<String>> getCategories(@RequestParam(required = false) String listingType) {
+		return ResponseEntity.ok(careerResourceService.getAllCategories(listingType));
 	}
 
 	@PostMapping
@@ -75,10 +77,23 @@ public class CareerResourceController {
 			@RequestParam String title,
 			@RequestParam String category,
 			@RequestParam(required = false) String description,
+			@RequestParam(required = false) String location,
+			@RequestParam(required = false) String company,
+			@RequestParam(required = false) String listingType,
+			@RequestParam(required = false) String eventDate,
 			@RequestParam MultipartFile file
 			) {
 		String email = getAuthenticatedEmail();
-		return ResponseEntity.ok(careerResourceService.createResourceFromFile(email, title, category, description, file));
+		CreateCareerResourceRequest request = new CreateCareerResourceRequest();
+		request.setTitle(title);
+		request.setCategory(category);
+		request.setDescription(description);
+		request.setLocation(location);
+		request.setCompany(company);
+		request.setListingType(listingType);
+		request.setEventDate(eventDate);
+		
+		return ResponseEntity.ok(careerResourceService.createResourceFromFile(email, request, file));
 	}
 
 	@DeleteMapping("/{id}")

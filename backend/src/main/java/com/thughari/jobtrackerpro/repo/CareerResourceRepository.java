@@ -20,5 +20,8 @@ public interface CareerResourceRepository extends JpaRepository<CareerResource, 
     @Query("select distinct r.category from CareerResource r where r.category is not null and trim(r.category) <> '' order by r.category asc")
     List<String> findDistinctCategories();
 
+    @Query("select distinct r.category from CareerResource r where upper(r.listingType) = upper(:listingType) and r.category is not null and trim(r.category) <> '' order by r.category asc")
+    List<String> findDistinctCategoriesByListingType(String listingType);
+
     boolean existsByUrl(String url);
 }

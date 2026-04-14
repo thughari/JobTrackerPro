@@ -17,56 +17,56 @@ import { TocComponent } from './components/toc/toc.component';
 import { VerifyComponent } from './components/auth/verify/verify.component';
 
 export const routes: Routes = [
-  { 
-    path: '', 
+  {
+    path: '',
     component: LandingComponent,
     title: 'JobTrackerPro - Automate Your Job Hunt'
   },
-  { 
-    path: 'about', 
+  {
+    path: 'about',
     component: AboutComponent,
     title: 'About JobTrackerPro - Architecture & Tech Stack'
   },
-  { 
-    path: 'privacy', 
-    component: PrivacyComponent, 
+  {
+    path: 'privacy',
+    component: PrivacyComponent,
     title: 'Privacy Policy'
   },
-  { 
-    path: 'terms', 
+  {
+    path: 'terms',
     component: TocComponent,
     title: 'Terms of Service - JobTrackerPro'
   },
-  { 
-    path: 'resources', 
+  {
+    path: 'resources',
     component: ResourcesComponent,
-    title: 'Career Resources - JobTrackerPro'
+    title: 'Explore Community Hub - JobTrackerPro'
   },
-  { 
-    path: 'reset-password', 
+  {
+    path: 'reset-password',
     component: ResetPasswordComponent
   },
-  { 
-    path: 'login', 
-    component: LoginComponent, 
-    canActivate: [guestGuard] 
+  {
+    path: 'login',
+    component: LoginComponent,
+    canActivate: [guestGuard]
   },
-  { 
-    path: 'signup', 
-    component: SignupComponent, 
-    canActivate: [guestGuard] 
+  {
+    path: 'signup',
+    component: SignupComponent,
+    canActivate: [guestGuard]
   },
-  { 
-    path: 'login-success', 
-    component: LoginSuccessComponent, 
-    canActivate: [guestGuard] 
+  {
+    path: 'login-success',
+    component: LoginSuccessComponent,
+    canActivate: [guestGuard]
   },
-  { 
-    path: 'verify-email', 
+  {
+    path: 'verify-email',
     component: VerifyComponent,
     title: 'Verify Account | JobTrackerPro'
   },
-  
+
   {
     path: 'app',
     canActivate: [authGuard],

@@ -51,6 +51,17 @@ public class CareerResource {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(length = 100)
+    private String location;
+
+    @Column(length = 100)
+    private String company;
+
+    private LocalDateTime eventDate;
+
+    @Column(nullable = false, length = 20, columnDefinition = "varchar(20) default 'RESOURCE'")
+    private String listingType = "RESOURCE";
+
     @PrePersist
     public void prePersist() {
         if (createdAt == null) {

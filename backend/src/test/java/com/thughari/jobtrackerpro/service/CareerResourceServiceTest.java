@@ -45,7 +45,7 @@ class CareerResourceServiceTest {
                     return new PageImpl<>(List.of(), pageable, 0);
                 });
 
-        var response = service.getResourcePage(-1, 1000, " all ", " all ", "bad", null);
+        var response = service.getResourcePage(-1, 1000, " all ", " all ", "bad", null, null, null);
 
         assertEquals(0, response.getPage());
         assertEquals(50, response.getSize());
@@ -77,7 +77,12 @@ class CareerResourceServiceTest {
         when(storageService.uploadResourceFile(multipartFile, user.getId().toString())).thenReturn("https://cdn/file.pdf");
         when(resourceRepository.save(any(CareerResource.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        var dto = service.createResourceFromFile("u@example.com", " Title ", " Prep ", " Desc ", multipartFile);
+        CreateCareerResourceRequest req = new CreateCareerResourceRequest();
+        req.setTitle(" Title ");
+        req.setCategory(" Prep ");
+        req.setDescription(" Desc ");
+        
+        var dto = service.createResourceFromFile("u@example.com", req, multipartFile);
 
         assertEquals("FILE", dto.getResourceType());
         assertEquals("guide.pdf", dto.getOriginalFileName());

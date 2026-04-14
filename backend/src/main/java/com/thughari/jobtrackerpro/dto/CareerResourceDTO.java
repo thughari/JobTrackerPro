@@ -18,4 +18,8 @@ public class CareerResourceDTO {
     private boolean ownedByCurrentUser;
     private String submittedByName;
     private LocalDateTime createdAt;
+    private String location;
+    private String company;
+    private LocalDateTime eventDate;
+    private String listingType;
 }

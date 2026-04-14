@@ -44,18 +44,22 @@ public class CareerResourceService {
 
     @Transactional(readOnly = true)
     @Cacheable(value = "resourcePages", 
-               key = "{#page, #size, #query ?: '', #category ?: '', #type ?: '', #viewerEmail ?: 'anon'}")
+               key = "{#page, #size, #query ?: '', #category ?: '', #type ?: '', #location ?: '', #listingType ?: '', #viewerEmail ?: 'anon'}")
     public CareerResourcePageResponse getResourcePage(int page, int size, String query, 
-                                                      String category, String type, String viewerEmail) {
+                                                      String category, String type, 
+                                                      String location, String listingType,
+                                                      String viewerEmail) {
         int sanitizedPage = Math.max(0, page);
         int sanitizedSize = Math.max(1, Math.min(size, MAX_PAGE_SIZE));
         
         String normalizedQuery = normalizeFilter(query);
         String normalizedCategory = normalizeFilter(category);
         String normalizedType = normalizeType(type);
+        String normalizedLocation = normalizeFilter(location);
+        String normalizedListingType = normalizeFilter(listingType);
 
-        var pageable = PageRequest.of(sanitizedPage, sanitizedSize, Sort.by(Sort.Order.asc("category"), Sort.Order.asc("title")));
-        var resourcePage = resourceRepository.findAll(buildResourceFilter(normalizedQuery, normalizedCategory, normalizedType), pageable);
+        var pageable = PageRequest.of(sanitizedPage, sanitizedSize, Sort.by(Sort.Order.desc("createdAt")));
+        var resourcePage = resourceRepository.findAll(buildExploreFilter(normalizedQuery, normalizedCategory, normalizedType, normalizedLocation, normalizedListingType), pageable);
 
         var content = resourcePage.getContent().stream()
                 .map(resource -> toDTO(resource, viewerEmail))
@@ -68,9 +72,12 @@ public class CareerResourceService {
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "resourceCategories")
-    public List<String> getAllCategories() {
-        return resourceRepository.findDistinctCategories();
+    @Cacheable(value = "resourceCategories", key = "#listingType ?: 'ALL'")
+    public List<String> getAllCategories(String listingType) {
+        if (listingType == null || listingType.isBlank() || "ALL".equalsIgnoreCase(listingType)) {
+            return resourceRepository.findDistinctCategories();
+        }
+        return resourceRepository.findDistinctCategoriesByListingType(listingType.trim().toUpperCase(Locale.ROOT));
     }
 
     @Transactional(readOnly = true)
@@ -100,7 +107,7 @@ public class CareerResourceService {
         resource.setUrl(normalizedUrl);
         resource.setCategory(request.getCategory().trim());
         resource.setDescription(request.getDescription() == null ? null : request.getDescription().trim());
-        resource.setResourceType("LINK");
+        applyMetadata(resource, request.getLocation(), request.getCompany(), request.getEventDate(), request.getListingType());
         applySubmitter(resource, user);
 
         return toDTO(resourceRepository.save(resource), email);
@@ -111,22 +118,22 @@ public class CareerResourceService {
         @CacheEvict(value = "resourceCategories", allEntries = true),
         @CacheEvict(value = "userResources", key = "#email")
     })
-    public CareerResourceDTO createResourceFromFile(String email, String title, String category, 
-                                                    String description, MultipartFile file) {
+    public CareerResourceDTO createResourceFromFile(String email, CreateCareerResourceRequest request, MultipartFile file) {
         if (file == null || file.isEmpty()) throw new IllegalArgumentException("File required");
-        validateCommonFields(title, category);
-
+        validateCommonFields(request.getTitle(), request.getCategory());
+        
         User user = getUser(email);
         String fileUrl = storageService.uploadResourceFile(file, user.getId().toString());
 
         CareerResource resource = new CareerResource();
-        resource.setTitle(title.trim());
-        resource.setCategory(category.trim());
-        resource.setDescription(description == null ? null : description.trim());
+        resource.setTitle(request.getTitle().trim());
+        resource.setCategory(request.getCategory().trim());
+        resource.setDescription(request.getDescription() == null ? null : request.getDescription().trim());
         resource.setUrl(fileUrl);
         resource.setResourceType("FILE");
         resource.setOriginalFileName(file.getOriginalFilename());
         resource.setFileSizeBytes(file.getSize());
+        applyMetadata(resource, request.getLocation(), request.getCompany(), request.getEventDate(), request.getListingType());
         applySubmitter(resource, user);
 
         return toDTO(resourceRepository.save(resource), email);
@@ -173,10 +180,12 @@ public class CareerResourceService {
             resource.setUrl(normalizeUrl(request.getUrl()));
         }
 
+        applyMetadata(resource, request.getLocation(), request.getCompany(), request.getEventDate(), request.getListingType());
+
         return toDTO(resourceRepository.save(resource), email);
     }
 
-    private Specification<CareerResource> buildResourceFilter(String query, String category, String type) {
+    private Specification<CareerResource> buildExploreFilter(String query, String category, String type, String location, String listingType) {
         return (root, criteriaQuery, criteriaBuilder) -> {
             var predicates = new ArrayList<Predicate>();
             if (query != null) {
@@ -185,6 +194,8 @@ public class CareerResourceService {
                         criteriaBuilder.like(criteriaBuilder.lower(root.get("title")), likeQuery),
                         criteriaBuilder.like(criteriaBuilder.lower(root.get("category")), likeQuery),
                         criteriaBuilder.like(criteriaBuilder.lower(root.get("description")), likeQuery),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("location")), likeQuery),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("company")), likeQuery),
                         criteriaBuilder.like(criteriaBuilder.lower(root.get("submittedByName")), likeQuery)
                 ));
             }
@@ -193,6 +204,12 @@ public class CareerResourceService {
             }
             if (type != null) {
                 predicates.add(criteriaBuilder.equal(criteriaBuilder.upper(root.get("resourceType")), type));
+            }
+            if (location != null) {
+                predicates.add(criteriaBuilder.equal(criteriaBuilder.lower(root.get("location")), location.toLowerCase(Locale.ROOT)));
+            }
+            if (listingType != null) {
+                predicates.add(criteriaBuilder.equal(criteriaBuilder.upper(root.get("listingType")), listingType.toUpperCase(Locale.ROOT)));
             }
             return predicates.isEmpty() ? criteriaBuilder.conjunction() : criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };
@@ -254,6 +271,24 @@ public class CareerResourceService {
         dto.setOwnedByCurrentUser(viewerEmail != null && resource.getSubmittedByEmail().equalsIgnoreCase(viewerEmail));
         dto.setSubmittedByName(resource.getSubmittedByName());
         dto.setCreatedAt(resource.getCreatedAt());
+        dto.setLocation(resource.getLocation());
+        dto.setCompany(resource.getCompany());
+        dto.setEventDate(resource.getEventDate());
+        dto.setListingType(resource.getListingType());
         return dto;
+    }
+
+    private void applyMetadata(CareerResource resource, String location, String company, String eventDate, String listingType) {
+        if (location != null) resource.setLocation(location.trim());
+        if (company != null) resource.setCompany(company.trim());
+        if (listingType != null) resource.setListingType(listingType.trim().toUpperCase(Locale.ROOT));
+        
+        if (eventDate != null && !eventDate.isBlank()) {
+            try {
+                resource.setEventDate(java.time.LocalDateTime.parse(eventDate));
+            } catch (Exception e) {
+                // Ignore parsing errors for now or handle gracefully
+            }
+        }
     }
 }

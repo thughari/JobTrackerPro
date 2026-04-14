@@ -8,4 +8,8 @@ public class UpdateCareerResourceRequest {
     private String url;
     private String category;
     private String description;
+    private String location;
+    private String company;
+    private String eventDate;
+    private String listingType;
 }

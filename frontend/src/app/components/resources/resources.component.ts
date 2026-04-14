@@ -46,13 +46,23 @@ export class ResourcesComponent implements OnDestroy {
 
   readonly searchQuery = signal('');
   readonly selectedCategoryFilter = signal('');
+  readonly selectedLocationFilter = signal('');
+  readonly selectedListingTypeFilter = signal<'ALL' | 'JOB' | 'WALK_IN' | 'EVENT' | 'RESOURCE'>('ALL');
+
   readonly backendCategories = signal<string[]>([]);
   readonly categoryOptions = computed(() => this.backendCategories());
+  
+  readonly cityOptions = signal(['Hyderabad', 'Bangalore', 'Chennai', 'Pune', 'Mumbai', 'Delhi', 'Remote']);
 
   title = '';
   url = '';
   category = '';
   description = '';
+  location = '';
+  company = '';
+  eventDate = '';
+  listingType = 'RESOURCE';
+
   contributionMode: 'link' | 'file' = 'link';
   selectedFile: File | null = null;
   selectedFileError = '';
@@ -100,6 +110,10 @@ export class ResourcesComponent implements OnDestroy {
     this.url = '';
     this.category = '';
     this.description = '';
+    this.location = '';
+    this.company = '';
+    this.eventDate = '';
+    this.listingType = 'RESOURCE';
     this.contributionMode = 'link';
     this.selectedFile = null;
     this.selectedFileError = '';
@@ -121,7 +135,13 @@ export class ResourcesComponent implements OnDestroy {
 
     try {
       const page = this.currentPage();
-      const filters = { query: this.searchQuery(), category: this.selectedCategoryFilter(), type: 'all' as any };
+      const filters = { 
+        query: this.searchQuery(), 
+        category: this.selectedCategoryFilter(), 
+        location: this.selectedLocationFilter(),
+        listingType: this.selectedListingTypeFilter() === 'ALL' ? undefined : this.selectedListingTypeFilter(),
+        type: 'all' as any 
+      };
       const response = await this.resourceService.getResources(page, PAGE_SIZE, filters, reset);
       this.resources.update(prev => reset ? response.content : [...prev, ...response.content]);
       this.hasNext.set(response.hasNext);
@@ -143,9 +163,27 @@ export class ResourcesComponent implements OnDestroy {
     }
   }
 
-  async loadCategoryOptions(force = false) {
-    const cats = await this.resourceService.getResourceCategories(force);
-    this.backendCategories.set(cats);
+  onListingTypeSelect(type: string) {
+    this.listingType = type;
+    this.contributionMode = (type === 'RESOURCE' ? this.contributionMode : 'link');
+    this.loadCategoryOptions(false, type);
+  }
+
+  async loadCategoryOptions(force = false, type?: string) {
+    const fetched = await this.resourceService.getResourceCategories(type, force);
+    
+    // Add helpful defaults if the list is empty or sparse for specific types
+    let defaults: string[] = [];
+    if (type === 'JOB' || type === 'WALK_IN') {
+      defaults = ['Frontend', 'Backend', 'Full Stack', 'DevOps', 'QA', 'Data Science', 'Mobile', 'Design'];
+    } else if (type === 'EVENT') {
+      defaults = ['Workshop', 'Meetup', 'Conference', 'Hackathon', 'Webinar', 'Social'];
+    } else {
+      defaults = ['Interview', 'Resume', 'Java', 'JavaScript', 'System Design', 'Cloud', 'AI'];
+    }
+
+    const combined = [...new Set([...fetched, ...defaults])].sort();
+    this.backendCategories.set(combined);
   }
 
   async addResource() {
@@ -154,18 +192,22 @@ export class ResourcesComponent implements OnDestroy {
     try {
       if (this.contributionMode === 'file' && this.selectedFile) {
         await this.resourceService.uploadResourceFile({ 
-          title: this.title, category: this.category, description: this.description, file: this.selectedFile 
+          title: this.title, category: this.category, description: this.description, 
+          location: this.location, company: this.company, listingType: this.listingType,
+          eventDate: this.eventDate, file: this.selectedFile 
         });
       } else {
         await this.resourceService.createResource({ 
-          title: this.title, url: this.url, category: this.category, description: this.description 
+          title: this.title, url: this.url, category: this.category, description: this.description,
+          location: this.location, company: this.company, listingType: this.listingType,
+          eventDate: this.eventDate
         });
       }
       this.showMessage('success', 'Resource shared with the community!');
       this.loadResources(true);
       this.loadMyResources();
       this.closeAddResourceModal();
-      this.loadCategoryOptions(true);
+      this.loadCategoryOptions(true, this.listingType);
     } catch (err: any) {
       this.showMessage('error', err.error?.message || 'Upload failed.');
     } finally {
@@ -203,6 +245,16 @@ export class ResourcesComponent implements OnDestroy {
 
   onCategoryFilterChange(value: string) {
     this.selectedCategoryFilter.set(value);
+    this.loadResources(true);
+  }
+
+  onLocationFilterChange(value: string) {
+    this.selectedLocationFilter.set(value);
+    this.loadResources(true);
+  }
+
+  onListingTypeFilterChange(type: any) {
+    this.selectedListingTypeFilter.set(type);
     this.loadResources(true);
   }
 

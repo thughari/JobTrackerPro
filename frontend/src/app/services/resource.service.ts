@@ -16,6 +16,10 @@ export interface CareerResource {
   ownedByCurrentUser: boolean;
   submittedByName: string;
   createdAt: string;
+  location?: string;
+  company?: string;
+  eventDate?: string;
+  listingType?: 'JOB' | 'WALK_IN' | 'EVENT' | 'RESOURCE';
 }
 
 export interface CareerResourcePage {
@@ -32,6 +36,10 @@ export interface CreateResourcePayload {
   url: string;
   category: string;
   description?: string;
+  location?: string;
+  company?: string;
+  eventDate?: string;
+  listingType?: string;
 }
 
 export interface UpdateResourcePayload {
@@ -39,12 +47,18 @@ export interface UpdateResourcePayload {
   url?: string;
   category: string;
   description?: string;
+  location?: string;
+  company?: string;
+  eventDate?: string;
+  listingType?: string;
 }
 
 export interface ResourceQueryFilters {
   query?: string;
   category?: string;
   type?: 'all' | 'LINK' | 'FILE';
+  location?: string;
+  listingType?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -54,14 +68,16 @@ export class ResourceService {
   private authService = inject(AuthService);
   private apiUrl = `${this.API}/api/resources`;
   private pageCache = new Map<string, CareerResourcePage>();
-  private categoryCache: string[] | null = null;
+  private categoryCache = new Map<string, string[]>();
 
   async getResources(page: number, size: number, filters: ResourceQueryFilters = {}, forceRefresh = false) {
     const cacheScope = this.authService.currentUser()?.email ?? 'anonymous';
     const query = filters.query?.trim() ?? '';
     const category = filters.category?.trim() ?? '';
     const type = filters.type && filters.type !== 'all' ? filters.type : '';
-    const key = `${cacheScope}:${page}:${size}:${query}:${category}:${type}`;
+    const location = filters.location?.trim() ?? '';
+    const listingType = filters.listingType?.trim() ?? '';
+    const key = `${cacheScope}:${page}:${size}:${query}:${category}:${type}:${location}:${listingType}`;
 
     if (!forceRefresh && this.pageCache.has(key)) {
       return this.pageCache.get(key)!;
@@ -74,7 +90,9 @@ export class ResourceService {
           size,
           ...(query ? { query } : {}),
           ...(category ? { category } : {}),
-          ...(type ? { type } : {})
+          ...(type ? { type } : {}),
+          ...(location ? { location } : {}),
+          ...(listingType ? { listingType } : {})
         }
       })
     );
@@ -85,17 +103,22 @@ export class ResourceService {
 
   invalidateCache() {
     this.pageCache.clear();
-    this.categoryCache = null;
+    this.categoryCache.clear();
   }
 
 
-  async getResourceCategories(forceRefresh = false) {
-    if (!forceRefresh && this.categoryCache) {
-      return this.categoryCache;
+  async getResourceCategories(listingType?: string, forceRefresh = false) {
+    const typeKey = listingType?.trim().toUpperCase() || 'ALL';
+    if (!forceRefresh && this.categoryCache.has(typeKey)) {
+      return this.categoryCache.get(typeKey)!;
     }
 
-    const categories = await firstValueFrom(this.http.get<string[]>(`${this.apiUrl}/categories`));
-    this.categoryCache = categories;
+    const categories = await firstValueFrom(
+      this.http.get<string[]>(`${this.apiUrl}/categories`, {
+        params: listingType ? { listingType } : {}
+      })
+    );
+    this.categoryCache.set(typeKey, categories);
     return categories;
   }
 
@@ -109,6 +132,10 @@ export class ResourceService {
     title: string;
     category: string;
     description?: string;
+    location?: string;
+    company?: string;
+    listingType?: string;
+    eventDate?: string;
     file: File;
   }) {
     const formData = new FormData();
@@ -117,6 +144,10 @@ export class ResourceService {
     if (payload.description?.trim()) {
       formData.append('description', payload.description.trim());
     }
+    if (payload.location?.trim()) formData.append('location', payload.location.trim());
+    if (payload.company?.trim()) formData.append('company', payload.company.trim());
+    if (payload.listingType) formData.append('listingType', payload.listingType);
+    if (payload.eventDate) formData.append('eventDate', payload.eventDate);
     formData.append('file', payload.file);
 
     const created = await firstValueFrom(
