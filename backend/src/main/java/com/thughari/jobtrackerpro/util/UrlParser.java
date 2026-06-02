@@ -10,6 +10,11 @@ public class UrlParser {
 	
     private static final Pattern URL_PATTERN = Pattern.compile("(https?://|www\\.)[a-zA-Z0-9./?=&%_\\-+]+(?<![.,!?:;])");
 
+    public static String cleanUrl(String url) {
+        if (url == null) return "";
+        return processUrlByDomain(url.trim());
+    }
+
     public static List<String> extractAndCleanUrls(String text) {
         if (text == null) return List.of();
         List<String> urls = new ArrayList<>();
@@ -29,6 +34,22 @@ public class UrlParser {
         String lowerUrl = url.toLowerCase();
         
         if (lowerUrl.contains("indeed.com")) {
+            if (url.contains("next=")) {
+                try {
+                    int nextIdx = url.indexOf("next=");
+                    String nextUrlEncoded = url.substring(nextIdx + 5);
+                    int ampIdx = nextUrlEncoded.indexOf("&");
+                    if (ampIdx > 0) {
+                        nextUrlEncoded = nextUrlEncoded.substring(0, ampIdx);
+                    }
+                    String decoded = java.net.URLDecoder.decode(nextUrlEncoded, java.nio.charset.StandardCharsets.UTF_8);
+                    if (!decoded.isBlank()) {
+                        return decoded;
+                    }
+                } catch (Exception e) {
+                    // Ignore and fallback
+                }
+            }
             return url;
         }
 

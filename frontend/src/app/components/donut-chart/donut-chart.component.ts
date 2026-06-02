@@ -85,6 +85,15 @@ export class DonutChartComponent
       return;
     }
 
+    // Scale tiny slices up for rendering so they don't get drowned by borders
+    const minPercent = 0.025; // 2.5% minimum
+    const chartData = this.data.map(d => {
+      if (d.value > 0 && (d.value / totalValue) < minPercent) {
+        return { name: d.name, value: d.value, displayValue: totalValue * minPercent };
+      }
+      return { name: d.name, value: d.value, displayValue: d.value };
+    });
+
     const rect = element.getBoundingClientRect();
     const width = rect.width;
     const height = rect.height;
@@ -105,15 +114,15 @@ export class DonutChartComponent
 
     const color = d3
       .scaleOrdinal()
-      .domain(this.data.map((d) => d.name))
+      .domain(chartData.map((d) => d.name))
       .range(this.colors);
 
     const pie = d3
-      .pie<{ name: string; value: number }>()
+      .pie<{ name: string; value: number; displayValue: number }>()
       .sort(null)
-      .value((d) => d.value);
+      .value((d) => d.displayValue);
 
-    const data_ready = pie(this.data);
+    const data_ready = pie(chartData);
 
     const arc = d3
       .arc()

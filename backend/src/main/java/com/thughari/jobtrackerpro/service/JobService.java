@@ -91,30 +91,27 @@ public class JobService {
             .collect(Collectors.groupingBy(Job::getStatus, Collectors.counting()));
         response.setStatusChart(mapToChartData(statusMap));
 
-        LocalDateTime sixMonthsAgo = LocalDateTime.now().minusMonths(6);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM yy");
         
-        List<Job> jobsForMonthly = jobs.parallelStream()
-            .filter(job -> job.getAppliedDate() != null)
-            .sorted(Comparator.comparing(Job::getAppliedDate))
-            .toList();
-        
-        List<Job> last6Months = jobsForMonthly.parallelStream()
-            .filter(job -> job.getAppliedDate().isAfter(sixMonthsAgo))
-            .toList();
-        
-        List<Job> jobsToChart = last6Months.parallelStream()
-            .collect(Collectors.groupingBy(
-                job -> job.getAppliedDate().format(formatter),
-                Collectors.toList()
-            )).size() >= 3 ? last6Months : jobsForMonthly;
-        
-        Map<String, Long> monthMap = jobsToChart.parallelStream()
-            .collect(Collectors.groupingBy(
-                job -> job.getAppliedDate().format(formatter),
-                LinkedHashMap::new, 
-                Collectors.counting()
-            ));
+        List<String> last6MonthKeys = new ArrayList<>();
+        LocalDateTime temp = LocalDateTime.now();
+        for (int i = 5; i >= 0; i--) {
+            last6MonthKeys.add(temp.minusMonths(i).format(formatter));
+        }
+
+        Map<String, Long> monthMap = new LinkedHashMap<>();
+        for (String key : last6MonthKeys) {
+            monthMap.put(key, 0L);
+        }
+
+        for (Job job : jobs) {
+            if (job.getAppliedDate() != null) {
+                String key = job.getAppliedDate().format(formatter);
+                if (monthMap.containsKey(key)) {
+                    monthMap.put(key, monthMap.get(key) + 1);
+                }
+            }
+        }
         response.setMonthlyChart(mapToChartData(monthMap));
 
         long interviewCount = jobs.parallelStream()
@@ -225,10 +222,10 @@ public class JobService {
         Job existingJob = findBestMatch(userJobs, incomingJob);
 
         if (existingJob != null) {
-            log.info("Found existing job for company: {}. Updating status.", existingJob.getCompany());
+            // log.info("Found existing job for company: {}. Updating status.", existingJob.getCompany());
             updateExistingJobFromEmail(existingJob, incomingJob);
         } else {
-            log.info("No match found. Creating new job for: {}", incomingJob.getCompany());
+            // log.info("No match found. Creating new job for: {}", incomingJob.getCompany());
             Job job = convertToEntity(incomingJob);
             job.setUserEmail(userEmail);
             jobRepository.save(job);
@@ -265,17 +262,38 @@ public class JobService {
         log.info("System Cleanup: Successfully rejected stale jobs for {} users.", affectedEmails.size());
     }
 
+    private boolean isCompanyMatch(String dbCompany, String incomingCompany) {
+        if (dbCompany == null || incomingCompany == null) return false;
+        String dbClean = dbCompany.toLowerCase().replaceAll("[^a-z0-9\\s]", "").trim();
+        String incClean = incomingCompany.toLowerCase().replaceAll("[^a-z0-9\\s]", "").trim();
+        if (dbClean.equals(incClean)) return true;
+        
+        String[] dbTokens = dbClean.split("\\s+");
+        String[] incTokens = incClean.split("\\s+");
+        
+        if (dbTokens.length == 0 || incTokens.length == 0) return false;
+        
+        if (dbClean.length() <= 3 || incClean.length() <= 3) {
+            if (dbClean.length() <= 3) {
+                return Arrays.asList(incTokens).contains(dbClean);
+            } else {
+                return Arrays.asList(dbTokens).contains(incClean);
+            }
+        }
+        
+        return dbClean.contains(incClean) || incClean.contains(dbClean);
+    }
+
     private Job findBestMatch(List<Job> existingJobs, JobDTO incoming) {
         if (incoming == null || incoming.getCompany() == null) return null;
         
-        String incomingCompany = incoming.getCompany().toLowerCase().trim();
+        String incomingCompany = incoming.getCompany();
         String incomingRole = (incoming.getRole() != null) ? incoming.getRole().toLowerCase().trim() : "";
 
         List<Job> companyMatches = existingJobs.parallelStream()
                 .filter(job -> {
                     if (job.getCompany() == null) return false;
-                    String dbCompany = job.getCompany().toLowerCase().trim();
-                    return dbCompany.contains(incomingCompany) || incomingCompany.contains(dbCompany);
+                    return isCompanyMatch(job.getCompany(), incomingCompany);
                 })
                 .collect(Collectors.toList());
 
