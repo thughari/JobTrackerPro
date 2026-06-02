@@ -14,10 +14,10 @@ The modern, responsive frontend for **JobTrackerPro**. Built with Angular and Ta
 
 ## ✨ Key Features
 
-*   **📊 Interactive Dashboard:** Real-time statistics using **D3.js** interactive charts.
+*   **📊 Interactive Dashboard:** Real-time statistics using **D3.js** interactive charts, featuring custom slice scaling to ensure tiny status percentages (e.g., 1 application out of 400+) remain visible and hoverable.
 *   **👤 Advanced Profile:** Atomic updates for profile data, supporting file uploads (R2) and external URLs.
 *   **🌗 Theming:** Built-in **Dark Mode** support persisted via LocalStorage.
-*   **⚡ Optimistic UI:** Smart caching and context-aware data fetching to minimize network latency.
+*   **⚡ Optimistic UI:** Smart caching and context-aware data fetching (leveraging Angular Signals) to minimize network latency.
 *   **🔒 Security:** JWT-based authentication with route guards (`AuthGuard`, `GuestGuard`).
 
 ## 🛠️ Tech Stack

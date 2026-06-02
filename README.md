@@ -38,29 +38,74 @@
 
 ---
 
-## 🧠 System Architecture
+## 🏗️ System Architecture & App Flow
 
-This application is built as a distributed system focusing on separation of concerns, data integrity, and automation.
+JobTrackerPro is built as a highly automated, decoupled system focusing on security, latency reduction, and seamless user experiences.
 
-### 1. 🤖 AI-Powered Email Ingestion Pipeline
-I engineered an event-driven pipeline to eliminate manual data entry using **Google Gemini 2.0 Flash**.
+### 🔄 End-to-End Application Flow
 
-*   **Smart Upsert:** Uses fuzzy matching and Jaccard Similarity to detect if an incoming email is a *new application* or an *interview update* for an existing job.
-*   **Resilience:** Gracefully handles unstructured data, HTML-only emails, and missing headers using regex fallback strategies.
+```mermaid
+flowchart TD
+    %% Styling
+    classDef service fill:#4A90E2,stroke:#357ABD,stroke-width:1.5px,color:#fff;
+    classDef utility fill:#50E3C2,stroke:#34A790,stroke-width:1.5px,color:#333;
+    classDef storage fill:#F5A623,stroke:#C68015,stroke-width:1.5px,color:#fff;
+    classDef trigger fill:#D0021B,stroke:#9E0010,stroke-width:1.5px,color:#fff;
 
-### 2. 🔐 Hybrid Security Architecture
-*   **Implementation:** Custom `OAuth2SuccessHandler` that merges identities based on trusted email verification.
-*   **Flow:** Users can log in via **Google/GitHub** OR **Email/Password** interchangeably without creating duplicate accounts or data silos.
-*   **Stateless:** Fully secured via **JWT (RS256)** with a custom Security Filter Chain.
+    A[Gmail Webhook / Push Notice]:::trigger --> B(GmailWebhookService):::service
+    B --> C{SmartExtractionService}:::service
+    
+    %% Template Ingest Pathway
+    C -->|LinkedIn / Indeed Template| D(TemplateParser):::utility
+    D -->|Extract Role & Company| E{Body Template Matches?}
+    E -->|Yes| F[Extract from Body & Clean Location]:::utility
+    E -->|No| G[Extract from Subject & Find Location]:::utility
+    D -->|Extract & Clean URL| H[UrlParser: Decode next= Parameter]:::utility
+    D -->|Determine Status| I[Strip Safety Warnings & Scan Keywords]:::utility
+    
+    %% AI Ingest Pathway
+    C -->|Unmatched Emails| J{app.gemini.enabled?}
+    J -->|true| K(GeminiExtractionService):::service
+    J -->|false| L(MockGeminiService):::service
+    
+    %% Job Matching & Storage
+    F --> M(JobService: createOrUpdateJob):::service
+    G --> M
+    K --> M
+    L --> M
+    
+    M --> N{findBestMatch}:::service
+    N -->|Stricter Token Matching for Short Names| O[Update Existing Job & Append Notes]:::storage
+    N -->|No Active Match| P[Create New Job Entry]:::storage
+    
+    O --> Q[(Database: PostgreSQL)]:::storage
+    P --> Q
+    Q --> R(Caffeine Cache Eviction / Angular Signal Update):::service
+```
 
-### 3. ☁️ Atomic Cloud Storage
-*   **Provider:** Cloudflare R2 (AWS S3 Compatible).
-*   **Transactional Integrity:** Profile updates are atomic. If a user uploads a new image but the database transaction fails, the image upload is rolled back.
-*   **Garbage Collection:** The system automatically issues delete commands for old/orphaned images in the R2 bucket when a user updates their photo, preventing storage leaks and reducing costs.
+The system operates across four key pipeline phases:
 
-### 4. ⚡ High-Performance Analytics
-*   **Backend:** Leverages **Java Stream API** for efficient in-memory aggregation of job statistics, reducing database hits to a single optimized read operation per dashboard load.
-*   **Frontend:** Uses **Angular Signals** for reactive state management and **Optimistic UI** updates, ensuring zero-latency feedback for the user even on slow networks.
+#### 1. 📬 Automated Ingestion & Webhook Layer
+- **Gmail Sync Integration**: Users link their Gmail account via OAuth2. A Google Pub/Sub topic listens to mailbox events and sends real-time push notifications to `GmailWebhookService`.
+- **Smart routing (`SmartExtractionService`)**: Ingested emails are routed through a `@Primary` interceptor. It checks if the email is a standard template from **LinkedIn** or **Indeed**.
+  - **Matched**: Processed locally instantly (0ms AI cost, sub-millisecond execution).
+  - **Unmatched**: Delegated to **Google Gemini 2.0 Flash** (or local `MockGeminiService` if offline).
+
+#### 2. ⚙️ Manual Extraction Engine (`TemplateParser`)
+- **Forward Header Reconstruction**: Recognizes forwarded email structures so you can forward confirmation emails directly to your sync mailbox.
+- **Indeed Body Parser**: Extracts the role, company name, and location directly from standard Indeed body layouts to avoid misidentifying hyphenated roles (e.g. `Java Backend Developer - MS` parses `Java Backend Developer - MS` as the role and `Capco` as the company).
+- **Url query decoding**: Recognizes `apply.indeed.com` confirmation links, extracts their `next=` query parameter, URL-decodes it, and stores the direct public listing URL (e.g., `https://in.indeed.com/viewjob?jk=...`), reducing length from 220+ to ~50 characters.
+- **Location & Status Cleaning**: Removes reviews meta-data (e.g. `Remote 95 reviews` -> `Remote`) and filters safety warning disclaimers to prevent false matches (e.g., preventing *"without an interview"* from triggering an *Interview Scheduled* status).
+
+#### 3. 🧠 Smart Deduplication & Matching (`JobService`)
+- When a parsed job hits `JobService.createOrUpdateJob()`, it compares the company and role with your active board entries:
+  - **Strict Token matching**: If either company name is $\le 3$ characters (e.g., `MS`), it requires an exact word-token match rather than a simple substring `contains` check (preventing `MS` from matching `ORION SYSTEMS`).
+  - **Status Updates**: If a match is found (e.g. an interview invite email for a job you already applied to), it updates the existing entry in-place and appends the email details to the transaction notes. Otherwise, it inserts a new job entry.
+
+#### 4. 🎨 Reactive UI & In-Memory Caching
+- **State Management**: The Angular frontend uses **Angular Signals** for reactive state updates, giving the user instant UI response.
+- **Caffeine In-Memory Caching**: User profiles, dashboard analytics, and job lists are cached on the Spring Boot backend, automatically evicted upon job modifications to keep the UI up-to-date while protecting the DB from heavy read traffic.
+- **Don't-Drown Slice Scaling**: The D3.js Donut Chart scales tiny slices (e.g., 1 application status out of 400+) up to a minimum 2.5% display size so they are visible and hoverable, while keeping tooltip values mathematically accurate.
 
 ---
 
