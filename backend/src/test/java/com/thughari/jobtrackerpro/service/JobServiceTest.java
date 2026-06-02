@@ -154,6 +154,24 @@ class JobServiceTest {
     }
 
     @Test
+    void createOrUpdateJob_strictCompanyMatchForShortNames() {
+        Job existing = baseJob("ORION SYSTEMS", "Java Developer", "Applied", 1);
+        when(jobRepository.findByUserEmailOrderByUpdatedAtDesc(EMAIL)).thenReturn(List.of(existing));
+
+        JobDTO incoming = new JobDTO();
+        incoming.setCompany("MS");
+        incoming.setRole("Java Backend Developer");
+        incoming.setStatus("Applied");
+        incoming.setStage(1);
+        incoming.setUpdatedAt(LocalDateTime.now());
+
+        jobService.createOrUpdateJob(incoming, EMAIL);
+
+        verify(jobRepository).save(any(Job.class));
+        verify(jobRepository, never()).saveAndFlush(any(Job.class));
+    }
+
+    @Test
     void getDashboardData_calculatesSummaryAndCharts() {
         Job applied = baseJob("A", "Engineer", "Applied", 1);
         applied.setAppliedDate(LocalDateTime.of(2025, 1, 5, 9, 0));
@@ -172,7 +190,7 @@ class JobServiceTest {
         assertEquals(2, response.getStats().getInterviews());
         assertEquals(1, response.getStats().getActiveInterviews());
         assertEquals(1, response.getStats().getOffers());
-        assertEquals(2, response.getMonthlyChart().size());
+        assertEquals(6, response.getMonthlyChart().size());
         assertEquals(2, response.getInterviewChart().size());
     }
 }
