@@ -34,35 +34,35 @@ flowchart TD
     classDef storage fill:#F5A623,stroke:#C68015,stroke-width:1.5px,color:#fff;
     classDef trigger fill:#D0021B,stroke:#9E0010,stroke-width:1.5px,color:#fff;
 
-    A[Gmail Sync Push / Webhook] :::trigger --> B(GmailWebhookService) :::service
-    B --> C{SmartExtractionService} :::service
+    A[Gmail Sync Push / Webhook]:::trigger --> B(GmailWebhookService):::service
+    B --> C{SmartExtractionService}:::service
     
     %% Template Ingest Pathway
-    C -->|LinkedIn / Indeed Template| D(TemplateParser) :::utility
+    C -->|LinkedIn / Indeed Template| D(TemplateParser):::utility
     D -->|Extract Role & Company| E{Body Template Matches?}
-    E -->|Yes| F[Extract from Body & Clean Location] :::utility
-    E -->|No| G[Extract from Subject & Find Location] :::utility
-    D -->|Extract & Clean URL| H[UrlParser: Decode next= Parameter] :::utility
-    D -->|Determine Status| I[Strip Safety Warnings & Scan Keywords] :::utility
+    E -->|Yes| F[Extract from Body & Clean Location]:::utility
+    E -->|No| G[Extract from Subject & Find Location]:::utility
+    D -->|Extract & Clean URL| H[UrlParser: Decode next= Parameter]:::utility
+    D -->|Determine Status| I[Strip Safety Warnings & Scan Keywords]:::utility
     
     %% AI Ingest Pathway
     C -->|Unmatched Emails| J{app.gemini.enabled?}
-    J -->|true| K(GeminiExtractionService) :::service
-    J -->|false| L(MockGeminiService) :::service
+    J -->|true| K(GeminiExtractionService):::service
+    J -->|false| L(MockGeminiService):::service
     
     %% Job Matching & Storage
-    F --> M(JobService: createOrUpdateJob) :::service
+    F --> M(JobService: createOrUpdateJob):::service
     G --> M
     K --> M
     L --> M
     
-    M --> N{findBestMatch} :::service
-    N -->|Stricter Token Matching for Short Names| O[Update Existing Job & Append Notes] :::storage
-    N -->|No Active Match| P[Create New Job Entry] :::storage
+    M --> N{findBestMatch}:::service
+    N -->|Stricter Token Matching for Short Names| O[Update Existing Job & Append Notes]:::storage
+    N -->|No Active Match| P[Create New Job Entry]:::storage
     
-    O --> Q[(Database: PostgreSQL)] :::storage
+    O --> Q[(Database: PostgreSQL)]:::storage
     P --> Q
-    Q --> R(Caffeine Cache Eviction) :::service
+    Q --> R(Caffeine Cache Eviction):::service
 ```
 
 ### Core Architecture Components
