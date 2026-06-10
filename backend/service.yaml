@@ -8,8 +8,10 @@ spec:
   template:
     metadata:
       annotations:
-        autoscaling.knative.dev/minScale: "1"
+        autoscaling.knative.dev/minScale: "0"
         autoscaling.knative.dev/maxScale: "5"
+        run.googleapis.com/cpu-throttling: "true"
+        run.googleapis.com/startup-cpu-boost: "true"
     spec:
       timeoutSeconds: 300
       containers:
@@ -25,7 +27,7 @@ spec:
           value: "prod"
 
         - name: JAVA_TOOL_OPTIONS
-          value: "-Xms256m -Xmx512m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError"
+          value: "-Xms256m -Xmx512m -XX:+UseSerialGC -XX:+ExitOnOutOfMemoryError"
         
         - name: JDBC_URL
           valueFrom:

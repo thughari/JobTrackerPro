@@ -5,7 +5,7 @@ import com.thughari.jobtrackerpro.entity.User;
 import com.thughari.jobtrackerpro.interfaces.GeminiService;
 import com.thughari.jobtrackerpro.repo.UserRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,7 +23,6 @@ public class IngestionService {
         this.userRepository = userRepository;
     }
 
-    @Async("taskExecutor")
     @Transactional
     public void handleManualForward(String from, String subject, String body, String userEmail) {
         User user = userRepository.findByEmail(userEmail).orElse(null);

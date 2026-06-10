@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Async;
+
 import org.springframework.stereotype.Service;
 
 import jakarta.mail.MessagingException;
@@ -29,7 +29,6 @@ public class EmailService {
 	@Value("${email.sender_name}") 
 	private String fromName; 
 
-	@Async("taskExecutor")
 	public void sendResetEmail(String to, String token) {
 		try {
 			MimeMessage message = mailSender.createMimeMessage();
@@ -70,7 +69,6 @@ public class EmailService {
 		}
 	}
 
-	@Async("taskExecutor")
 	public void sendForwardingHelper(String to, String code, String link) {
 		try {
 			MimeMessage message = mailSender.createMimeMessage();
@@ -107,7 +105,6 @@ public class EmailService {
 		}
 	}
 	
-	@Async("taskExecutor")
     public void sendVerificationEmail(String to, String token) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
