@@ -14,7 +14,7 @@ import com.thughari.jobtrackerpro.util.CacheEvictService;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
+
 import org.springframework.stereotype.Service;
 
 import java.math.BigInteger;
@@ -49,7 +49,6 @@ public class GmailWebhookService {
         this.cacheEvictService = cacheEvictService;
     }
 
-    @Async("taskExecutor")
     public void processHistorySync(String userEmail) {
         final String email = userEmail.toLowerCase();
 

@@ -23,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
-import org.springframework.scheduling.annotation.Async;
+
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -122,7 +122,6 @@ public class GmailIntegrationService {
         log.info("User {} successfully connected Gmail. Watch set with label ID: {}", email, labelId);
     }
 
-    @Async("taskExecutor")
     public void initiateManualSync(String email) {
     	
     	LocalDateTime now = LocalDateTime.now();
@@ -340,7 +339,6 @@ public class GmailIntegrationService {
         cleanupGoogleResourcesAsync(refreshToken, labelId);
     }
 
-    @Async("taskExecutor")
     protected void cleanupGoogleResourcesAsync(String refreshToken, String labelId) {
         try {
             String accessToken = getFreshAccessToken(refreshToken);
