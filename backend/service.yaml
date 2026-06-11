@@ -92,75 +92,36 @@ spec:
               name: cloudflare-secret-key
               key: latest
         - name: CLOUDFLARE_ENDPOINT
-          valueFrom:
-            secretKeyRef:
-              name: cloudflare-endpoint
-              key: latest
+          value: "https://a707cb49c90aa1d9ed30f00c8559c50f.r2.cloudflarestorage.com"
         - name: CLOUDFLARE_AVATAR_BUCKET
-          valueFrom:
-            secretKeyRef:
-              name: cloudflare-avatar-bucket
-              key: latest
+          value: "jobtracker-avatars"
         - name: CLOUDFLARE_AVATAR_URL
-          valueFrom:
-            secretKeyRef:
-              name: cloudflare-avatar-url
-              key: latest
+          value: "https://pub-491f92cb65b94aa9a49c0a98d7d67249.r2.dev"
         - name: CLOUDFLARE_RESOURCE_BUCKET
-          valueFrom:
-            secretKeyRef:
-              name: cloudflare-resource-bucket
-              key: latest
+          value: "jobtracker-resources"
         - name: CLOUDFLARE_RESOURCE_URL
-          valueFrom:
-            secretKeyRef:
-              name: cloudflare-resource-url
-              key: latest
+          value: "https://pub-add5d47f72e7455f92e8319437d0c657.r2.dev"
         - name: EMAIL_HOST
-          valueFrom:
-            secretKeyRef:
-              name: email-host
-              key: latest
+          value: "smtp-relay.brevo.com"
         - name: EMAIL_PORT
-          valueFrom:
-            secretKeyRef:
-              name: email-port
-              key: latest
+          value: "587"
         - name: EMAIL_USER_NAME
-          valueFrom:
-            secretKeyRef:
-              name: email-user-name
-              key: latest
+          value: "9e4e44001@smtp-brevo.com"
         - name: EMAIL_SMTP_KEY
           valueFrom:  
             secretKeyRef:
               name: email-smtp-key
               key: latest
         - name: EMAIL_SENDER
-          valueFrom:
-            secretKeyRef:
-              name: email-sender
-              key: latest
+          value: "haribabu.thatikonda3@gmail.com"
         - name: EMAIL_SENDER_NAME
-          valueFrom:
-            secretKeyRef:
-              name: email-sender-name
-              key: latest
+          value: "Hari from JobTrackPro"
         - name: EMAIL_SENDER_ADDRESS
-          valueFrom:
-            secretKeyRef:
-              name: email-sender-address
-              key: latest
+          value: "hyd"
         - name: GOOGLE_PUBSUB_TOPIC
-          valueFrom:
-            secretKeyRef:
-              name: google-pubsub-topic
-              key: latest
+          value: "projects/job-tracker-pro-480917/topics/gmail-notifications"
         - name: GOOGLE_PUBSUB_SERVICE_ACCOUNT
-          valueFrom:
-            secretKeyRef:
-              name: google-pubsub-service-account
-              key: latest
+          value: "job-tracker-webhook-invoker@job-tracker-pro-480917.iam.gserviceaccount.com"
         - name: CRON_SECRET
           valueFrom:
             secretKeyRef:
