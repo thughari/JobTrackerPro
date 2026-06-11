@@ -161,3 +161,8 @@ spec:
             secretKeyRef:
               name: google-pubsub-service-account
               key: latest
+        - name: CRON_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: cron-secret
+              key: latest
