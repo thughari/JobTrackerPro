@@ -35,6 +35,7 @@ public class GmailIntegrationController {
         
         try {
             gmailAutomationService.connectAndSetupPush(authCode, email);
+            gmailAutomationService.initiateManualSync(email);
             return ResponseEntity.ok("Gmail Automation enabled successfully.");
         } catch (Exception e) {
             log.error("Failed to setup Gmail for user {}: {}", email, e.getMessage());

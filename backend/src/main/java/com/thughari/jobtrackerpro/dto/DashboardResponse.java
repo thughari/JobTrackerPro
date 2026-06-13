@@ -8,4 +8,6 @@ public class DashboardResponse {
     private List<ChartData> statusChart;
     private List<ChartData> monthlyChart;
     private List<ChartData> interviewChart;
+    private boolean gmailSyncInProgress;
+    private String gmailSyncStatus;
 }

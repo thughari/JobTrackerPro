@@ -39,3 +39,6 @@ build/
 
 ### upload files ###
 uploads/
+
+# Local run script
+run-backend.ps1

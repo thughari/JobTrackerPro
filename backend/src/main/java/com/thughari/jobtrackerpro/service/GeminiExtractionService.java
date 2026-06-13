@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 import java.time.LocalDateTime;
@@ -63,6 +64,13 @@ public class GeminiExtractionService implements GeminiService {
 
             return parseGeminiResponse(response);
 
+        } catch (HttpClientErrorException e) {
+            if (e.getStatusCode().value() == 429) {
+                log.error("Gemini API quota/rate limit exceeded: {}", e.getResponseBodyAsString());
+                throw new RuntimeException("GEMINI_QUOTA_EXCEEDED", e);
+            }
+            log.error("AI Extraction failed or timed out: {}", e.getMessage());
+            return null;
         } catch (Exception e) {
             log.error("AI Extraction failed or timed out", e);
             return null; 
@@ -91,6 +99,13 @@ public class GeminiExtractionService implements GeminiService {
 
             return parseBulkGeminiResponse(response);
 
+        } catch (HttpClientErrorException e) {
+            if (e.getStatusCode().value() == 429) {
+                log.error("Gemini API quota/rate limit exceeded: {}", e.getResponseBodyAsString());
+                throw new RuntimeException("GEMINI_QUOTA_EXCEEDED", e);
+            }
+            log.error("Bulk AI Extraction failed: {}", e.getMessage());
+            return List.of();
         } catch (Exception e) {
             log.error("Bulk AI Extraction failed", e);
             return List.of();

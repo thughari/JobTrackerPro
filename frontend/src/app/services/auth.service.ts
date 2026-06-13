@@ -236,7 +236,7 @@ export class AuthService {
       const userEmail = this.userProfile()?.email;
 
       const client = google.accounts.oauth2.initCodeClient({
-        client_id: '963261513098-j8u29ce8g5v0r9p3q3a1nqnpcg669a46.apps.googleusercontent.com',
+        client_id: environment.googleClientId,
         scope: 'openid email profile https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.labels https://www.googleapis.com/auth/gmail.settings.basic',
         ux_mode: 'popup',
         login_hint: userEmail,

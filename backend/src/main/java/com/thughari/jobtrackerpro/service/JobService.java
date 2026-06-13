@@ -74,7 +74,26 @@ public class JobService {
         List<Job> jobs = jobRepository.findByUserEmailOrderByUpdatedAtDesc(email);
         
         DashboardResponse response = new DashboardResponse();
+        response.setStats(calculateStats(jobs));
+        response.setStatusChart(calculateStatusDistribution(jobs));
+        response.setMonthlyChart(calculateMonthlyDistribution(jobs));
+        response.setInterviewChart(calculateInterviewProgress(jobs));
+        
+        Optional<User> userOpt = userRepository.findByEmail(email);
+        boolean syncInProgress = userOpt
+                .map(User::getGmailSyncInProgress)
+                .orElse(false);
+        response.setGmailSyncInProgress(syncInProgress);
 
+        String syncStatus = userOpt
+                .map(User::getGmailSyncStatus)
+                .orElse(null);
+        response.setGmailSyncStatus(syncStatus);
+
+        return response;
+    }
+
+    private DashboardStatsDTO calculateStats(List<Job> jobs) {
         long total = jobs.size();
         long active = jobs.parallelStream().filter(j -> j.getStatus() != null && 
         		!j.getStatus().equals("Rejected") && !j.getStatus().equals("Offer Received")).count();
@@ -85,14 +104,17 @@ public class JobService {
         long offers = jobs.parallelStream().filter(j -> "Offer Received".equals(j.getStatus())).count();
         long activeInterviews = jobs.parallelStream().filter(j -> "Interview Scheduled".equals(j.getStatus())).count();
 
-        response.setStats(new DashboardStatsDTO(total, active, interviews, activeInterviews, offers));
+        return new DashboardStatsDTO(total, active, interviews, activeInterviews, offers);
+    }
 
+    private List<ChartData> calculateStatusDistribution(List<Job> jobs) {
         Map<String, Long> statusMap = jobs.parallelStream()
             .collect(Collectors.groupingBy(Job::getStatus, Collectors.counting()));
-        response.setStatusChart(mapToChartData(statusMap));
+        return mapToChartData(statusMap);
+    }
 
+    private List<ChartData> calculateMonthlyDistribution(List<Job> jobs) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM yy");
-        
         List<String> last6MonthKeys = new ArrayList<>();
         LocalDateTime temp = LocalDateTime.now();
         for (int i = 5; i >= 0; i--) {
@@ -112,16 +134,18 @@ public class JobService {
                 }
             }
         }
-        response.setMonthlyChart(mapToChartData(monthMap));
+        return mapToChartData(monthMap);
+    }
 
+    private List<ChartData> calculateInterviewProgress(List<Job> jobs) {
+        long total = jobs.size();
         long interviewCount = jobs.parallelStream()
         	    .filter(j -> j.getStage() != null && j.getStage() >= 3)
-        	    .count();        response.setInterviewChart(List.of(
+        	    .count();
+        return List.of(
             new ChartData("Interviewed", interviewCount),
             new ChartData("Not Interviewed", total > 0 ? total - interviewCount : 0)
-        ));
-
-        return response;
+        );
     }
 
     @Caching(evict = {

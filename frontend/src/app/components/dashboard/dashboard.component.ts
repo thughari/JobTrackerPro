@@ -4,7 +4,6 @@ import { JobService } from '../../services/job.service';
 import { CommonModule } from '@angular/common';
 import { DonutChartComponent } from '../donut-chart/donut-chart.component';
 import { BarChartComponent } from '../bar-chart/bar-chart.component';
-import { GmailSetupModalComponent } from '../gmail-setup-modal/gmail-setup-modal.component';
 import { AuthService } from '../../services/auth.service';
 import { firstValueFrom } from 'rxjs';
 
@@ -15,7 +14,6 @@ import { firstValueFrom } from 'rxjs';
     CommonModule,
     DonutChartComponent,
     BarChartComponent,
-    GmailSetupModalComponent,
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
@@ -27,8 +25,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private themeService = inject(ThemeService);
 
   isRefreshing = signal(false);
-  showHelpModal = signal(false);
-  isSyncing = signal(false);
+  isLocalSyncing = signal(false);
+  isSyncing = computed(() => this.isLocalSyncing() || this.jobService.gmailSyncInProgress());
 
   isGmailConnected = computed(() => !!this.authService.userProfile()?.gmailConnected);
 
@@ -40,6 +38,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   statusData = this.jobService.statusDistribution;
   monthlyData = this.jobService.monthlyApplications;
   interviewData = this.jobService.interviewProgress;
+  syncStatus = this.jobService.gmailSyncStatus;
 
   ngOnInit() {
     this.jobService.loadDashboard();
@@ -62,31 +61,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
   async onGmailSync() {
     if (this.isSyncing() || !this.authService.userProfile()?.gmailConnected) return;
 
-    this.isSyncing.set(true);
+    this.isLocalSyncing.set(true);
     
     try {
       await firstValueFrom(this.authService.syncGmail());
       this.showMessage('success', 'Syncing started! Your dashboard will update as jobs are found.');
-      setTimeout(() => this.isSyncing.set(false), 30000);
-
+      // Immediately reload dashboard to capture the syncInProgress state
+      await this.jobService.loadDashboard(true);
     } catch (err) {
       this.showMessage('error', 'Sync failed. Please check your Gmail connection.');
     } finally {
-      this.isSyncing.set(false);
+      this.isLocalSyncing.set(false);
     }
   }
 
-  handleModalMessage(event: { type: 'success' | 'error'; text: string }) {
-    this.showMessage(event.type, event.text);
-  }
 
-  openHelpModal() {
-    this.showHelpModal.set(true);
-  }
-
-  closeHelpModal() {
-    this.showHelpModal.set(false);
-  }
 
   showMessage(type: 'success' | 'error', message: string) {
     this.clearMessages();
@@ -161,7 +150,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       await this.authService.initiateGmailConnection();
       
       this.showMessage('success', 'Gmail Auto-Tracking Enabled!');
-      this.closeHelpModal();
       
       this.jobService.loadDashboard(true); 
     } catch (err) {

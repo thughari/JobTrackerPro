@@ -1,6 +1,6 @@
-import { Injectable, signal, inject, OnDestroy } from '@angular/core';
+import { Injectable, signal, inject, OnDestroy, effect } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom, interval, Subscription } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Router } from '@angular/router';
 
@@ -38,6 +38,8 @@ export interface DashboardResponse {
   statusChart: ChartData[];
   monthlyChart: ChartData[];
   interviewChart: ChartData[];
+  gmailSyncInProgress: boolean;
+  gmailSyncStatus?: string;
 }
 
 export interface PagedResponse {
@@ -57,7 +59,7 @@ export class JobService implements OnDestroy {
   private router = inject(Router);
   private apiUrl = `${this.API}/api/jobs`;
 
-  private refreshSubscription: Subscription | null = null;
+  private refreshTimeout: any = null;
 
   private jobsSignal = signal<Job[]>([]);
   readonly jobs = this.jobsSignal.asReadonly();
@@ -72,6 +74,8 @@ export class JobService implements OnDestroy {
 
   readonly statusDistribution = signal<ChartData[]>([]);
   readonly monthlyApplications = signal<ChartData[]>([]);
+  readonly gmailSyncInProgress = signal<boolean>(false);
+  readonly gmailSyncStatus = signal<string | null>(null);
 
   readonly interviewProgress = signal<ChartData[]>([
     { name: 'Interviewed', value: 0 },
@@ -91,7 +95,15 @@ export class JobService implements OnDestroy {
   private currentSearchState = '';
   private currentStatusState = 'All Statuses';
 
-  constructor() {}
+  constructor() {
+    effect(() => {
+      // Access the signal to track it reactive-ly
+      const inProgress = this.gmailSyncInProgress();
+      if (this.refreshTimeout) {
+        this.scheduleNextRefresh();
+      }
+    });
+  }
 
   private refreshActiveView() {
     const currentUrl = this.router.url;
@@ -110,19 +122,30 @@ export class JobService implements OnDestroy {
   }
 
   startAutoRefresh() {
-    if (this.refreshSubscription) return;    
-    this.refreshSubscription = interval(30000).subscribe(() => {
-      if (document.visibilityState === 'visible') {
-        this.performSilentRefresh();
-      }
-    });
+    this.scheduleNextRefresh();
   }
 
   stopAutoRefresh() {
-    if (this.refreshSubscription) {
-      this.refreshSubscription.unsubscribe();
-      this.refreshSubscription = null;
+    if (this.refreshTimeout) {
+      clearTimeout(this.refreshTimeout);
+      this.refreshTimeout = null;
     }
+  }
+
+  private scheduleNextRefresh() {
+    if (this.refreshTimeout) {
+      clearTimeout(this.refreshTimeout);
+    }
+    const delay = this.gmailSyncInProgress() ? 2000 : 30000;
+    this.refreshTimeout = setTimeout(() => {
+      if (document.visibilityState === 'visible') {
+        this.performSilentRefresh().finally(() => {
+          this.scheduleNextRefresh();
+        });
+      } else {
+        this.scheduleNextRefresh();
+      }
+    }, delay);
   }
 
   private async performSilentRefresh() {
@@ -160,6 +183,9 @@ export class JobService implements OnDestroy {
       const data = await firstValueFrom(
         this.http.get<DashboardResponse>(`${this.apiUrl}/dashboard`),
       );
+
+      this.gmailSyncInProgress.set(data.gmailSyncInProgress);
+      this.gmailSyncStatus.set(data.gmailSyncStatus || null);
 
       // Only update if data has changed
       if (!this.isDashboardDataEqual(data)) {
@@ -255,6 +281,8 @@ export class JobService implements OnDestroy {
 
     this.statusDistribution.set([]);
     this.monthlyApplications.set([]);
+    this.gmailSyncInProgress.set(false);
+    this.gmailSyncStatus.set(null);
     this.interviewProgress.set([
       { name: 'Interviewed', value: 0 },
       { name: 'Not Interviewed', value: 0 },

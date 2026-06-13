@@ -3,7 +3,6 @@ import { AuthService } from '../../services/auth.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { environment } from '../../../environments/environment';
-import { GmailSetupModalComponent } from '../gmail-setup-modal/gmail-setup-modal.component';
 import { firstValueFrom } from 'rxjs';
 
 declare var google: any;
@@ -11,7 +10,7 @@ declare var google: any;
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule, GmailSetupModalComponent],
+  imports: [CommonModule, FormsModule],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.css',
 })
@@ -46,8 +45,6 @@ export class ProfileComponent {
 
   pendingFile: File | null = null;
   localPreviewUrl = signal<string | null>(null);
-
-  showHelpModal = signal(false);
 
   // Deletion related signals
   showDeleteConfirm = signal(false);
@@ -260,26 +257,7 @@ export class ProfileComponent {
     }
   }
 
-  openHelpModal() {
-    this.showHelpModal.set(true);
-  }
 
-  closeHelpModal() {
-    this.showHelpModal.set(false);
-  }
-
-  handleModalMessage(event: { type: 'success' | 'error'; text: string }) {
-    this.showMessage(event.type, event.text);
-  }
-
-  get inboundEmailAddress(): string {
-    return environment.inboundEmail;
-  }
-
-  copyEmail() {
-    navigator.clipboard.writeText(this.inboundEmailAddress);
-    this.showMessage('success', 'Forwarding address copied to clipboard!');
-  }
 
   connectGmail() {
 
@@ -291,7 +269,7 @@ export class ProfileComponent {
 
     try{
       const client = google.accounts.oauth2.initCodeClient({
-        client_id: '963261513098-j8u29ce8g5v0r9p3q3a1nqnpcg669a46.apps.googleusercontent.com',
+        client_id: environment.googleClientId,
         scope: 'openid email profile https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.labels https://www.googleapis.com/auth/gmail.settings.basic',
         ux_mode: 'popup',
         login_hint: userEmail,

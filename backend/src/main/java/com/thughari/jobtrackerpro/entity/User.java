@@ -53,6 +53,9 @@ public class User {
 	@Column(name = "gmail_sync_started_at")
 	private LocalDateTime gmailSyncStartedAt;
 
+	@Column(name = "gmail_sync_status")
+	private String gmailSyncStatus;
+
 	@Column(name = "gmail_connected")
 	private Boolean gmailConnected = false;
 	

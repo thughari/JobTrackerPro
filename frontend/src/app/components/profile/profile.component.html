@@ -209,60 +209,6 @@
             }
         </div>
     </div>
-    @if (!authService.userProfile()?.gmailConnected) {
-    <div
-        class="bg-white dark:bg-[#151A23] border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm transition-colors">
-        <div class="flex justify-between items-center px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                <i class="ph ph-magic-wand"></i> Automation
-            </h3>
-        </div>
-
-        <div class="p-6">
-            <div
-                class="mb-6 p-4 bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-800 rounded-lg flex gap-3">
-                <div
-                    class="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400 h-fit">
-                    <i class="ph ph-envelope-open text-xl"></i>
-                </div>
-                <div>
-                    <h4 class="text-sm font-bold text-gray-900 dark:text-white">
-                        Auto-import from Email
-                    </h4>
-
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-                        Automatically pull job applications, interview invites, and updates from your inbox.
-                        <span class="text-indigo-600 dark:text-indigo-400 font-medium">
-                            One-time setup - no manual tracking.
-                        </span>
-                    </p>
-
-                    <button (click)="openHelpModal()"
-                        class="mt-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
-                        <i class="ph ph-envelope-simple-open"></i>
-                        Set up Gmail import
-                    </button>
-                </div>
-            </div>
-
-            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Your Inbound
-                Address</label>
-            <div class="flex gap-2">
-                <div
-                    class="flex-1 bg-gray-50 dark:bg-[#0B0E14] border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2.5 flex items-center min-w-0">
-                    <code class="text-sm text-gray-900 dark:text-white font-mono truncate select-all block w-full">
-                        {{ inboundEmailAddress }}
-                    </code>
-                </div>
-                <button (click)="copyEmail()"
-                    class="px-4 py-2 bg-white dark:bg-[#242c38] border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-[#2d3748] text-gray-700 dark:text-white font-medium rounded-lg transition-colors flex items-center gap-2 shadow-sm flex-shrink-0">
-                    <i class="ph ph-copy"></i> Copy
-                </button>
-            </div>
-        </div>
-
-    </div>
-    }
 
     <div class="bg-white dark:bg-[#151A23] border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-sm">
         <div class="flex items-start justify-between mb-8">
@@ -473,11 +419,7 @@
 </div>
 }
 
-@if (showHelpModal()) {
-<app-gmail-setup-modal [isVisible]="showHelpModal()" (onClose)="closeHelpModal()"
-    (onMessage)="handleModalMessage($event)" (onConnect)="connectGmail()">
-</app-gmail-setup-modal>
-}
+
 
 
 @if (showDisconnectConfirm()) {

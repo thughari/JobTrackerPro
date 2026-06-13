@@ -1,6 +1,7 @@
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import {
   Component,
+  computed,
   effect,
   inject,
   OnDestroy,
@@ -38,7 +39,9 @@ export class ApplicationListComponent implements OnInit, OnDestroy {
   sortDirection = signal<SortDirection>('desc');
   currentPage = signal(0);
   pageSize = signal(8);
-  isSyncing = signal(false);
+  isLocalSyncing = signal(false);
+  isSyncing = computed(() => this.isLocalSyncing() || this.jobService.gmailSyncInProgress());
+  syncStatus = this.jobService.gmailSyncStatus;
 
   successMessage = signal('');
   errorMessage = signal('');
@@ -79,15 +82,15 @@ export class ApplicationListComponent implements OnInit, OnDestroy {
   async onGmailSync() {
     if (this.isSyncing() || !this.authService.userProfile()?.gmailConnected) return;
 
-    this.isSyncing.set(true);
+    this.isLocalSyncing.set(true);
     try {
       await firstValueFrom(this.authService.syncGmail());
       this.showMessage('success', 'Gmail sync started in background.');
-      setTimeout(() => this.isSyncing.set(false), 30000);
+      await this.jobService.loadDashboard(true);
     } catch (err) {
       this.showMessage('error', 'Failed to start sync.');
     } finally {
-      this.isSyncing.set(false);
+      this.isLocalSyncing.set(false);
     }
   }
 

@@ -30,6 +30,16 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 	@Query("UPDATE User u SET u.gmailSyncInProgress = false WHERE u.email = :email")
 	void releaseSyncLock(@Param("email") String email);
 
+	@Modifying
+	@Transactional
+	@Query("UPDATE User u SET u.gmailSyncInProgress = false, u.gmailSyncStatus = null")
+	void resetAllSyncLocks();
+
+	@Modifying
+	@Transactional
+	@Query("UPDATE User u SET u.gmailSyncStatus = :status WHERE u.email = :email")
+	void updateSyncStatus(@Param("email") String email, @Param("status") String status);
+
 	List<User> findByGmailConnectedTrue();
 	
 	@Modifying
