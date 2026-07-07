@@ -2,7 +2,7 @@ package com.thughari.jobtrackerpro.service.mock;
 
 import com.thughari.jobtrackerpro.dto.EmailBatchItem;
 import com.thughari.jobtrackerpro.dto.JobDTO;
-import com.thughari.jobtrackerpro.interfaces.GeminiService;
+import com.thughari.jobtrackerpro.interfaces.AiExtractionService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 
 @Service
 @ConditionalOnProperty(name = "app.gemini.enabled", havingValue = "false", matchIfMissing = true)
-public class MockGeminiService implements GeminiService {
+public class MockAiExtractionService implements AiExtractionService {
 	
 	private static final Pattern COMPANY_PATTERN = Pattern.compile("(?:to|at)\\s+([A-Z][A-Za-z0-9\\s]+)");
 

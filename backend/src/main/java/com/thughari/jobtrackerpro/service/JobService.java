@@ -109,7 +109,7 @@ public class JobService {
 
     private List<ChartData> calculateStatusDistribution(List<Job> jobs) {
         Map<String, Long> statusMap = jobs.parallelStream()
-            .collect(Collectors.groupingBy(Job::getStatus, Collectors.counting()));
+            .collect(Collectors.groupingBy(j -> sanitizeStatus(j.getStatus()), Collectors.counting()));
         return mapToChartData(statusMap);
     }
 
@@ -176,6 +176,7 @@ public class JobService {
         LocalDateTime originalAppliedDate = existingJob.getAppliedDate();
         
         BeanUtils.copyProperties(dto, existingJob, "id", "userEmail", "appliedDate", "updatedAt");
+        existingJob.setStatus(sanitizeStatus(existingJob.getStatus()));
         existingJob.setAppliedDate(originalAppliedDate);
         existingJob.setUpdatedAt(LocalDateTime.now());
         return convertToDto(jobRepository.save(existingJob));
@@ -342,8 +343,8 @@ public class JobService {
     }
     
     private void updateExistingJobFromEmail(Job existingJob, JobDTO incoming) {
-        String currentStatus = (existingJob.getStatus() != null) ? existingJob.getStatus() : "";
-        String incomingStatus = (incoming.getStatus() != null) ? incoming.getStatus() : "";
+        String currentStatus = sanitizeStatus(existingJob.getStatus());
+        String incomingStatus = sanitizeStatus(incoming.getStatus());
         
         LocalDateTime incomingTime = incoming.getUpdatedAt();
         LocalDateTime existingTime = existingJob.getUpdatedAt();
@@ -428,13 +429,27 @@ public class JobService {
     private JobDTO convertToDto(Job job) {
         JobDTO dto = new JobDTO();
         BeanUtils.copyProperties(job, dto);
+        dto.setStatus(sanitizeStatus(job.getStatus()));
         return dto;
     }
 
     private Job convertToEntity(JobDTO dto) {
         Job job = new Job();
         BeanUtils.copyProperties(dto, job);
+        job.setStatus(sanitizeStatus(job.getStatus()));
         return job;
+    }
+    
+    private String sanitizeStatus(String status) {
+        if (status == null || status.isBlank()) return "Applied";
+        
+        String s = status.trim();
+        if (s.equalsIgnoreCase("Shortlisted")) return "Shortlisted";
+        if (s.equalsIgnoreCase("Interview Scheduled")) return "Interview Scheduled";
+        if (s.equalsIgnoreCase("Offer Received")) return "Offer Received";
+        if (s.equalsIgnoreCase("Rejected")) return "Rejected";
+        
+        return "Applied";
     }
     
     private List<ChartData> mapToChartData(Map<String, Long> map) {

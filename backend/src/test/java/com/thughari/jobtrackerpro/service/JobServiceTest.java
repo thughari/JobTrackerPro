@@ -5,6 +5,7 @@ import com.thughari.jobtrackerpro.dto.JobDTO;
 import com.thughari.jobtrackerpro.entity.Job;
 import com.thughari.jobtrackerpro.exception.ResourceNotFoundException;
 import com.thughari.jobtrackerpro.repo.JobRepository;
+import com.thughari.jobtrackerpro.repo.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -26,6 +27,9 @@ class JobServiceTest {
 
     @Mock
     private JobRepository jobRepository;
+
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     private JobService jobService;
@@ -183,6 +187,7 @@ class JobServiceTest {
         offer.setAppliedDate(LocalDateTime.of(2025, 2, 20, 9, 0));
 
         when(jobRepository.findByUserEmailOrderByUpdatedAtDesc(EMAIL)).thenReturn(List.of(applied, interview, offer));
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
 
         DashboardResponse response = jobService.getDashboardData(EMAIL);
 

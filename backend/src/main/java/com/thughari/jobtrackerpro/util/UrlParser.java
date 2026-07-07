@@ -73,6 +73,7 @@ public class UrlParser {
             if (index > 0) cleanBody = cleanBody.substring(0, index);
         }
         
-        return cleanBody.length() > 3000 ? cleanBody.substring(0, 3000) : cleanBody;
+        cleanBody = cleanBody.replaceAll("\\s+", " ").trim();
+        return cleanBody.length() > 1200 ? cleanBody.substring(0, 1200) : cleanBody;
     }
 }

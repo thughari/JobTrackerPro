@@ -13,6 +13,7 @@ import com.thughari.jobtrackerpro.util.UrlParser;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -24,19 +25,22 @@ import java.util.Map;
 
 @Service
 @Slf4j
-@ConditionalOnProperty(name = "app.gemini.enabled", havingValue = "true")
-public class GeminiExtractionService implements AiExtractionService {
+@ConditionalOnProperty(name = "openrouter.api.enabled", havingValue = "true")
+public class OpenRouterExtractionService implements AiExtractionService {
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
 
-    @Value("${gemini.api.key}")
+    @Value("${openrouter.api.key}")
     private String apiKey;
 
-    @Value("${gemini.api.url}")
+    @Value("${openrouter.api.url}")
     private String apiUrl;
 
-    public GeminiExtractionService() {
+    @Value("${openrouter.api.model:meta-llama/llama-3.1-8b-instruct}")
+    private String apiModel;
+
+    public OpenRouterExtractionService() {
         this.restClient = RestClient.create();
         this.objectMapper = new ObjectMapper()
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -47,33 +51,36 @@ public class GeminiExtractionService implements AiExtractionService {
         String prompt = buildPrompt(from, subject, body);
 
         try {
-        	Map<String, Object> requestBody = Map.of(
-                    "contents", List.of(
-                        Map.of(
-                            "role", "user",
-                            "parts", List.of(Map.of("text", prompt))
-                        )
+            Map<String, Object> requestBody = Map.of(
+                "model", apiModel,
+                "messages", List.of(
+                    Map.of(
+                        "role", "user",
+                        "content", prompt
                     )
-                );
+                ),
+                "max_tokens", 800
+            );
 
             String response = restClient.post()
-                    .uri(apiUrl + "?key=" + apiKey)
+                    .uri(apiUrl)
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(requestBody)
                     .retrieve()
                     .body(String.class);
 
-            return parseGeminiResponse(response);
+            return parseOpenAiResponse(response);
 
         } catch (HttpClientErrorException e) {
-            log.error("Gemini API error: {}", e.getResponseBodyAsString());
-            throw new AiQuotaExceededException("GEMINI_API_ERROR", e);
+            log.error("OpenRouter API error: {}", e.getResponseBodyAsString());
+            throw new AiQuotaExceededException("OPENROUTER_API_ERROR", e);
         } catch (Exception e) {
-            log.error("AI Extraction failed or timed out", e);
-            return null; 
+            log.error("OpenRouter AI Extraction failed or timed out", e);
+            return null;
         }
     }
-    
+
     @Override
     public List<JobDTO> extractJobsFromBatch(List<EmailBatchItem> items) {
         if (items == null || items.isEmpty()) return List.of();
@@ -82,60 +89,103 @@ public class GeminiExtractionService implements AiExtractionService {
 
         try {
             Map<String, Object> requestBody = Map.of(
-                "contents", List.of(
-                    Map.of("role", "user", "parts", List.of(Map.of("text", prompt)))
-                )
+                "model", apiModel,
+                "messages", List.of(
+                    Map.of("role", "user", "content", prompt)
+                ),
+                "max_tokens", 2500
             );
 
             String response = restClient.post()
-                    .uri(apiUrl + "?key=" + apiKey)
+                    .uri(apiUrl)
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(requestBody)
                     .retrieve()
                     .body(String.class);
 
-            return parseBulkGeminiResponse(response);
+            return parseBulkOpenAiResponse(response);
 
         } catch (HttpClientErrorException e) {
-            log.error("Gemini API error: {}", e.getResponseBodyAsString());
-            throw new AiQuotaExceededException("GEMINI_API_ERROR", e);
+            log.error("OpenRouter API error: {}", e.getResponseBodyAsString());
+            throw new AiQuotaExceededException("OPENROUTER_API_ERROR", e);
         } catch (Exception e) {
-            log.error("Bulk AI Extraction failed", e);
+            log.error("OpenRouter Bulk AI Extraction failed", e);
             return List.of();
         }
     }
-    
 
-    private List<JobDTO> parseBulkGeminiResponse(String rawResponse) {
+    private JobDTO parseOpenAiResponse(String rawResponse) {
         try {
             JsonNode root = objectMapper.readTree(rawResponse);
-            JsonNode candidates = root.path("candidates");
-            
-            if (candidates.isMissingNode() || candidates.isEmpty()) return List.of();
+            JsonNode choices = root.path("choices");
 
-            String contentText = candidates.get(0)
-                    .path("content").path("parts").get(0)
-                    .path("text").asText();
+            if (choices.isMissingNode() || choices.isEmpty()) {
+                return null;
+            }
 
+            String contentText = choices.get(0).path("message").path("content").asText();
             contentText = contentText.replaceAll("```json", "").replaceAll("```", "").trim();
+
+            if (contentText.equalsIgnoreCase("null")) {
+                log.info("OpenRouter AI determined this email is NOT a job application.");
+                return null;
+            }
+
+            JobDTO job = objectMapper.readValue(contentText, JobDTO.class);
+
+            LocalDateTime now = LocalDateTime.now();
+            job.setAppliedDate(now);
+            job.setUpdatedAt(now);
+
+            job.setStage(mapStatusToStage(job.getStatus()));
+
+            if ("Rejected".equalsIgnoreCase(job.getStatus())) {
+                job.setStageStatus("failed");
+            } else if ("Offer Received".equalsIgnoreCase(job.getStatus())) {
+                job.setStageStatus("passed");
+            } else {
+                job.setStageStatus("active");
+            }
+
+            return job;
+
+        } catch (Exception e) {
+            log.error("Failed to parse OpenRouter AI response: {}", rawResponse);
+            return null;
+        }
+    }
+
+    private List<JobDTO> parseBulkOpenAiResponse(String rawResponse) {
+        try {
+            JsonNode root = objectMapper.readTree(rawResponse);
+            JsonNode choices = root.path("choices");
+
+            if (choices.isMissingNode() || choices.isEmpty()) return List.of();
+
+            String contentText = choices.get(0).path("message").path("content").asText();
 
             // Extract just the JSON array between first '[' and last ']'
             int start = contentText.indexOf('[');
             int end = contentText.lastIndexOf(']');
             if (start == -1 || end == -1 || end <= start) {
-                log.warn("Gemini bulk response has no JSON array: {}", contentText.substring(0, Math.min(200, contentText.length())));
+                log.warn("OpenRouter bulk response has no JSON array: {}", contentText.substring(0, Math.min(200, contentText.length())));
                 return List.of();
             }
             contentText = contentText.substring(start, end + 1);
 
+            // Sanitize malformed JSON from LLM (e.g. missing opening quotes on keys)
+            contentText = contentText.replaceAll(",(?:\\s*)([a-zA-Z_]+)\"\\s*:", ",\"$1\":");
+            contentText = contentText.replaceAll("\\{(?:\\s*)([a-zA-Z_]+)\"\\s*:", "{\"$1\":");
+
             List<JobDTO> jobs = objectMapper.readValue(contentText, new TypeReference<List<JobDTO>>() {});
-            
+
             LocalDateTime now = LocalDateTime.now();
             jobs.forEach(job -> {
-                job.setAppliedDate(now); 
+                job.setAppliedDate(now);
                 job.setUpdatedAt(now);
                 job.setStage(mapStatusToStage(job.getStatus()));
-                
+
                 if ("Rejected".equalsIgnoreCase(job.getStatus())) {
                     job.setStageStatus("failed");
                 } else if ("Offer Received".equalsIgnoreCase(job.getStatus())) {
@@ -144,22 +194,13 @@ public class GeminiExtractionService implements AiExtractionService {
                     job.setStageStatus("active");
                 }
             });
-            
+
             return jobs;
 
         } catch (Exception e) {
-            log.error("Failed to parse Bulk AI response: {}", rawResponse);
+            log.error("Failed to parse OpenRouter Bulk AI response: {}", rawResponse);
             return List.of();
         }
-    }
-    
-    private String buildUrlIndexList(List<String> urls) {
-        if (urls.isEmpty()) return "None\n";
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < urls.size(); i++) {
-            sb.append(i).append(": ").append(urls.get(i)).append("\n");
-        }
-        return sb.toString();
     }
 
     private String buildPrompt(String from, String subject, String body) {
@@ -235,48 +276,13 @@ public class GeminiExtractionService implements AiExtractionService {
         """.formatted(emailListBuilder.toString());
     }
 
-    private JobDTO parseGeminiResponse(String rawResponse) {
-        try {
-            JsonNode root = objectMapper.readTree(rawResponse);
-            JsonNode candidates = root.path("candidates");
-            
-            if (candidates.isMissingNode() || candidates.isEmpty()) {
-                return null;
-            }
-
-            String contentText = candidates.get(0)
-                    .path("content").path("parts").get(0)
-                    .path("text").asText();
-
-            contentText = contentText.replaceAll("```json", "").replaceAll("```", "").trim();
-
-            if (contentText.equalsIgnoreCase("null")) {
-                log.info("AI determined this email is NOT a job application.");
-                return null;
-            }
-
-            JobDTO job = objectMapper.readValue(contentText, JobDTO.class);
-            
-            LocalDateTime now = LocalDateTime.now();
-            job.setAppliedDate(now); 
-            job.setUpdatedAt(now);
-            
-            job.setStage(mapStatusToStage(job.getStatus()));
-            
-            if ("Rejected".equalsIgnoreCase(job.getStatus())) {
-                job.setStageStatus("failed");
-            } else if ("Offer Received".equalsIgnoreCase(job.getStatus())) {
-                job.setStageStatus("passed");
-            } else {
-                job.setStageStatus("active");
-            }
-            
-            return job;
-
-        } catch (Exception e) {
-            log.error("Failed to parse AI response: {}", rawResponse);
-            return null;
+    private String buildUrlIndexList(List<String> urls) {
+        if (urls.isEmpty()) return "None\\n";
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < urls.size(); i++) {
+            sb.append(i).append(": ").append(urls.get(i)).append("\\n");
         }
+        return sb.toString();
     }
 
     private Integer mapStatusToStage(String status) {

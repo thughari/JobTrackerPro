@@ -2,7 +2,8 @@ package com.thughari.jobtrackerpro.service;
 
 import com.thughari.jobtrackerpro.dto.EmailBatchItem;
 import com.thughari.jobtrackerpro.dto.JobDTO;
-import com.thughari.jobtrackerpro.interfaces.GeminiService;
+import com.thughari.jobtrackerpro.interfaces.AiExtractionService;
+import com.thughari.jobtrackerpro.exception.AiQuotaExceededException;
 import com.thughari.jobtrackerpro.util.TemplateParser;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
@@ -14,37 +15,49 @@ import java.util.List;
 @Service
 @Primary
 @Slf4j
-public class SmartExtractionService implements GeminiService {
+public class SmartExtractionService implements AiExtractionService {
 
-    private final GeminiService activeService;
+    private final List<AiExtractionService> providers = new ArrayList<>();
 
-    public SmartExtractionService(List<GeminiService> services) {
-        // Find the actual delegate service (GeminiExtractionService or MockGeminiService)
-        this.activeService = services.stream()
-                .filter(s -> s != this)
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("No active GeminiService implementation found!"));
-        log.info("SmartExtractionService initialized. Delegating non-template extractions to: {}", 
-                 this.activeService.getClass().getSimpleName());
+    public SmartExtractionService(List<AiExtractionService> services) {
+        // Order the providers: Gemini -> Groq -> OpenRouter -> Mock
+        // We filter out 'this' instance to avoid infinite recursion
+        services.stream().filter(s -> s instanceof GeminiExtractionService).findFirst().ifPresent(providers::add);
+        services.stream().filter(s -> s instanceof GroqExtractionService).findFirst().ifPresent(providers::add);
+        services.stream().filter(s -> s instanceof OpenRouterExtractionService).findFirst().ifPresent(providers::add);
+        services.stream().filter(s -> s.getClass().getSimpleName().contains("Mock")).findFirst().ifPresent(providers::add);
+        
+        log.info("SmartExtractionService initialized with fallback chain: {}", 
+                 providers.stream().map(p -> p.getClass().getSimpleName()).toList());
     }
 
     @Override
     public JobDTO extractJobFromEmail(String from, String subject, String body) {
-        // log.info("[DEBUG] SmartExtractionService - From: '{}', Subject: '{}'", from, subject);
-        // log.info("[DEBUG] Body: {}", body);
-
         try {
             JobDTO manualJob = TemplateParser.parse(from, subject, body);
             if (manualJob != null) {
-                // log.info("Successfully matched and manually extracted job for company: {}", manualJob.getCompany());
                 return manualJob;
             }
         } catch (Exception e) {
-            log.warn("Manual parsing error, falling back to delegation: {}", e.getMessage());
+            log.warn("Manual parsing error, falling back to AI delegation: {}", e.getMessage());
         }
 
-        log.info("Bypassing manual templates. Delegating extraction to: {}", activeService.getClass().getSimpleName());
-        return activeService.extractJobFromEmail(from, subject, body);
+        for (int i = 0; i < providers.size(); i++) {
+            AiExtractionService provider = providers.get(i);
+            try {
+                log.info("Attempting extraction with provider: {}", provider.getClass().getSimpleName());
+                return provider.extractJobFromEmail(from, subject, body);
+            } catch (AiQuotaExceededException e) {
+                log.warn("Quota exceeded for provider {}: {}", provider.getClass().getSimpleName(), e.getMessage());
+                if (i < providers.size() - 1) {
+                    log.info("Falling back to next provider...");
+                } else {
+                    log.error("All AI providers exhausted their quotas!");
+                    throw e; // No more fallbacks
+                }
+            }
+        }
+        return null;
     }
 
     @Override
@@ -57,9 +70,6 @@ public class SmartExtractionService implements GeminiService {
 
         for (int i = 0; i < items.size(); i++) {
             EmailBatchItem item = items.get(i);
-            // log.info("[DEBUG] SmartExtractionService batch item {} - From: '{}', Subject: '{}'", i, item.from(), item.subject());
-            // log.info("[DEBUG] Body: {}", item.body());
-
             JobDTO parsed = null;
             try {
                 parsed = TemplateParser.parse(item.from(), item.subject(), item.body());
@@ -69,7 +79,6 @@ public class SmartExtractionService implements GeminiService {
 
             if (parsed != null) {
                 parsed.setInputIndex(i);
-                // log.info("Successfully matched and manually extracted batch item {} for company: {}", i, parsed.getCompany());
                 results.add(parsed);
             } else {
                 remainingItems.add(item);
@@ -78,9 +87,23 @@ public class SmartExtractionService implements GeminiService {
         }
 
         if (!remainingItems.isEmpty()) {
-            log.info("Bypassing manual templates for {}/{} items. Delegating to: {}", 
-                     remainingItems.size(), items.size(), activeService.getClass().getSimpleName());
-            List<JobDTO> delegatedJobs = activeService.extractJobsFromBatch(remainingItems);
+            List<JobDTO> delegatedJobs = new ArrayList<>();
+            for (int i = 0; i < providers.size(); i++) {
+                AiExtractionService provider = providers.get(i);
+                try {
+                    log.info("Attempting batch extraction with provider: {}", provider.getClass().getSimpleName());
+                    delegatedJobs = provider.extractJobsFromBatch(remainingItems);
+                    break; // Success, stop trying other providers
+                } catch (AiQuotaExceededException e) {
+                    log.warn("Quota exceeded for provider {}: {}", provider.getClass().getSimpleName(), e.getMessage());
+                    if (i < providers.size() - 1) {
+                        log.info("Falling back to next provider...");
+                    } else {
+                        log.error("All AI providers exhausted their quotas!");
+                        throw e;
+                    }
+                }
+            }
             
             for (JobDTO job : delegatedJobs) {
                 if (job.getInputIndex() != null && job.getInputIndex() >= 0 && job.getInputIndex() < originalIndexes.size()) {

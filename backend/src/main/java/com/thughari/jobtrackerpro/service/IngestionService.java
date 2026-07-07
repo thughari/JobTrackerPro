@@ -2,7 +2,7 @@ package com.thughari.jobtrackerpro.service;
 
 import com.thughari.jobtrackerpro.dto.JobDTO;
 import com.thughari.jobtrackerpro.entity.User;
-import com.thughari.jobtrackerpro.interfaces.GeminiService;
+import com.thughari.jobtrackerpro.interfaces.AiExtractionService;
 import com.thughari.jobtrackerpro.repo.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 
@@ -13,12 +13,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class IngestionService {
 
-    private final GeminiService geminiService;
+    private final AiExtractionService aiService;
     private final JobService jobService;
     private final UserRepository userRepository;
 
-    public IngestionService(GeminiService geminiService, JobService jobService, UserRepository userRepository) {
-        this.geminiService = geminiService;
+    public IngestionService(AiExtractionService aiService, JobService jobService, UserRepository userRepository) {
+        this.aiService = aiService;
         this.jobService = jobService;
         this.userRepository = userRepository;
     }
@@ -33,8 +33,8 @@ public class IngestionService {
             return;
         }
 
-        log.info("Forwarding email to Gemini AI for user: {}", userEmail);
-        JobDTO job = geminiService.extractJobFromEmail(from, subject, body);
+        log.info("Forwarding email to AI for user: {}", userEmail);
+        JobDTO job = aiService.extractJobFromEmail(from, subject, body);
 
         if (job != null) {
             jobService.createOrUpdateJob(job, userEmail);

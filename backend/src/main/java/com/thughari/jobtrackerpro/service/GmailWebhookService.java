@@ -8,7 +8,7 @@ import com.google.api.services.gmail.model.*;
 import com.thughari.jobtrackerpro.dto.EmailBatchItem;
 import com.thughari.jobtrackerpro.dto.JobDTO;
 import com.thughari.jobtrackerpro.entity.User;
-import com.thughari.jobtrackerpro.interfaces.GeminiService;
+import com.thughari.jobtrackerpro.interfaces.AiExtractionService;
 import com.thughari.jobtrackerpro.repo.UserRepository;
 import com.thughari.jobtrackerpro.util.CacheEvictService;
 
@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public class GmailWebhookService {
 
-    private final GeminiService geminiService;
+    private final AiExtractionService aiService;
     private final JobService jobService;
     private final UserRepository userRepository;
     private final CacheEvictService cacheEvictService;
@@ -42,8 +42,8 @@ public class GmailWebhookService {
     @Value("${spring.security.oauth2.client.registration.google.client-secret}")
     private String clientSecret;
 
-    public GmailWebhookService(GeminiService geminiService, JobService jobService, UserRepository userRepository, CacheEvictService cacheEvictService) {
-        this.geminiService = geminiService;
+    public GmailWebhookService(AiExtractionService aiService, JobService jobService, UserRepository userRepository, CacheEvictService cacheEvictService) {
+        this.aiService = aiService;
         this.jobService = jobService;
         this.userRepository = userRepository;
         this.cacheEvictService = cacheEvictService;
@@ -84,7 +84,7 @@ public class GmailWebhookService {
 
             if (!batchItems.isEmpty()) {
                 log.info("Ingesting batch of {} emails for {}", batchItems.size(), email);
-                List<JobDTO> extractedJobs = geminiService.extractJobsFromBatch(batchItems);
+                List<JobDTO> extractedJobs = aiService.extractJobsFromBatch(batchItems);
                 jobService.saveBatchResults(email, batchItems, extractedJobs);
             }
         } catch (Exception e) {

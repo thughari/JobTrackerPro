@@ -50,6 +50,16 @@ spec:
             secretKeyRef:
               name: gemini-api-key
               key: latest
+        - name: GROQ_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: groq-api-key
+              key: latest
+        - name: OPENROUTER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openrouter-api-key
+              key: latest
 
         - name: JWT_SECRET
           valueFrom:

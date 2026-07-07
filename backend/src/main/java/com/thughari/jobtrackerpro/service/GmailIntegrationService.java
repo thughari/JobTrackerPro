@@ -13,7 +13,8 @@ import com.thughari.jobtrackerpro.dto.EmailBatchItem;
 import com.thughari.jobtrackerpro.dto.JobDTO;
 import com.thughari.jobtrackerpro.entity.User;
 import com.thughari.jobtrackerpro.exception.ResourceNotFoundException;
-import com.thughari.jobtrackerpro.interfaces.GeminiService;
+import com.thughari.jobtrackerpro.exception.AiQuotaExceededException;
+import com.thughari.jobtrackerpro.interfaces.AiExtractionService;
 import com.thughari.jobtrackerpro.repo.UserRepository;
 import com.thughari.jobtrackerpro.util.CacheEvictService;
 import com.thughari.jobtrackerpro.util.UrlParser;
@@ -43,7 +44,7 @@ import java.util.concurrent.Executor;
 public class GmailIntegrationService {
 
     private final UserRepository userRepository;
-    private final GeminiService geminiService;
+    private final AiExtractionService aiService;
     private final JobService jobService;
     private final RestClient restClient;
     private final CacheEvictService cacheEvictService;
@@ -77,10 +78,10 @@ public class GmailIntegrationService {
     @Value("${app.google.pubsub-topic}")
     private String pubsubTopic;
 
-    public GmailIntegrationService(UserRepository userRepository, GeminiService geminiService, JobService jobService,
+    public GmailIntegrationService(UserRepository userRepository, AiExtractionService aiService, JobService jobService,
             CacheEvictService cacheEvictService, Executor taskExecutor) {
         this.userRepository = userRepository;
-        this.geminiService = geminiService;
+        this.aiService = aiService;
         this.jobService = jobService;
         this.restClient = RestClient.create();
         this.cacheEvictService = cacheEvictService;
@@ -184,15 +185,12 @@ public class GmailIntegrationService {
             jobService.finalizeManualSync(email, currentHistoryId);
             log.info("Manual sync successfully completed for user: {}. New jobs found: {}", email, found);
             updateSyncStatus(email, "Sync completed. Found " + found + " new jobs.");
+        } catch (AiQuotaExceededException e) {
+            log.error("Manual sync paused: AI API daily quota exceeded.");
+            updateSyncStatus(email, "Sync paused: AI API daily quota exceeded. Please try again tomorrow.");
         } catch (Exception e) {
-            if ((e.getMessage() != null && e.getMessage().contains("GEMINI_QUOTA_EXCEEDED")) || 
-                (e.getCause() != null && e.getCause().getMessage() != null && e.getCause().getMessage().contains("GEMINI_QUOTA_EXCEEDED"))) {
-                log.error("Manual sync paused: Gemini API daily quota exceeded.");
-                updateSyncStatus(email, "Sync paused: Gemini API daily quota exceeded. Please try again tomorrow.");
-            } else {
-                log.error("Manual sync failed for {}: {}", email, e.getMessage());
-                updateSyncStatus(email, "Sync failed: " + e.getMessage());
-            }
+            log.error("Manual sync failed for {}: {}", email, e.getMessage());
+            updateSyncStatus(email, "Sync failed: " + e.getMessage());
         } finally {
             userRepository.releaseSyncLock(email);
             cacheEvictService.evictAllForUser(email);
@@ -238,11 +236,9 @@ public class GmailIntegrationService {
             log.info("Processed {} valid job-related batch items.", batchItems.size());
 
             return extractAndSaveJobs(batchItems, userEmail);
+        } catch (AiQuotaExceededException e) {
+            throw e;
         } catch (Exception e) {
-            if ((e.getMessage() != null && e.getMessage().contains("GEMINI_QUOTA_EXCEEDED")) || 
-                (e.getCause() != null && e.getCause().getMessage() != null && e.getCause().getMessage().contains("GEMINI_QUOTA_EXCEEDED"))) {
-                throw new RuntimeException("GEMINI_QUOTA_EXCEEDED", e);
-            }
             log.error("Historical batch scan failed for {}: {}", userEmail, e.getMessage());
             return 0;
         }
@@ -358,16 +354,16 @@ public class GmailIntegrationService {
         for (int i = 0; i < batchItems.size(); i += batchSize) {
             int batchNum = (i / batchSize) + 1;
             int percent = (totalBatches == 0) ? 100 : (int) Math.round(((double) batchNum / totalBatches) * 100);
-            String statusMsg = String.format("Extracting jobs with Gemini AI (batch %d/%d - %d%%)...", batchNum, totalBatches, percent);
+            String statusMsg = String.format("Extracting jobs with AI (batch %d/%d - %d%%)...", batchNum, totalBatches, percent);
             updateSyncStatus(userEmail, statusMsg);
-            log.info("Running Gemini AI extraction: batch {} of {}...", batchNum, totalBatches);
+            log.info("Running AI extraction: batch {} of {}...", batchNum, totalBatches);
 
             List<EmailBatchItem> subList = batchItems.subList(i, Math.min(i + batchSize, batchItems.size()));
             List<List<String>> urlMaps = subList.stream()
                     .map(item -> UrlParser.extractAndCleanUrls(item.body()))
                     .toList();
 
-            List<JobDTO> extractedJobs = geminiService.extractJobsFromBatch(subList);
+            List<JobDTO> extractedJobs = aiService.extractJobsFromBatch(subList);
             for (JobDTO job : extractedJobs) {
                 hydrateJobUrl(job, urlMaps);
                 jobService.createOrUpdateJob(job, userEmail);
