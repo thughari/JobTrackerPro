@@ -51,6 +51,26 @@ spec:
               name: gemini-api-key
               key: latest
 
+        - name: GROK_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: groq-api-key
+              key: latest
+        - name: GROQ_API_URL
+          value: "https://api.groq.com/openai/v1/chat/completions"
+        - name: GROQ_MODEL
+          value: "llama-3.1-8b-instant"
+
+        - name: OPENROUTER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openrouter-api-key
+              key: latest
+        - name: OPENROUTER_API_URL
+          value: "https://openrouter.ai/api/v1/chat/completions"
+        - name: OPENROUTER_MODEL
+          value: "meta-llama/llama-3.1-8b-instruct"
+
         - name: JWT_SECRET
           valueFrom:
             secretKeyRef:

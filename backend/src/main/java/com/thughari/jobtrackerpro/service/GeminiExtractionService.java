@@ -34,6 +34,24 @@ public class GeminiExtractionService implements GeminiService {
     @Value("${gemini.api.url}")
     private String apiUrl;
 
+    @Value("${groq.api.key:}")
+    private String groqApiKey;
+
+    @Value("${groq.api.url:}")
+    private String groqApiUrl;
+
+    @Value("${groq.api.model:}")
+    private String groqModel;
+
+    @Value("${openrouter.api.key:}")
+    private String openRouterApiKey;
+
+    @Value("${openrouter.api.url:}")
+    private String openRouterApiUrl;
+
+    @Value("${openrouter.api.model:}")
+    private String openRouterModel;
+
     public GeminiExtractionService() {
         this.restClient = RestClient.create();
         this.objectMapper = new ObjectMapper()
@@ -45,26 +63,10 @@ public class GeminiExtractionService implements GeminiService {
         String prompt = buildPrompt(from, subject, body);
 
         try {
-        	Map<String, Object> requestBody = Map.of(
-                    "contents", List.of(
-                        Map.of(
-                            "role", "user",
-                            "parts", List.of(Map.of("text", prompt))
-                        )
-                    )
-                );
-
-            String response = restClient.post()
-                    .uri(apiUrl + "?key=" + apiKey)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(requestBody)
-                    .retrieve()
-                    .body(String.class);
-
-            return parseGeminiResponse(response);
-
+            String contentText = executeWithFallback(prompt);
+            return parseExtractedText(contentText);
         } catch (Exception e) {
-            log.error("AI Extraction failed or timed out", e);
+            log.error("AI Extraction failed or timed out across all providers", e);
             return null; 
         }
     }
@@ -76,24 +78,91 @@ public class GeminiExtractionService implements GeminiService {
         String prompt = buildBatchPrompt(items);
 
         try {
-            Map<String, Object> requestBody = Map.of(
-                "contents", List.of(
-                    Map.of("role", "user", "parts", List.of(Map.of("text", prompt)))
-                )
-            );
-
-            String response = restClient.post()
-                    .uri(apiUrl + "?key=" + apiKey)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(requestBody)
-                    .retrieve()
-                    .body(String.class);
-
-            return parseBulkGeminiResponse(response);
-
+            String contentText = executeWithFallback(prompt);
+            return parseBulkExtractedText(contentText);
         } catch (Exception e) {
-            log.error("Bulk AI Extraction failed", e);
+            log.error("Bulk AI Extraction failed across all providers", e);
             return List.of();
+        }
+    }
+    
+    private String executeWithFallback(String prompt) {
+        try {
+            return executeGeminiCall(prompt);
+        } catch (Exception e) {
+            log.warn("Gemini AI failed, falling back to Groq AI: {}", e.getMessage());
+            try {
+                return executeGroqCall(prompt);
+            } catch (Exception ex) {
+                log.warn("Groq AI failed, falling back to OpenRouter AI: {}", ex.getMessage());
+                return executeOpenRouterCall(prompt);
+            }
+        }
+    }
+
+    private String executeGeminiCall(String prompt) {
+        Map<String, Object> requestBody = Map.of(
+            "contents", List.of(
+                Map.of("role", "user", "parts", List.of(Map.of("text", prompt)))
+            )
+        );
+
+        String response = restClient.post()
+                .uri(apiUrl + "?key=" + apiKey)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(requestBody)
+                .retrieve()
+                .body(String.class);
+
+        try {
+            JsonNode root = objectMapper.readTree(response);
+            JsonNode candidates = root.path("candidates");
+            if (candidates.isMissingNode() || candidates.isEmpty()) {
+                throw new RuntimeException("Empty Gemini response");
+            }
+            return candidates.get(0).path("content").path("parts").get(0).path("text").asText();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse Gemini response: " + e.getMessage(), e);
+        }
+    }
+
+    private String executeGroqCall(String prompt) {
+        return executeOpenAIFormatCall(prompt, groqApiUrl, groqApiKey, groqModel);
+    }
+
+    private String executeOpenRouterCall(String prompt) {
+        return executeOpenAIFormatCall(prompt, openRouterApiUrl, openRouterApiKey, openRouterModel);
+    }
+
+    private String executeOpenAIFormatCall(String prompt, String url, String key, String model) {
+        if (key == null || key.isBlank() || url == null || url.isBlank()) {
+            throw new RuntimeException("API key or URL is not configured for provider");
+        }
+        
+        Map<String, Object> requestBody = Map.of(
+            "model", model,
+            "messages", List.of(
+                Map.of("role", "user", "content", prompt)
+            )
+        );
+
+        String response = restClient.post()
+                .uri(url)
+                .header("Authorization", "Bearer " + key)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(requestBody)
+                .retrieve()
+                .body(String.class);
+
+        try {
+            JsonNode root = objectMapper.readTree(response);
+            JsonNode choices = root.path("choices");
+            if (choices.isMissingNode() || choices.isEmpty()) {
+                throw new RuntimeException("Empty response from AI provider");
+            }
+            return choices.get(0).path("message").path("content").asText();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse AI response: " + e.getMessage(), e);
         }
     }
     
@@ -450,17 +519,10 @@ public class GeminiExtractionService implements GeminiService {
 		]""".formatted(emailListBuilder.toString());
     }
 
-    private List<JobDTO> parseBulkGeminiResponse(String rawResponse) {
+    private List<JobDTO> parseBulkExtractedText(String contentText) {
         try {
-            JsonNode root = objectMapper.readTree(rawResponse);
-            JsonNode candidates = root.path("candidates");
+            if (contentText == null) return List.of();
             
-            if (candidates.isMissingNode() || candidates.isEmpty()) return List.of();
-
-            String contentText = candidates.get(0)
-                    .path("content").path("parts").get(0)
-                    .path("text").asText();
-
             contentText = contentText.replaceAll("```json", "").replaceAll("```", "").trim();
 
             if (contentText.equals("[]") || contentText.equalsIgnoreCase("null")) {
@@ -487,7 +549,7 @@ public class GeminiExtractionService implements GeminiService {
             return jobs;
 
         } catch (Exception e) {
-            log.error("Failed to parse Bulk AI response: {}", rawResponse);
+            log.error("Failed to parse Bulk AI response: {}", contentText);
             return List.of();
         }
     }
@@ -579,19 +641,10 @@ public class GeminiExtractionService implements GeminiService {
             """.formatted(from, subject, safeBody);
     }
 
-    private JobDTO parseGeminiResponse(String rawResponse) {
+    private JobDTO parseExtractedText(String contentText) {
         try {
-            JsonNode root = objectMapper.readTree(rawResponse);
-            JsonNode candidates = root.path("candidates");
+            if (contentText == null) return null;
             
-            if (candidates.isMissingNode() || candidates.isEmpty()) {
-                return null;
-            }
-
-            String contentText = candidates.get(0)
-                    .path("content").path("parts").get(0)
-                    .path("text").asText();
-
             contentText = contentText.replaceAll("```json", "").replaceAll("```", "").trim();
 
             if (contentText.equalsIgnoreCase("null")) {
@@ -618,7 +671,7 @@ public class GeminiExtractionService implements GeminiService {
             return job;
 
         } catch (Exception e) {
-            log.error("Failed to parse AI response: {}", rawResponse);
+            log.error("Failed to parse AI response: {}", contentText);
             return null;
         }
     }
