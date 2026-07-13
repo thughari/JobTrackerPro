@@ -98,18 +98,21 @@
           @for (job of jobs(); track job.id) {
           <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
             <td class="px-6 py-4 whitespace-nowrap">
-              <div class="flex items-center">
-                <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ job.company }}</span>
+              <div class="flex items-center max-w-[160px] lg:max-w-[240px]">
+                <span class="text-sm font-semibold text-gray-900 dark:text-white truncate" [title]="job.company">{{ job.company }}</span>
                 @if (job.url && job.url.startsWith('http')) {
                 <a [href]="job.url" target="_blank"
-                  class="ml-2 text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400"><i
+                  class="ml-2 flex-shrink-0 text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400"><i
                     class="ph ph-arrow-square-out"></i></a>
                 }
               </div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">{{ job.role }}</td>
-            <td class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{
-              job.location }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+              <div class="max-w-[180px] lg:max-w-[260px] truncate" [title]="job.role">{{ job.role }}</div>
+            </td>
+            <td class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+              <div class="max-w-[140px] lg:max-w-[200px] truncate" [title]="job.location">{{ job.location }}</div>
+            </td>
             <td class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
               <span class="text-sm text-gray-900 dark:text-white">{{ job.appliedDate | date:'MM/dd/yyyy' }}</span>
             </td>
