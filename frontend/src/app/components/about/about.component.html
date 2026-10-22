@@ -1,26 +1,29 @@
 <div class="min-h-screen bg-[#0B0E14] text-gray-300 font-sans selection:bg-indigo-500/30">
 
+  <!-- Navbar -->
   <nav class="sticky top-0 z-50 bg-[#0B0E14]/80 backdrop-blur-md border-b border-gray-800">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-20">
 
         <a routerLink="/" class="cursor-pointer hover:opacity-80 transition-opacity">
-            <app-logo size="md"></app-logo>
-          </a>
+          <app-logo size="md"></app-logo>
+        </a>
 
         <div class="flex items-center gap-4">
+          <a routerLink="/resources"
+            class="hidden md:block text-sm font-medium text-gray-400 hover:text-white transition-colors mr-2">Community Hub</a>
           @if (authService.isAuthenticated()) {
-          <a routerLink="/app/dashboard"
-            class="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors shadow-lg shadow-indigo-500/20 flex items-center gap-2">
-            <i class="ph ph-squares-four text-lg"></i>
-            Dashboard
-          </a>
+            <a routerLink="/app/dashboard"
+              class="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors shadow-lg shadow-indigo-500/20 flex items-center gap-2">
+              <i class="ph ph-squares-four text-lg"></i>
+              Dashboard
+            </a>
           } @else {
-          <a routerLink="/login" class="text-sm font-medium text-gray-400 hover:text-white transition-colors whitespace-nowrap">Log in</a>
-          <a routerLink="/signup"
-            class="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm font-medium transition-all shadow-lg shadow-indigo-500/25 whitespace-nowrap">
-            Sign up
-          </a>
+            <a routerLink="/login" class="text-sm font-medium text-gray-400 hover:text-white transition-colors whitespace-nowrap">Log in</a>
+            <a routerLink="/signup"
+              class="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm font-medium transition-all shadow-lg shadow-indigo-500/25 whitespace-nowrap">
+              Sign up
+            </a>
           }
         </div>
 
@@ -28,202 +31,429 @@
     </div>
   </nav>
 
-  <div class="max-w-4xl mx-auto space-y-12 animate-fade-in py-16 px-4">
+  <div class="max-w-5xl mx-auto space-y-16 animate-fade-in py-16 px-4">
 
+    <!-- Hero / Title -->
     <div class="text-center space-y-4">
-      <div class="flex justify-center mb-8">
+      <div class="flex justify-center mb-6">
         <app-logo size="xl" [showText]="false"></app-logo>
       </div>
+
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#151A23] border border-indigo-500/30 text-indigo-300 text-xs font-mono font-medium mb-2">
+        <span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
+        <span>SYSTEM DESIGN & ARCHITECTURE</span>
+      </div>
+
       <h1 class="text-3xl md:text-5xl font-bold text-white tracking-tight">
-        Built for <span class="text-indigo-500">Engineering</span> Excellence.
+        Built for <span class="text-indigo-400">Scale</span>, <span class="text-emerald-400">Zero Cost Latency</span> & <span class="text-purple-400">Automation</span>.
       </h1>
-      <p class="text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
-        JobTrackerPro isn't just a todo list. It is an enterprise-grade full-stack application I architected to
-        demonstrate modern security, cloud storage, and performance patterns.
+      <p class="text-base md:text-lg text-gray-400 max-w-3xl mx-auto leading-relaxed">
+        JobTrackerPro is an enterprise-grade full-stack platform engineered to demonstrate advanced system design, cloud-native scalability, and resilient data processing. From real-time event-driven Gmail webhooks and hybrid deterministic/AI parsing, to in-memory Caffeine caching and fine-grained Angular Signals.
       </p>
+
+      <div class="flex flex-wrap items-center justify-center gap-4 pt-4">
+        <a href="https://github.com/thughari/JobTrackerPro" target="_blank"
+          class="px-5 py-2.5 rounded-xl bg-[#151A23] hover:bg-[#1E2532] border border-gray-700 text-white text-sm font-medium transition-all flex items-center gap-2">
+          <i class="ph ph-github-logo text-lg"></i>
+          View Source on GitHub
+        </a>
+        <a routerLink="/signup"
+          class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-all shadow-lg shadow-indigo-500/25 flex items-center gap-2">
+          Try Live Demo <i class="ph ph-arrow-right"></i>
+        </a>
+      </div>
     </div>
 
+    <!-- Motivation Card -->
     <div class="bg-[#151A23] border border-gray-800 rounded-2xl p-8 shadow-sm">
-      <h2 class="text-xl font-bold text-white mb-4">Why I built this</h2>
-      <p class="text-gray-400 leading-relaxed">
-        Searching for a job is a full-time job. I found that spreadsheets were messy, and generic to-do lists couldn't
-        capture the nuance of interview stages, salary negotiations, and follow-ups.
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+          <i class="ph ph-compass text-2xl"></i>
+        </div>
+        <h2 class="text-xl font-bold text-white">Why I Built This</h2>
+      </div>
+      <p class="text-gray-400 leading-relaxed text-sm md:text-base">
+        Searching for a job is an intensive endeavor. Spreadsheets are notoriously messy, prone to stale data, and unable to capture the real-world progression of interview stages, recruiter contacts, and timeline notes without constant manual upkeep.
         <br><br>
-        I built JobTrackerPro to bring <strong>clarity to the chaos</strong>. My goal was to create a centralized hub
-        where I could track every application, visualize my conversion rates, and handle data securely using
-        industry-standard practices.
+        Rather than building a basic CRUD tutorial, I architected JobTrackerPro as a <strong>production-grade, event-driven platform</strong>. It operates hands-free: users connect their Gmail or forward confirmation emails, and the system autonomously ingests, normalizes, deduplicates, and manages their entire interview pipeline in real time.
       </p>
     </div>
 
+    <!-- 4-Phase System Architecture Blueprint -->
+    <div class="space-y-6">
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-2 border-b border-gray-800 pb-4">
+        <div>
+          <span class="text-xs uppercase font-mono tracking-widest text-indigo-400 font-bold">End-to-End Pipeline</span>
+          <h2 class="text-2xl md:text-3xl font-bold text-white mt-1">4-Phase System Architecture</h2>
+        </div>
+        <span class="text-xs text-gray-500 font-mono">Decoupled · Event-Driven · Low-Latency</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Phase 1: Inbound Webhook & Gmail Push -->
+        <div class="p-6 bg-[#151A23] border border-gray-800 rounded-2xl flex flex-col justify-between hover:border-blue-500/40 transition-colors">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="px-2.5 py-1 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-mono font-bold uppercase">
+                Phase 01 · Ingestion Layer
+              </span>
+              <i class="ph ph-envelope-simple-open text-blue-400 text-2xl"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Automated Webhooks & Gmail Push</h3>
+            <p class="text-sm text-gray-400 leading-relaxed mb-4">
+              Users link their Gmail account via OAuth2. A Google Cloud Pub/Sub topic listens to mailbox changes and sends push webhook notices directly to <code class="text-blue-300 font-mono text-xs">/api/webhooks/gmail/push</code>.
+            </p>
+            <ul class="space-y-2 text-xs text-gray-400">
+              <li class="flex items-start gap-2">
+                <i class="ph ph-check text-blue-400 mt-0.5"></i>
+                <span><strong>Google Service Account Auth:</strong> Incoming webhooks are validated against Google audience JWT claims.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i class="ph ph-check text-blue-400 mt-0.5"></i>
+                <span><strong>Java 21 Virtual Threads:</strong> High-throughput asynchronous email reading via <code class="text-blue-300 font-mono">spring.threads.virtual.enabled=true</code>.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i class="ph ph-check text-blue-400 mt-0.5"></i>
+                <span><strong>Header Reconstruction:</strong> Parses forwarded email headers (<code class="text-blue-300 font-mono">From</code>, <code class="text-blue-300 font-mono">Subject</code>) for users forwarding from any client.</span>
+              </li>
+            </ul>
+          </div>
+          <div class="mt-6 pt-3 border-t border-gray-800 text-[11px] font-mono text-gray-500">
+            Component: GmailWebhookService · Google Cloud Pub/Sub
+          </div>
+        </div>
+
+        <!-- Phase 2: Smart Hybrid Extraction -->
+        <div class="p-6 bg-[#151A23] border border-gray-800 rounded-2xl flex flex-col justify-between hover:border-purple-500/40 transition-colors">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="px-2.5 py-1 rounded bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-mono font-bold uppercase">
+                Phase 02 · Smart Engine
+              </span>
+              <i class="ph ph-cpu text-purple-400 text-2xl"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Hybrid Deterministic & AI Parser</h3>
+            <p class="text-sm text-gray-400 leading-relaxed mb-4">
+              A <code class="text-purple-300 font-mono text-xs">&#64;Primary</code> decorator (<code class="text-purple-300 font-mono text-xs">SmartExtractionService</code>) intercepts emails before invoking costly LLMs, checking for standard templates.
+            </p>
+            <ul class="space-y-2 text-xs text-gray-400">
+              <li class="flex items-start gap-2">
+                <i class="ph ph-check text-purple-400 mt-0.5"></i>
+                <span><strong>LinkedIn & Indeed Parsing:</strong> Zero-cost deterministic parsing with sub-millisecond execution and 0ms AI latency.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i class="ph ph-check text-purple-400 mt-0.5"></i>
+                <span><strong>URL Decelerator:</strong> Decodes <code class="text-purple-300 font-mono">next=</code> parameters from redirect links (e.g. Indeed), shrinking URLs from 220+ to ~50 characters.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i class="ph ph-check text-purple-400 mt-0.5"></i>
+                <span><strong>Safety Disclaimer Filter:</strong> Strips security notices (e.g. "without an interview") and review metadata to prevent status pollution.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i class="ph ph-check text-purple-400 mt-0.5"></i>
+                <span><strong>Multi-Model AI Fallback:</strong> Unmatched recruiter emails route to Gemini 2.5 Flash Lite with Groq and OpenRouter fallbacks.</span>
+              </li>
+            </ul>
+          </div>
+          <div class="mt-6 pt-3 border-t border-gray-800 text-[11px] font-mono text-gray-500">
+            Component: SmartExtractionService · TemplateParser · Gemini
+          </div>
+        </div>
+
+        <!-- Phase 3: Strict Deduplication & State Updates -->
+        <div class="p-6 bg-[#151A23] border border-gray-800 rounded-2xl flex flex-col justify-between hover:border-amber-500/40 transition-colors">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="px-2.5 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-mono font-bold uppercase">
+                Phase 03 · State Machine
+              </span>
+              <i class="ph ph-git-merge text-amber-400 text-2xl"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Strict Deduplication & Matching</h3>
+            <p class="text-sm text-gray-400 leading-relaxed mb-4">
+              When a parsed application enters <code class="text-amber-300 font-mono text-xs">JobService.createOrUpdateJob()</code>, it matches against existing active records using strict word-token boundaries.
+            </p>
+            <ul class="space-y-2 text-xs text-gray-400">
+              <li class="flex items-start gap-2">
+                <i class="ph ph-check text-amber-400 mt-0.5"></i>
+                <span><strong>Short-Name Collision Protection:</strong> If either company name is ≤ 3 characters (e.g. "MS"), requires exact word tokens rather than loose substring matches.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i class="ph ph-check text-amber-400 mt-0.5"></i>
+                <span><strong>In-Place Lifecycle Promotion:</strong> Automatically updates existing records (e.g., Applied → Interview Scheduled) rather than creating duplicates.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i class="ph ph-check text-amber-400 mt-0.5"></i>
+                <span><strong>Timeline Notes:</strong> Email snippets and update timestamps are appended directly to transaction logs.</span>
+              </li>
+            </ul>
+          </div>
+          <div class="mt-6 pt-3 border-t border-gray-800 text-[11px] font-mono text-gray-500">
+            Component: JobService.findBestMatch() · PostgreSQL
+          </div>
+        </div>
+
+        <!-- Phase 4: Reactive UI & Caffeine Caching -->
+        <div class="p-6 bg-[#151A23] border border-gray-800 rounded-2xl flex flex-col justify-between hover:border-emerald-500/40 transition-colors">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono font-bold uppercase">
+                Phase 04 · Performance
+              </span>
+              <i class="ph ph-lightning text-emerald-400 text-2xl"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">In-Memory Cache & Reactive Signals</h3>
+            <p class="text-sm text-gray-400 leading-relaxed mb-4">
+              Sub-5ms read speeds achieved with Spring Boot Caffeine in-memory caching and Angular Signals fine-grained reactivity.
+            </p>
+            <ul class="space-y-2 text-xs text-gray-400">
+              <li class="flex items-start gap-2">
+                <i class="ph ph-check text-emerald-400 mt-0.5"></i>
+                <span><strong>Caffeine Cache:</strong> Caches user profiles, dashboard metrics, and job lists in memory; automatically evicted on mutations.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i class="ph ph-check text-emerald-400 mt-0.5"></i>
+                <span><strong>Angular Signals:</strong> Optimistic state management updates the board instantly without expensive component tree re-renders.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i class="ph ph-check text-emerald-400 mt-0.5"></i>
+                <span><strong>Don't-Drown D3 Scaling:</strong> Visually scales small slices (≤2.5% share) so 1 offer among 400 applications remains visible and interactive.</span>
+              </li>
+            </ul>
+          </div>
+          <div class="mt-6 pt-3 border-t border-gray-800 text-[11px] font-mono text-gray-500">
+            Component: Caffeine Cache · Angular 17 Signals · D3.js
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Complete Tech Stack Grid -->
     <div>
-      <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 px-2">My Tech Stack</h2>
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-2 border-b border-gray-800 pb-4 mb-6">
+        <div>
+          <span class="text-xs uppercase font-mono tracking-widest text-indigo-400 font-bold">Technology Stack</span>
+          <h2 class="text-2xl md:text-3xl font-bold text-white mt-1">Core Architecture Components</h2>
+        </div>
+        <span class="text-xs text-gray-500 font-mono">Modern JVM & Web Standards</span>
+      </div>
+
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-        <div
-          class="p-6 bg-[#151A23] border border-gray-800 rounded-2xl hover:border-green-500/50 transition-colors group">
+        <!-- Backend Core -->
+        <div class="p-6 bg-[#151A23] border border-gray-800 rounded-2xl hover:border-green-500/50 transition-colors group">
           <div class="flex items-center gap-3 mb-4">
-            <div
-              class="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center text-green-500 group-hover:scale-110 transition-transform">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 97.1 97">
-                <defs>
-                  <style>
-                    .cls-1 {
-                      fill: #6db33f;
-                    }
-                  </style>
-                </defs>
-                <title>spring-icon</title>
-                <g id="Layer_2" data-name="Layer 2">
-                  <g id="logos">
-                    <path class="cls-1"
-                      d="M88.4,5.6a42.32,42.32,0,0,1-5.2,9.1A48.46,48.46,0,1,0,15.5,84l1.8,1.6A48.41,48.41,0,0,0,96.8,52C98.2,39.8,94.5,24.2,88.4,5.6ZM22.5,84.4a4.12,4.12,0,1,1-.6-5.8A4.21,4.21,0,0,1,22.5,84.4ZM88.1,69.9C76.2,85.8,50.6,80.4,34.3,81.2c0,0-2.9.2-5.8.6,0,0,1.1-.5,2.5-1,11.5-4,16.9-4.8,23.9-8.4C68,65.7,81.1,51,83.7,35.8c-5,14.6-20.2,27.2-34,32.3C40.2,71.6,23.1,75,23.1,75l-.7-.4c-11.6-5.7-12-30.9,9.2-39,9.3-3.6,18.1-1.6,28.2-4,10.7-2.5,23.1-10.5,28.1-21C93.5,27.5,100.3,53.7,88.1,69.9Z" />
-                  </g>
-                </g>
-              </svg>
+            <div class="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center text-green-500 group-hover:scale-110 transition-transform">
+              <i class="ph ph-code text-2xl font-bold"></i>
             </div>
-            <h3 class="font-bold text-white">Spring Boot 3</h3>
+            <div>
+              <h3 class="font-bold text-white">Java 21 & Spring Boot 3.4</h3>
+              <span class="text-xs text-green-400 font-mono">Enterprise Backend</span>
+            </div>
           </div>
           <p class="text-sm text-gray-400 leading-relaxed">
-            I engineered a robust REST API using Java 21 and Spring Security 6. It features multi-threaded analytics and
-            optimized JPA queries.
+            REST API built with modern JVM features (Records, Pattern Matching, Virtual Threads), Spring Security 6, Spring Data JPA, and HikariCP connection pooling.
           </p>
         </div>
 
-        <div
-          class="p-6 bg-[#151A23] border border-gray-800 rounded-2xl hover:border-red-500/50 transition-colors group">
+        <!-- Frontend Reactive UI -->
+        <div class="p-6 bg-[#151A23] border border-gray-800 rounded-2xl hover:border-red-500/50 transition-colors group">
           <div class="flex items-center gap-3 mb-4">
-            <div
-              class="w-12 h-12 bg-red-500/10 rounded-xl flex items-center justify-center text-red-500 group-hover:scale-110 transition-transform">
-              <svg class="angular-logo" width="200" height="211.7" fill="none" _ngcontent-ng-c586675657="" version="1.1"
-                viewBox="0 0 200 211.7" xmlns="http://www.w3.org/2000/svg">
-                <g transform="scale(.90059)" clip-path="url(#a)" _ngcontent-ng-c586675657="">
-                  <path
-                    d="m222.08 39.192-8.019 125.92-76.671-165.12zm-53.105 162.82-57.933 33.056-57.934-33.056 11.783-28.556h92.301zm-57.933-139.34 30.357 73.803h-60.715zm-103.1 102.44-7.937-125.92 84.69-39.192z"
-                    fill="url(#b)" _ngcontent-ng-c586675657="" />
-                  <path
-                    d="m222.08 39.192-8.019 125.92-76.671-165.12zm-53.105 162.82-57.933 33.056-57.934-33.056 11.783-28.556h92.301zm-57.933-139.34 30.357 73.803h-60.715zm-103.1 102.44-7.937-125.92 84.69-39.192z"
-                    fill="url(#c)" _ngcontent-ng-c586675657="" />
-                </g>
-                <defs _ngcontent-ng-c586675657="">
-                  <linearGradient id="b" x1="49.009" x2="225.83" y1="213.75" y2="129.72" _ngcontent-ng-c586675657=""
-                    gradientUnits="userSpaceOnUse">
-                    <stop stop-color="#E40035" _ngcontent-ng-c586675657="" offset="0" />
-                    <stop stop-color="#F60A48" _ngcontent-ng-c586675657="" offset=".24" />
-                    <stop stop-color="#F20755" _ngcontent-ng-c586675657="" offset=".352" />
-                    <stop stop-color="#DC087D" _ngcontent-ng-c586675657="" offset=".494" />
-                    <stop stop-color="#9717E7" _ngcontent-ng-c586675657="" offset=".745" />
-                    <stop stop-color="#6C00F5" _ngcontent-ng-c586675657="" offset="1" />
-                  </linearGradient>
-                  <linearGradient id="c" x1="41.025" x2="156.74" y1="28.344" y2="160.34" _ngcontent-ng-c586675657=""
-                    gradientUnits="userSpaceOnUse">
-                    <stop stop-color="#FF31D9" _ngcontent-ng-c586675657="" offset="0" />
-                    <stop stop-color="#FF5BE1" stop-opacity="0" _ngcontent-ng-c586675657="" offset="1" />
-                  </linearGradient>
-                  <clipPath id="a" _ngcontent-ng-c586675657="">
-                    <path d="m0 0h223v236h-223z" fill="#fff" _ngcontent-ng-c586675657="" />
-                  </clipPath>
-                </defs>
-              </svg>
-
+            <div class="w-12 h-12 bg-red-500/10 rounded-xl flex items-center justify-center text-red-500 group-hover:scale-110 transition-transform">
+              <i class="ph ph-lightning text-2xl font-bold"></i>
             </div>
-            <h3 class="font-bold text-white">Angular 17</h3>
+            <div>
+              <h3 class="font-bold text-white">Angular 17 + Tailwind</h3>
+              <span class="text-xs text-red-400 font-mono">Reactive Frontend</span>
+            </div>
           </div>
           <p class="text-sm text-gray-400 leading-relaxed">
-            I utilized a modern reactive architecture with Angular Signals, standalone components, and TailwindCSS for a
-            fully responsive UI.
+            Standalone components and Angular Signals for optimistic UI updates. Features custom D3.js interactive donut charts with intelligent slice scaling.
           </p>
         </div>
 
-        <div
-          class="p-6 bg-[#151A23] border border-gray-800 rounded-2xl hover:border-orange-500/50 transition-colors group">
+        <!-- Hybrid AI & Parser -->
+        <div class="p-6 bg-[#151A23] border border-gray-800 rounded-2xl hover:border-purple-500/50 transition-colors group">
           <div class="flex items-center gap-3 mb-4">
-            <div
-              class="w-12 h-12 bg-orange-500/10 rounded-xl flex items-center justify-center text-orange-500 group-hover:scale-110 transition-transform">
-              <svg xmlns="http://www.w3.org/2000/svg" aria-label="Cloudflare" role="img" viewBox="0 0 512 512">
-                <rect width="512" height="512" rx="15%" fill="#ffffff" />
-                <path fill="#f38020"
-                  d="M331 326c11-26-4-38-19-38l-148-2c-4 0-4-6 1-7l150-2c17-1 37-15 43-33 0 0 10-21 9-24a97 97 0 0 0-187-11c-38-25-78 9-69 46-48 3-65 46-60 72 0 1 1 2 3 2h274c1 0 3-1 3-3z" />
-                <path fill="#faae40"
-                  d="M381 224c-4 0-6-1-7 1l-5 21c-5 16 3 30 20 31l32 2c4 0 4 6-1 7l-33 1c-36 4-46 39-46 39 0 2 0 3 2 3h113l3-2a81 81 0 0 0-78-103" />
-              </svg>
+            <div class="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform">
+              <i class="ph ph-brain text-2xl font-bold"></i>
             </div>
-            <h3 class="font-bold text-white">Cloudflare R2</h3>
+            <div>
+              <h3 class="font-bold text-white">Gemini 2.5 Flash + Groq</h3>
+              <span class="text-xs text-purple-400 font-mono">Hybrid Extraction</span>
+            </div>
           </div>
           <p class="text-sm text-gray-400 leading-relaxed">
-            I implemented S3-compatible object storage to handle secure file uploads and deliver assets with high
-            performance.
+            Deterministic rule parser handles high-volume LinkedIn/Indeed emails with 0ms AI overhead, backed by a multi-provider LLM cascade for unstructured emails.
+          </p>
+        </div>
+
+        <!-- Database & In-Memory Cache -->
+        <div class="p-6 bg-[#151A23] border border-gray-800 rounded-2xl hover:border-blue-500/50 transition-colors group">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
+              <i class="ph ph-database text-2xl font-bold"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-white">PostgreSQL & Caffeine</h3>
+              <span class="text-xs text-blue-400 font-mono">Persistence & Cache</span>
+            </div>
+          </div>
+          <p class="text-sm text-gray-400 leading-relaxed">
+            Supabase managed PostgreSQL database with batching and transaction mode, backed by high-speed Caffeine in-memory cache with event-driven invalidation.
+          </p>
+        </div>
+
+        <!-- Cloud Messaging & Storage -->
+        <div class="p-6 bg-[#151A23] border border-gray-800 rounded-2xl hover:border-orange-500/50 transition-colors group">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-12 h-12 bg-orange-500/10 rounded-xl flex items-center justify-center text-orange-400 group-hover:scale-110 transition-transform">
+              <i class="ph ph-cloud text-2xl font-bold"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-white">Cloud Pub/Sub & R2</h3>
+              <span class="text-xs text-orange-400 font-mono">Event Messaging & S3</span>
+            </div>
+          </div>
+          <p class="text-sm text-gray-400 leading-relaxed">
+            Google Cloud Pub/Sub for real-time mailbox push notifications and Cloudflare R2 S3-compatible storage for user avatars and career assets with atomic cleanup.
+          </p>
+        </div>
+
+        <!-- Cloud Run & Containerization -->
+        <div class="p-6 bg-[#151A23] border border-gray-800 rounded-2xl hover:border-sky-500/50 transition-colors group">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-12 h-12 bg-sky-500/10 rounded-xl flex items-center justify-center text-sky-400 group-hover:scale-110 transition-transform">
+              <i class="ph ph-package text-2xl font-bold"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-white">Docker & Cloud Run</h3>
+              <span class="text-xs text-sky-400 font-mono">Serverless Deployment</span>
+            </div>
+          </div>
+          <p class="text-sm text-gray-400 leading-relaxed">
+            Containerized multi-stage builds deployed on Google Cloud Run serverless infrastructure with automated CI/CD pipelines orchestrated through GitHub Actions.
           </p>
         </div>
 
       </div>
     </div>
 
+    <!-- Engineering Challenges Solved Deep Dive -->
     <div class="space-y-6">
-      <h2 class="text-2xl font-bold text-white">Engineering Challenges I Solved</h2>
+      <div class="border-b border-gray-800 pb-4">
+        <span class="text-xs uppercase font-mono tracking-widest text-indigo-400 font-bold">Technical Deep Dive</span>
+        <h2 class="text-2xl md:text-3xl font-bold text-white mt-1">Engineering Challenges Solved</h2>
+      </div>
+
       <div class="grid md:grid-cols-2 gap-6">
-        <div class="p-5 border border-gray-800 rounded-xl bg-gradient-to-br from-[#151A23] to-[#0B0E14]">
-          <h4 class="font-bold text-white flex items-center gap-2 mb-2">
-            <i class="ph ph-lock-key text-green-500"></i> Hybrid Security
-          </h4>
-          <p class="text-sm text-gray-400">
-            I designed a custom auth system supporting both JWT-based local authentication and OAuth2 (Google/GitHub), allowing seamless account linking.
-          </p>
+
+        <!-- Challenge 1 -->
+        <div class="p-6 border border-gray-800 rounded-xl bg-gradient-to-br from-[#151A23] to-[#0B0E14] flex flex-col justify-between">
+          <div>
+            <h4 class="font-bold text-white flex items-center gap-2 mb-2">
+              <i class="ph ph-bell-ringing text-blue-400 text-lg"></i> Event-Driven Gmail Push via Cloud Pub/Sub
+            </h4>
+            <p class="text-sm text-gray-400 leading-relaxed">
+              Eliminated brittle client-side polling and third-party email forwarder bottlenecks. Connected directly to Gmail OAuth2 and Google Cloud Pub/Sub push webhooks, authenticated with Google Service Account audience claims and processed asynchronously via Java 21 Virtual Threads.
+            </p>
+          </div>
+          <span class="text-[11px] font-mono text-gray-500 mt-4 block">Pub/Sub · Virtual Threads · Service Account JWT</span>
         </div>
 
-        <div class="p-5 border border-gray-800 rounded-xl bg-gradient-to-br from-[#151A23] to-[#0B0E14]">
-          <h4 class="font-bold text-white flex items-center gap-2 mb-2">
-            <i class="ph ph-robot text-purple-500"></i> AI Webhook Pipeline
-          </h4>
-          <p class="text-sm text-gray-400">
-            I architected an inbound email parser using <strong>Google Gemini AI</strong>. It processes webhooks from Cloudmailin, extracts structured data from unstructured emails, and performs smart upserts to the database.
-          </p>
+        <!-- Challenge 2 -->
+        <div class="p-6 border border-gray-800 rounded-xl bg-gradient-to-br from-[#151A23] to-[#0B0E14] flex flex-col justify-between">
+          <div>
+            <h4 class="font-bold text-white flex items-center gap-2 mb-2">
+              <i class="ph ph-cpu text-purple-400 text-lg"></i> Zero-Cost Deterministic Template Routing
+            </h4>
+            <p class="text-sm text-gray-400 leading-relaxed">
+              Implemented <code class="text-purple-300 font-mono text-xs">SmartExtractionService</code> as an intercepting proxy. It parses standardized LinkedIn and Indeed application receipts with deterministic regex/DOM rules in sub-milliseconds, bypassing external AI APIs for 90%+ of emails and falling back to Gemini only for unstructured emails.
+            </p>
+          </div>
+          <span class="text-[11px] font-mono text-gray-500 mt-4 block">0ms AI Cost · TemplateParser · UrlParser</span>
         </div>
 
-        <div class="p-5 border border-gray-800 rounded-xl bg-gradient-to-br from-[#151A23] to-[#0B0E14]">
-          <h4 class="font-bold text-white flex items-center gap-2 mb-2">
-            <i class="ph ph-database text-blue-500"></i> Atomic Data Integrity
-          </h4>
-          <p class="text-sm text-gray-400">
-            I implemented transactional logic for profile updates. File uploads and text data are handled atomically, and orphaned files in R2 are automatically cleaned up.
-          </p>
+        <!-- Challenge 3 -->
+        <div class="p-6 border border-gray-800 rounded-xl bg-gradient-to-br from-[#151A23] to-[#0B0E14] flex flex-col justify-between">
+          <div>
+            <h4 class="font-bold text-white flex items-center gap-2 mb-2">
+              <i class="ph ph-shield-check text-amber-400 text-lg"></i> Boundary-Safe Word-Token Deduplication
+            </h4>
+            <p class="text-sm text-gray-400 leading-relaxed">
+              Solved the classic short-name collision problem where 2-3 letter companies (like "MS") incorrectly matched substrings of larger company records (like "ORION SYSTEMS"). Built token-boundary matching rules and transformed the pipeline into an in-place state progression machine.
+            </p>
+          </div>
+          <span class="text-[11px] font-mono text-gray-500 mt-4 block">Exact Token Bounds · State Promotion · Transaction Logs</span>
         </div>
 
-        <div class="p-5 border border-gray-800 rounded-xl bg-gradient-to-br from-[#151A23] to-[#0B0E14]">
-          <h4 class="font-bold text-white flex items-center gap-2 mb-2">
-            <i class="ph ph-lightning text-yellow-500"></i> Multi-threaded Analytics
-          </h4>
-          <p class="text-sm text-gray-400">
-            I leveraged Java `CompletableFuture` to calculate dashboard analytics in parallel threads, ensuring the dashboard loads instantly even with large datasets.
-          </p>
+        <!-- Challenge 4 -->
+        <div class="p-6 border border-gray-800 rounded-xl bg-gradient-to-br from-[#151A23] to-[#0B0E14] flex flex-col justify-between">
+          <div>
+            <h4 class="font-bold text-white flex items-center gap-2 mb-2">
+              <i class="ph ph-lightning text-emerald-400 text-lg"></i> High-Performance In-Memory Caffeine Caching
+            </h4>
+            <p class="text-sm text-gray-400 leading-relaxed">
+              Integrated Caffeine Cache on top of Spring Data JPA to store user profiles, dashboard metrics, and job queries in memory. Combined with event-driven cache invalidation on mutations, dashboard read latencies dropped to sub-5ms while protecting the database.
+            </p>
+          </div>
+          <span class="text-[11px] font-mono text-gray-500 mt-4 block">Caffeine Cache · Sub-5ms Read Latency · Eviction on Mutation</span>
         </div>
+
+        <!-- Challenge 5 -->
+        <div class="p-6 border border-gray-800 rounded-xl bg-gradient-to-br from-[#151A23] to-[#0B0E14] flex flex-col justify-between">
+          <div>
+            <h4 class="font-bold text-white flex items-center gap-2 mb-2">
+              <i class="ph ph-lock-key text-rose-400 text-lg"></i> Hybrid Security & Atomic R2 File Operations
+            </h4>
+            <p class="text-sm text-gray-400 leading-relaxed">
+              Engineered a dual authentication architecture supporting standard JWT credentials and OAuth2 (Google & GitHub) with rotating HTTP-only refresh cookies. Integrated Cloudflare R2 object storage with transactional cleanup of orphaned media files.
+            </p>
+          </div>
+          <span class="text-[11px] font-mono text-gray-500 mt-4 block">Spring Security 6 · OAuth2 · Cloudflare R2 Garbage Collection</span>
+        </div>
+
+        <!-- Challenge 6 -->
+        <div class="p-6 border border-gray-800 rounded-xl bg-gradient-to-br from-[#151A23] to-[#0B0E14] flex flex-col justify-between">
+          <div>
+            <h4 class="font-bold text-white flex items-center gap-2 mb-2">
+              <i class="ph ph-chart-pie-slice text-sky-400 text-lg"></i> "Don't-Drown" D3 Scaling & Reactive Signals
+            </h4>
+            <p class="text-sm text-gray-400 leading-relaxed">
+              Standard donut charts make rare pipeline states (e.g. 1 offer out of 400 applications) unclickable lines. Developed a geometry scaling algorithm giving small slices a minimum 2.5% visual width while retaining 100% mathematical precision in tooltips, powered by Angular Signals.
+            </p>
+          </div>
+          <span class="text-[11px] font-mono text-gray-500 mt-4 block">Angular Signals · D3.js Geometry Scaling · Optimistic UI</span>
+        </div>
+
       </div>
     </div>
 
-    <div class="pt-12 mt-12 border-t border-gray-800 text-center">
-      
-      <p class="text-gray-400 mb-6">Designed & Developed by <span class="text-white font-semibold">Hari Thatikonda</span></p>
-      
-      <div class="flex justify-center gap-6 mb-8">
-        <a href="https://github.com/thughari" target="_blank"
-          class="text-gray-500 hover:text-white transition-colors text-2xl" title="GitHub">
-          <i class="ph ph-github-logo"></i>
-        </a>
-        <a href="https://www.linkedin.com/in/hari-thatikonda/" target="_blank"
-          class="text-gray-500 hover:text-blue-500 transition-colors text-2xl" title="LinkedIn">
-          <i class="ph ph-linkedin-logo"></i>
-        </a>
-        <a href="https://thughari.github.io/" target="_blank"
-          class="text-gray-500 hover:text-blue-400 transition-colors text-2xl" title="Portfolio">
-          <i class="ph ph-globe"></i>
-        </a>
+    <!-- Contributor-Friendly Local Development -->
+    <div class="bg-[#151A23] border border-gray-800 rounded-2xl p-8">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+          <i class="ph ph-terminal-window text-2xl"></i>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-white">Contributor-Friendly by Design</h2>
+          <span class="text-xs text-gray-500 font-mono">Zero API Keys Required for Local Dev</span>
+        </div>
       </div>
+      <p class="text-gray-400 text-sm leading-relaxed mb-6">
+        JobTrackerPro features environment profiles that allow any developer to clone and run the full stack locally with a single Docker command. When running in the <code class="text-emerald-400 font-mono text-xs">local</code> profile, the backend automatically uses <strong class="text-white">MockGeminiService</strong> and local file storage, with a local MailHog SMTP trap for email simulation.
+      </p>
 
-      <div class="flex flex-col md:flex-row justify-center items-center gap-2 md:gap-4 text-xs text-gray-600">
-        <p>© 2026 JobTrackerPro. Open Source Software.</p>
-        <span class="hidden md:inline text-gray-700">•</span>
-        <a routerLink="/privacy" class="hover:text-gray-400 transition-colors">Privacy Policy</a>
+      <div class="bg-[#0B0E14] border border-gray-800 rounded-xl p-4 font-mono text-xs text-gray-300 overflow-x-auto space-y-1">
+        <div class="text-gray-500"># 1. Start Docker local infrastructure (PostgreSQL & MailHog)</div>
+        <div class="text-emerald-400">docker-compose up -d</div>
+        <div class="text-gray-500 pt-2"># 2. Start Spring Boot API (Uses local mock AI & local storage)</div>
+        <div class="text-emerald-400">cd backend && ./mvnw spring-boot:run</div>
+        <div class="text-gray-500 pt-2"># 3. Start Angular frontend</div>
+        <div class="text-emerald-400">cd frontend && npm start</div>
       </div>
-
     </div>
 
   </div>
